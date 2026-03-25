@@ -14,7 +14,8 @@ export async function GET(
   }
 
   try {
-    const [project] = await db.select().from(projects).where(eq(projects.id, params.id)).limit(1);
+    const projectId = parseInt(params.id);
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
     }
@@ -35,11 +36,12 @@ export async function PATCH(
   }
 
   try {
+    const projectId = parseInt(params.id);
     const { name, slug } = await request.json();
 
     const [updatedProject] = await db.update(projects)
       .set({ name, slug })
-      .where(eq(projects.id, params.id))
+      .where(eq(projects.id, projectId))
       .returning();
 
     if (!updatedProject) {
@@ -63,7 +65,8 @@ export async function DELETE(
   }
 
   try {
-    await db.delete(projects).where(eq(projects.id, params.id));
+    const projectId = parseInt(params.id);
+    await db.delete(projects).where(eq(projects.id, projectId));
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Failed to delete project:", error);
