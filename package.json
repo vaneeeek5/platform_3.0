@@ -24,7 +24,9 @@
     "xlsx": "latest",
     "sonner": "latest",
     "clsx": "latest",
-    "tailwind-merge": "latest"
+    "tailwind-merge": "latest",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "typescript": "^5",
@@ -36,6 +38,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.0.0",
     "drizzle-kit": "latest",
-    "@types/pg": "latest"
+    "@types/pg": "latest",
+    "@types/bcrypt": "^5.0.2",
+    "tsx": "^4.7.1"
   }
 }
