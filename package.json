@@ -26,7 +26,11 @@
     "clsx": "latest",
     "tailwind-merge": "latest",
     "bcrypt": "^5.1.1",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "tailwindcss-animate": "^1.0.7",
+    "lucide-react": "^0.453.0",
+    "class-variance-authority": "^0.7.0",
+    "@radix-ui/react-slot": "^1.1.0"
   },
   "devDependencies": {
     "typescript": "^5",
