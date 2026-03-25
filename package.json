@@ -22,7 +22,6 @@
     "bullmq": "latest",
     "jose": "latest",
     "xlsx": "latest",
-    "sonner": "latest",
     "clsx": "latest",
     "tailwind-merge": "latest",
     "bcryptjs": "^2.4.3",
