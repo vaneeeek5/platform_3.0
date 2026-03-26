@@ -61,9 +61,10 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     let attempts = 0;
     while (status !== 'processed' && attempts < 60) {
         await new Promise(r => setTimeout(r, 5000));
-        const statusRes = await fetch(`${listUrl}/${requestId}`, { 
+        const statusRes = await fetch(`https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequest/${requestId}`, { 
             headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
         });
+        if (!statusRes.ok) throw new Error(`Status check failed: ${await statusRes.text()}`);
         const statusData = await statusRes.json();
         status = statusData.log_request.status;
         console.log(`[Logs API] Polling ${requestId}... Status: ${status}`);
@@ -73,7 +74,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     if (status !== 'processed') throw new Error("Log request timed out");
 
     // 3. Download and Parse Parts
-    const infoRes = await fetch(`${listUrl}/${requestId}`, { 
+    const infoRes = await fetch(`https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequest/${requestId}`, { 
         headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
     });
     const infoData = await infoRes.json();
@@ -85,7 +86,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     const projectGoals = await db.select().from(trackedGoals).where(eq(trackedGoals.projectId, projectId));
 
     for (const part of parts) {
-        const downloadUrl = `${listUrl}/${requestId}/part/${part.part_number}/download`;
+        const downloadUrl = `https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequest/${requestId}/part/${part.part_number}/download`;
         const downloadRes = await fetch(downloadUrl, { 
             headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
         });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
-import { syncMetrikaLeads } from "@/lib/sync/yandex-metrika";
+import { syncMetrikaLeads, syncMetrikaVisits } from "@/lib/sync/yandex-metrika";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -21,8 +21,11 @@ export async function POST(
     
     console.log(`[Sync] Starting Metrika sync for project ${projectId}, period: ${dateFrom} to ${dateTo}`);
 
-    const metrikaResult = await syncMetrikaLeads(projectId, dateFrom, dateTo);
-    console.log(`[Sync] Metrika result:`, metrikaResult);
+    const leadsResult = await syncMetrikaLeads(projectId, dateFrom, dateTo);
+    const visitsResult = await syncMetrikaVisits(projectId, dateFrom, dateTo);
+    
+    const metrikaResult = { leads: leadsResult, visits: visitsResult };
+    console.log(`[Sync] Results:`, metrikaResult);
 
     await db.update(projects).set({ lastSyncAt: new Date() }).where(eq(projects.id, projectId));
 
