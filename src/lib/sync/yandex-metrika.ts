@@ -29,7 +29,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
     // 1. Check for existing requests to avoid 400 "already exists"
     const listUrl = `https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequests`;
-    const listRes = await fetch(listUrl, { headers: { 'Authorization': `OAuth ${project.yandexToken}` } });
+    const listRes = await fetch(listUrl, { headers: { 'Authorization': `Bearer ${project.yandexToken}` } });
     if (!listRes.ok) throw new Error(`Failed to list log requests: ${await listRes.text()}`);
     const { requests = [] } = await listRes.json();
     
@@ -44,11 +44,11 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
         requestId = existing.request_id;
         console.log(`[Logs API] Found existing request: ${requestId} (Status: ${existing.status})`);
     } else {
-        // Create new request
-        const createUrl = `https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequest?date1=${dateFrom}&date2=${dateTo}&fields=ym:s:visitID,ym:s:date,ym:s:clientID,ym:s:lastUTMCampaign,ym:s:lastUTMSource,ym:s:goalsID&source=visits`;
+        // Create new request (plural logrequests)
+        const createUrl = `https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequests?date1=${dateFrom}&date2=${dateTo}&fields=ym:s:visitID,ym:s:date,ym:s:clientID,ym:s:lastUTMCampaign,ym:s:lastUTMSource,ym:s:goalsID&source=visits`;
         const createRes = await fetch(createUrl, { 
             method: 'POST',
-            headers: { 'Authorization': `OAuth ${project.yandexToken}` } 
+            headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
         });
         if (!createRes.ok) throw new Error(`Failed to create log request: ${await createRes.text()}`);
         const createData = await createRes.json();
@@ -62,7 +62,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     while (status !== 'processed' && attempts < 60) {
         await new Promise(r => setTimeout(r, 5000));
         const statusRes = await fetch(`${listUrl}/${requestId}`, { 
-            headers: { 'Authorization': `OAuth ${project.yandexToken}` } 
+            headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
         });
         const statusData = await statusRes.json();
         status = statusData.log_request.status;
@@ -74,7 +74,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
     // 3. Download and Parse Parts
     const infoRes = await fetch(`${listUrl}/${requestId}`, { 
-        headers: { 'Authorization': `OAuth ${project.yandexToken}` } 
+        headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
     });
     const infoData = await infoRes.json();
     const parts = infoData.log_request.parts || [];
@@ -87,7 +87,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     for (const part of parts) {
         const downloadUrl = `${listUrl}/${requestId}/part/${part.part_number}/download`;
         const downloadRes = await fetch(downloadUrl, { 
-            headers: { 'Authorization': `OAuth ${project.yandexToken}` } 
+            headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
         });
         const tsv = await downloadRes.text();
         const lines = tsv.split('\n').filter(l => l.trim());
@@ -190,8 +190,8 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
 
         // 2. Parallel Fetch using Promise.all
         const [visitsRes, costsRes] = await Promise.all([
-            fetch(visitsUrl, { headers: { 'Authorization': `OAuth ${project.yandexToken}` } }),
-            fetch(costsUrl, { headers: { 'Authorization': `OAuth ${project.yandexToken}` } })
+            fetch(visitsUrl, { headers: { 'Authorization': `Bearer ${project.yandexToken}` } }),
+            fetch(costsUrl, { headers: { 'Authorization': `Bearer ${project.yandexToken}` } })
         ]);
 
         if (!visitsRes.ok) throw new Error(`Visits API error: ${await visitsRes.text()}`);
