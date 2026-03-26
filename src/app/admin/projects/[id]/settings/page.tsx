@@ -8,6 +8,7 @@ import { YandexSettings } from "@/components/projects/yandex-settings";
 import { SyncSettings } from "@/components/projects/sync-settings";
 import { StatusSettings } from "@/components/projects/status-settings";
 import { CampaignMappingSettings } from "@/components/projects/campaign-mapping";
+import { LeadsList } from "@/components/leads/leads-list";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -59,6 +60,13 @@ export default function ProjectSettingsPage() {
             Синхронизация и CRM
           </TabsTrigger>
           <TabsTrigger 
+            value="leads" 
+            active={activeTab === "leads"} 
+            onClick={() => setActiveTab("leads")}
+          >
+            Лиды
+          </TabsTrigger>
+          <TabsTrigger 
             value="general" 
             active={activeTab === "general"} 
             onClick={() => setActiveTab("general")}
@@ -81,6 +89,10 @@ export default function ProjectSettingsPage() {
 
         <TabsContent value="sync" active={activeTab === "sync"}>
             <SyncSettings projectId={parseInt(id)} />
+        </TabsContent>
+
+        <TabsContent value="leads" active={activeTab === "leads"}>
+            <LeadsList projectId={parseInt(id)} />
         </TabsContent>
 
         <TabsContent value="general" active={activeTab === "general"}>
