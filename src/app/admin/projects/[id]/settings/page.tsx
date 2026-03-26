@@ -27,27 +27,51 @@ export default function ProjectSettingsPage() {
         <h2 className="text-3xl font-bold tracking-tight">Настройки проекта</h2>
       </div>
 
-      <Tabs defaultValue="yandex">
+      <Tabs>
         <TabsList>
-          <TabsTrigger value="yandex">Яндекс.Метрика</TabsTrigger>
-          <TabsTrigger value="statuses">Статусы</TabsTrigger>
-          <TabsTrigger value="sync">Синхронизация и CRM</TabsTrigger>
-          <TabsTrigger value="general">Общие</TabsTrigger>
+          <TabsTrigger 
+            value="yandex" 
+            active={activeTab === "yandex"} 
+            onClick={() => setActiveTab("yandex")}
+          >
+            Яндекс.Метрика
+          </TabsTrigger>
+          <TabsTrigger 
+            value="statuses" 
+            active={activeTab === "statuses"} 
+            onClick={() => setActiveTab("statuses")}
+          >
+            Статусы
+          </TabsTrigger>
+          <TabsTrigger 
+            value="sync" 
+            active={activeTab === "sync"} 
+            onClick={() => setActiveTab("sync")}
+          >
+            Синхронизация и CRM
+          </TabsTrigger>
+          <TabsTrigger 
+            value="general" 
+            active={activeTab === "general"} 
+            onClick={() => setActiveTab("general")}
+          >
+            Общие
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="yandex">
+        <TabsContent value="yandex" active={activeTab === "yandex"}>
             <YandexSettings projectId={parseInt(id)} />
         </TabsContent>
 
-        <TabsContent value="statuses">
+        <TabsContent value="statuses" active={activeTab === "statuses"}>
             <StatusSettings projectId={parseInt(id)} />
         </TabsContent>
 
-        <TabsContent value="sync">
+        <TabsContent value="sync" active={activeTab === "sync"}>
             <SyncSettings projectId={parseInt(id)} />
         </TabsContent>
 
-        <TabsContent value="general">
+        <TabsContent value="general" active={activeTab === "general"}>
             <Card>
               <CardHeader>
                 <CardTitle>Общая информация</CardTitle>
