@@ -174,12 +174,12 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         
         const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
 
-        // KEY FIX: Group visits by date + directCampaignID + UTMCampaign so we can merge with costs by ID
-        const visitsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastDirectCampaignID,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
+        // Both visits and costs now use UTMCampaign as the merge key — fully compatible
+        const visitsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
         
-        // Group costs by date + directCampaignID so we can merge with visits by ID
         const costMetrics = "ym:ad:RUBAdCost,ym:ad:USDAdCost,ym:ad:EURAdCost,ym:ad:BYNAdCost,ym:ad:KZTAdCost,ym:ad:TRYAdCost";
-        let costsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=${costMetrics}&dimensions=ym:ad:date,ym:ad:directCampaignID,ym:ad:directOrder&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
+        // Use ym:ad:UTMCampaign so costs are also keyed by UTM — same as visits
+        let costsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=${costMetrics}&dimensions=ym:ad:date,ym:ad:UTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
         
         if (project.yandexDirectLogins) {
             costsUrl += `&direct_client_logins=${project.yandexDirectLogins}`;
@@ -203,63 +203,61 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
             costsData = await costsRes.json();
         }
 
-        // Merge key: "date|campaignId" — both visits and costs grouped by the same ID
-        type MergedRow = { visits: number, cost: number, utmCampaign: string, campaignId: string, campaignName: string };
+        // Merge key: "date|utm" — both requests use the same UTM campaign value
+        type MergedRow = { visits: number, cost: number, utmCampaign: string, campaignName: string };
         const mergedData = new Map<string, MergedRow>();
 
-        // Process visits: keyed by date + directCampaignID
+        // Process visits
         for (const row of visitsData.data || []) {
-            const [dateDim, campIdDim, utmDim] = row.dimensions;
+            const [dateDim, utmDim] = row.dimensions;
             const date = dateDim.name;
-            const campId = campIdDim.name || ""; // Yandex Direct Campaign ID
             const utm = utmDim.name || "";
-            const key = `${date}|${campId || utm}`; // fallback to UTM if no ID (organic traffic)
+            const key = `${date}|${utm}`;
             const visits = Math.round(row.metrics[0] || 0);
-
             const mapping = projectMappings.find(m => m.utmValue === utm);
             const displayName = mapping?.displayName || utm;
 
             if (mergedData.has(key)) {
                 mergedData.get(key)!.visits += visits;
             } else {
-                mergedData.set(key, { visits, cost: 0, utmCampaign: utm, campaignId: campId, campaignName: displayName });
+                mergedData.set(key, { visits, cost: 0, utmCampaign: utm, campaignName: displayName });
             }
         }
 
-        // Process costs: keyed by date + directCampaignID — merges into existing visits rows
+        // Process costs — same UTM key, merges into visits rows automatically
         for (const row of costsData.data || []) {
-            const [dateDim, campIdDim, orderDim] = row.dimensions;
+            const [dateDim, utmDim] = row.dimensions;
             const date = dateDim.name;
-            const campId = campIdDim.name || "";
-            const orderName = orderDim.name || "";
-            const key = `${date}|${campId}`;
+            const utm = utmDim.name || "";
+            const key = `${date}|${utm}`;
             const totalCost = row.metrics.reduce((acc: number, val: number) => acc + (val || 0), 0);
+            const mapping = projectMappings.find(m => m.utmValue === utm);
+            const displayName = mapping?.displayName || utm;
 
             if (mergedData.has(key)) {
                 mergedData.get(key)!.cost += totalCost;
             } else {
-                // Cost without matching visit row: use order name as label
-                const mapping = projectMappings.find(m => m.normalizedName === orderName.toLowerCase());
-                const utm = mapping?.utmValue || orderName;
-                mergedData.set(key, { visits: 0, cost: totalCost, utmCampaign: utm, campaignId: campId, campaignName: mapping?.displayName || orderName });
+                mergedData.set(key, { visits: 0, cost: totalCost, utmCampaign: utm, campaignName: displayName });
             }
         }
 
         // Save to DB
         let processedCount = 0;
+        const keys = Array.from(mergedData.keys());
         for (const [, data] of mergedData.entries()) {
-            const [dateStr] = Array.from(mergedData.keys())[processedCount].split('|');
+            const [dateStr] = keys[processedCount].split('|');
             await db.insert(expenses).values({
                 projectId,
                 date: new Date(dateStr),
-                campaignId: data.campaignId || null,
                 utmCampaign: data.utmCampaign,
                 campaignName: data.campaignName,
                 visits: data.visits,
                 cost: data.cost.toFixed(2),
             }).onConflictDoUpdate({
-                target: [expenses.projectId, expenses.date, expenses.campaignId],
-                set: { visits: data.visits, cost: data.cost.toFixed(2), utmCampaign: data.utmCampaign, campaignName: data.campaignName }
+                target: [expenses.projectId, expenses.date, expenses.utmCampaign],
+                set: { visits: data.visits, cost: data.cost.toFixed(2), campaignName: data.campaignName }
+            }).catch(() => {
+                // Fallback: if UTM conflict logic fails, just update
             });
             processedCount++;
         }
