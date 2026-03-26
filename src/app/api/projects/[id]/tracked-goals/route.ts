@@ -45,6 +45,8 @@ export async function POST(
             projectId,
             goalId: g.goalId,
             goalName: g.goalName,
+            targetStatusId: g.targetStatusId || null,
+            qualificationStatusId: g.qualificationStatusId || null,
             isActive: true,
           }))
         );

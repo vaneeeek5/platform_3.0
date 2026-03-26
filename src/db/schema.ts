@@ -70,6 +70,8 @@ export const trackedGoals = pgTable(
       .notNull(),
     goalId: text("goal_id").notNull(),
     goalName: text("goal_name").notNull(),
+    targetStatusId: integer("target_status_id").references(() => targetStatuses.id, { onDelete: "set null" }),
+    qualificationStatusId: integer("qualification_status_id").references(() => qualificationStatuses.id, { onDelete: "set null" }),
     isActive: boolean("is_active").default(true),
   },
   (t) => ({

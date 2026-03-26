@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { YandexSettings } from "@/components/projects/yandex-settings";
 import { SyncSettings } from "@/components/projects/sync-settings";
+import { StatusSettings } from "@/components/projects/status-settings";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -26,40 +27,27 @@ export default function ProjectSettingsPage() {
         <h2 className="text-3xl font-bold tracking-tight">Настройки проекта</h2>
       </div>
 
-      <Tabs>
+      <Tabs defaultValue="yandex">
         <TabsList>
-          <TabsTrigger 
-            value="yandex" 
-            active={activeTab === "yandex"} 
-            onClick={() => setActiveTab("yandex")}
-          >
-            Яндекс.Метрика
-          </TabsTrigger>
-          <TabsTrigger 
-            value="sync" 
-            active={activeTab === "sync"} 
-            onClick={() => setActiveTab("sync")}
-          >
-            Синхронизация и CRM
-          </TabsTrigger>
-          <TabsTrigger 
-            value="general" 
-            active={activeTab === "general"} 
-            onClick={() => setActiveTab("general")}
-          >
-            Общие
-          </TabsTrigger>
+          <TabsTrigger value="yandex">Яндекс.Метрика</TabsTrigger>
+          <TabsTrigger value="statuses">Статусы</TabsTrigger>
+          <TabsTrigger value="sync">Синхронизация и CRM</TabsTrigger>
+          <TabsTrigger value="general">Общие</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="yandex" active={activeTab === "yandex"}>
+        <TabsContent value="yandex">
             <YandexSettings projectId={parseInt(id)} />
         </TabsContent>
 
-        <TabsContent value="sync" active={activeTab === "sync"}>
+        <TabsContent value="statuses">
+            <StatusSettings projectId={parseInt(id)} />
+        </TabsContent>
+
+        <TabsContent value="sync">
             <SyncSettings projectId={parseInt(id)} />
         </TabsContent>
 
-        <TabsContent value="general" active={activeTab === "general"}>
+        <TabsContent value="general">
             <Card>
               <CardHeader>
                 <CardTitle>Общая информация</CardTitle>

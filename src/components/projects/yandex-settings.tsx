@@ -8,11 +8,25 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Goal {
   id: string;
   name: string;
   type: string;
+}
+
+interface TrackedGoal {
+  goalId: string;
+  goalName: string;
+  targetStatusId?: number | null;
+  qualificationStatusId?: number | null;
+}
+
+interface Status {
+  id: number;
+  label: string;
+  color: string;
 }
 
 export function YandexSettings({ projectId }: { projectId: number }) {
@@ -22,7 +36,10 @@ export function YandexSettings({ projectId }: { projectId: number }) {
   const [token, setToken] = useState("");
   const [counterId, setCounterId] = useState("");
   const [availableGoals, setAvailableGoals] = useState<Goal[]>([]);
-  const [trackedGoalIds, setTrackedGoalIds] = useState<string[]>([]);
+  const [trackedGoalsList, setTrackedGoalsList] = useState<TrackedGoal[]>([]);
+  
+  const [targetStatuses, setTargetStatuses] = useState<Status[]>([]);
+  const [qualStatuses, setQualStatuses] = useState<Status[]>([]);
 
   const fetchGoals = useCallback(async (t?: string, c?: string) => {
     const activeToken = t || token;
@@ -34,14 +51,11 @@ export function YandexSettings({ projectId }: { projectId: number }) {
     try {
       const res = await fetch(`/api/projects/${projectId}/metrika/goals?token=${activeToken}&counterId=${activeCounter}`);
       const data = await res.json();
-      if (data.error) {
-        // Don't toast on initial auto-load to avoid noise
-        if (t || c) toast.error(data.error);
-      } else {
+      if (!data.error) {
         setAvailableGoals(data);
       }
     } catch (e) {
-      if (t || c) toast.error("Ошибка при получении целей");
+       console.error(e);
     } finally {
       setFetchingGoals(false);
     }
@@ -50,43 +64,37 @@ export function YandexSettings({ projectId }: { projectId: number }) {
   useEffect(() => {
     Promise.all([
       fetch(`/api/projects/${projectId}`).then(res => res.json()),
-      fetch(`/api/projects/${projectId}/tracked-goals`).then(res => res.json())
-    ]).then(([project, goals]) => {
+      fetch(`/api/projects/${projectId}/tracked-goals`).then(res => res.json()),
+      fetch(`/api/projects/${projectId}/statuses/target`).then(res => res.json()),
+      fetch(`/api/projects/${projectId}/statuses/qualification`).then(res => res.json())
+    ]).then(([project, goals, targets, quals]) => {
       if (project) {
         setToken(project.yandexToken || "");
         setCounterId(project.yandexCounterId || "");
-        
-        // Auto-fetch goals if creds exist
         if (project.yandexToken && project.yandexCounterId) {
            fetchGoals(project.yandexToken, project.yandexCounterId);
         }
       }
       if (Array.isArray(goals)) {
-        setTrackedGoalIds(goals.map((g: any) => g.goalId));
+        setTrackedGoalsList(goals);
       }
+      if (Array.isArray(targets)) setTargetStatuses(targets);
+      if (Array.isArray(quals)) setQualStatuses(quals);
       setLoading(false);
     });
   }, [projectId, fetchGoals]);
 
   const handleSaveGoals = async () => {
-    // If availableGoals is empty because they haven't fetched manually, we can't save names
-    // But we should have the IDs anyway. 
-    // This is a UI limitation: we only save what we see.
-    const goalsToSave = trackedGoalIds.map(id => {
-       const goal = availableGoals.find(g => g.id === id);
-       return { goalId: id, goalName: goal?.name || "Unknown Goal" };
-    });
-
     setSaving(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/tracked-goals`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goals: goalsToSave }),
+        body: JSON.stringify({ goals: trackedGoalsList }),
       });
 
       if (res.ok) {
-        toast.success("Список отслеживаемых целей обновлен");
+        toast.success("Список отслеживаемых целей и маппинг обновлены");
       } else {
         toast.error("Не удалось сохранить цели");
       }
@@ -95,6 +103,31 @@ export function YandexSettings({ projectId }: { projectId: number }) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleGoal = (goal: Goal, checked: boolean) => {
+     if (checked) {
+        setTrackedGoalsList([...trackedGoalsList, { 
+           goalId: goal.id, 
+           goalName: goal.name,
+           targetStatusId: null,
+           qualificationStatusId: null
+        }]);
+     } else {
+        setTrackedGoalsList(trackedGoalsList.filter(g => g.goalId !== goal.id));
+     }
+  };
+
+  const updateGoalMapping = (goalId: string, type: 'target' | 'qual', statusId: string) => {
+     setTrackedGoalsList(trackedGoalsList.map(g => {
+        if (g.goalId === goalId) {
+           return {
+              ...g,
+              [type === 'target' ? 'targetStatusId' : 'qualificationStatusId']: statusId === "none" ? null : parseInt(statusId)
+           };
+        }
+        return g;
+     }));
   };
 
   const handleSave = async () => {
@@ -111,7 +144,6 @@ export function YandexSettings({ projectId }: { projectId: number }) {
 
       if (res.ok) {
         toast.success("Доступы Яндекса сохранены");
-        // Re-fetch goals to refresh UI
         fetchGoals(token, counterId);
       } else {
         toast.error("Ошибка при сохранении");
@@ -167,15 +199,15 @@ export function YandexSettings({ projectId }: { projectId: number }) {
         </CardFooter>
       </Card>
 
-      {(availableGoals.length > 0 || trackedGoalIds.length > 0) && (
-        <Card>
+      {(availableGoals.length > 0 || trackedGoalsList.length > 0) && (
+        <Card className="overflow-hidden">
           <CardHeader>
-            <CardTitle>Цели Метрики</CardTitle>
+            <CardTitle>Цели Метрики и Маппинг</CardTitle>
             <CardDescription>
-              Выберите цели, которые должны считаться «Лидами».
+              Выберите цели-лиды и соответствующие им статусы в платформе.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {fetchingGoals ? (
                <div className="py-8 text-center text-muted-foreground italic">Загрузка списка целей...</div>
             ) : availableGoals.length === 0 ? (
@@ -183,44 +215,80 @@ export function YandexSettings({ projectId }: { projectId: number }) {
             ) : (
                 <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Отсл.</TableHead>
-                    <TableHead>Goal ID</TableHead>
-                    <TableHead>Название</TableHead>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-[50px] pl-6"></TableHead>
+                    <TableHead>Название / ID</TableHead>
                     <TableHead>Тип</TableHead>
+                    <TableHead>Целевой статус</TableHead>
+                    <TableHead>Квал. статус</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {availableGoals.map((goal) => (
-                    <TableRow key={goal.id}>
-                      <TableCell>
-                        <input 
-                          type="checkbox" 
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                          checked={trackedGoalIds.includes(goal.id)}
-                          onChange={(e) => {
-                             if (e.target.checked) {
-                                setTrackedGoalIds([...trackedGoalIds, goal.id]);
-                             } else {
-                                setTrackedGoalIds(trackedGoalIds.filter(id => id !== goal.id));
-                             }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{goal.id}</TableCell>
-                      <TableCell>{goal.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{goal.type}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {availableGoals.map((goal) => {
+                    const tracked = trackedGoalsList.find(g => g.goalId === goal.id);
+                    return (
+                      <TableRow key={goal.id} className={tracked ? "bg-primary/5" : ""}>
+                        <TableCell className="pl-6">
+                          <input 
+                            type="checkbox" 
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                            checked={!!tracked}
+                            onChange={(e) => toggleGoal(goal, e.target.checked)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                           <div className="flex flex-col">
+                              <span className="font-medium text-sm">{goal.name}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground">{goal.id}</span>
+                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-[10px]">{goal.type}</Badge>
+                        </TableCell>
+                        <TableCell>
+                           <Select 
+                              disabled={!tracked} 
+                              value={tracked?.targetStatusId?.toString() || "none"}
+                              onValueChange={(val) => updateGoalMapping(goal.id, 'target', val)}
+                           >
+                              <SelectTrigger className="h-8 text-xs w-[140px]">
+                                 <SelectValue placeholder="Нет" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="none">Не маппить</SelectItem>
+                                 {targetStatuses.map(s => (
+                                    <SelectItem key={s.id} value={s.id.toString()}>{s.label}</SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                        </TableCell>
+                        <TableCell>
+                           <Select 
+                              disabled={!tracked} 
+                              value={tracked?.qualificationStatusId?.toString() || "none"}
+                              onValueChange={(val) => updateGoalMapping(goal.id, 'qual', val)}
+                           >
+                              <SelectTrigger className="h-8 text-xs w-[140px]">
+                                 <SelectValue placeholder="Нет" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                 <SelectItem value="none">Не маппить</SelectItem>
+                                 {qualStatuses.map(s => (
+                                    <SelectItem key={s.id} value={s.id.toString()}>{s.label}</SelectItem>
+                                 ))}
+                              </SelectContent>
+                           </Select>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
           </CardContent>
-          <CardFooter className="border-t px-6 py-4">
+          <CardFooter className="border-t px-6 py-4 bg-muted/20">
              <Button onClick={handleSaveGoals} disabled={saving}>
-                {saving ? "Сохранение..." : "Сохранить выбранные цели"}
+                {saving ? "Сохранение..." : "Сохранить цели и маппинг"}
              </Button>
           </CardFooter>
         </Card>
