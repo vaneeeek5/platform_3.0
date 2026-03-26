@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session || (session.role !== "SUPER_ADMIN" && session.role !== "ADMIN")) {
@@ -14,7 +14,8 @@ export async function GET(
   }
 
   try {
-    const projectId = parseInt(params.id);
+    const { id } = await params;
+    const projectId = parseInt(id);
     const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });
@@ -28,7 +29,7 @@ export async function GET(
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session || session.role !== "SUPER_ADMIN") {
@@ -36,7 +37,8 @@ export async function PATCH(
   }
 
   try {
-    const projectId = parseInt(params.id);
+    const { id } = await params;
+    const projectId = parseInt(id);
     const { name, slug } = await request.json();
 
     const [updatedProject] = await db.update(projects)
@@ -57,7 +59,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session || session.role !== "SUPER_ADMIN") {
@@ -65,7 +67,8 @@ export async function DELETE(
   }
 
   try {
-    const projectId = parseInt(params.id);
+    const { id } = await params;
+    const projectId = parseInt(id);
     await db.delete(projects).where(eq(projects.id, projectId));
     return NextResponse.json({ ok: true });
   } catch (error) {

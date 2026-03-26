@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
-export default function ProjectSettingsPage({ params }: { params: { id: string } }) {
+export default function ProjectSettingsPage() {
+  const params = useParams();
+  const id = params.id as string;
   const [activeTab, setActiveTab] = useState("yandex");
 
   return (

@@ -7,14 +7,15 @@ import { eq, and } from "drizzle-orm";
 // Fetch tracked goals for this project
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const projectId = parseInt(params.id);
+  const { id } = await params;
+  const projectId = parseInt(id);
   const goals = await db.select().from(trackedGoals).where(eq(trackedGoals.projectId, projectId));
   return NextResponse.json(goals);
 }
@@ -22,14 +23,15 @@ export async function GET(
 // Update tracked goals
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const projectId = parseInt(params.id);
+  const { id } = await params;
+  const projectId = parseInt(id);
   const { goals } = await request.json(); // Array of { goalId, goalName }
 
   try {

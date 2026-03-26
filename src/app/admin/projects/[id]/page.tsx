@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,8 +17,10 @@ interface Project {
   isActive: boolean
 }
 
-export default function EditProjectPage({ params }: { params: { id: string } }) {
+export default function EditProjectPage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params.id as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [project, setProject] = useState<Project | null>(null)
@@ -129,7 +131,7 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
                Настройки Яндекса, CRM и расписания находятся в отдельном разделе.
             </p>
             <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" asChild>
-               <Link href={`/admin/projects/${params.id}/settings`}>
+               <Link href={`/admin/projects/${id}/settings`}>
                   Перейти к настройкам проекта
                </Link>
             </Button>
