@@ -14,10 +14,12 @@ export async function GET(request: Request) {
   const dateTo = searchParams.get("dateTo");
   const status = searchParams.get("status");
   const query = searchParams.get("query");
+  const sources = searchParams.get("sources")?.split(",");
+  const goals = searchParams.get("goals")?.split(",");
 
   try {
     let baseWhere = [];
-    if (projectId) baseWhere.push(eq(leads.projectId, parseInt(projectId)));
+    if (projectId && projectId !== '0') baseWhere.push(eq(leads.projectId, parseInt(projectId)));
     if (dateFrom) baseWhere.push(gte(leads.date, new Date(dateFrom)));
     if (dateTo) {
         const dTo = new Date(dateTo);
@@ -25,6 +27,10 @@ export async function GET(request: Request) {
         baseWhere.push(lte(leads.date, dTo));
     }
     
+    if (sources && sources.length > 0) {
+        baseWhere.push(sql`${leads.utmSource} IN ${sources}`);
+    }
+
     // Search by client ID or Campaign
     if (query) {
         baseWhere.push(or(
@@ -55,6 +61,10 @@ export async function GET(request: Request) {
     .leftJoin(goalAchievements, eq(leads.id, goalAchievements.leadId))
     .where(and(...baseWhere))
     .groupBy(leads.id, projects.id)
+    .having(goals && goals.length > 0 
+       ? sql`bool_or(${goalAchievements.goalName} IN ${goals})` 
+       : sql`true`
+    )
     .orderBy(desc(leads.date))
     .limit(100);
 

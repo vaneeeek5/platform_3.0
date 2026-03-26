@@ -18,6 +18,8 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { LeadEditDialog } from "./lead-edit-dialog"
 import * as XLSX from "xlsx"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface LeadsListProps {
   projectId: number;
@@ -31,6 +33,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [filterSources, setFilterSources] = useState<string[]>([])
+  const [filterGoals, setFilterGoals] = useState<string[]>([])
 
   useEffect(() => {
     setMounted(true)
@@ -42,6 +46,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     const params = new URLSearchParams()
     if (projectId) params.append("projectId", projectId.toString())
     if (query) params.append("query", query)
+    if (filterSources.length > 0) params.append("sources", filterSources.join(","))
+    if (filterGoals.length > 0) params.append("goals", filterGoals.join(","))
     
     try {
       const res = await fetch(`/api/leads?${params.toString()}`)
@@ -99,8 +105,26 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
             <TableRow>
               <TableHead className="w-[140px] text-xs">Дата</TableHead>
               {showProjectColumn && <TableHead className="text-xs">Проект</TableHead>}
-              <TableHead className="text-xs">Источник / Кампания</TableHead>
-              <TableHead className="text-xs">Цели</TableHead>
+              <TableHead className="text-xs">
+                 <div className="flex items-center gap-1">
+                    Источник
+                    <FilterPopover 
+                       options={Array.from(new Set(leads.map(l => l.lead.utmSource || 'direct')))} 
+                       selected={filterSources} 
+                       onChange={setFilterSources} 
+                    />
+                 </div>
+              </TableHead>
+              <TableHead className="text-xs">
+                 <div className="flex items-center gap-1">
+                    Цели
+                    <FilterPopover 
+                       options={Array.from(new Set(leads.flatMap(l => l.achievements?.map((a: any) => a.goalName) || [])))} 
+                       selected={filterGoals} 
+                       onChange={setFilterGoals} 
+                    />
+                 </div>
+              </TableHead>
               <TableHead className="text-xs">ClientID</TableHead>
               <TableHead className="text-right text-xs">Сумма</TableHead>
               <TableHead className="w-[50px]"></TableHead>
@@ -170,4 +194,41 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
       />
     </div>
   )
+}
+
+function FilterPopover({ options, selected, onChange }: { options: string[], selected: string[], onChange: (val: string[]) => void }) {
+   return (
+      <Popover>
+         <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+               <Filter className={`h-3 w-3 ${selected.length > 0 ? 'text-primary' : 'text-muted-foreground'}`} />
+            </Button>
+         </PopoverTrigger>
+         <PopoverContent className="w-56 p-2" align="start">
+            <div className="space-y-2">
+               <p className="text-xs font-medium px-1">Фильтр</p>
+               <div className="max-h-48 overflow-y-auto space-y-1">
+                  {options.map(opt => (
+                     <div key={opt} className="flex items-center space-x-2 px-1 py-1 hover:bg-muted rounded">
+                        <Checkbox 
+                           id={opt} 
+                           checked={selected.includes(opt)} 
+                           onCheckedChange={(checked) => {
+                              if (checked) onChange([...selected, opt])
+                              else onChange(selected.filter(s => s !== opt))
+                           }}
+                        />
+                        <label htmlFor={opt} className="text-xs cursor-pointer truncate flex-1">{opt}</label>
+                     </div>
+                  ))}
+               </div>
+               {selected.length > 0 && (
+                  <Button variant="ghost" size="sm" className="w-full h-7 text-[10px]" onClick={() => onChange([])}>
+                     Сбросить
+                  </Button>
+               )}
+            </div>
+         </PopoverContent>
+      </Popover>
+   )
 }
