@@ -71,6 +71,7 @@ export function ExpensesReport() {
     const [loading, setLoading] = React.useState(false);
     const [sortCol, setSortCol] = React.useState<SortKey | null>("totalCost");
     const [sortDir, setSortDir] = React.useState<SortDir>("desc");
+    const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
     React.useEffect(() => {
         fetch("/api/projects")
@@ -90,7 +91,10 @@ export function ExpensesReport() {
             });
             const res = await fetch(`/api/reports/expenses?${params}`);
             const json = await res.json();
-            setData(Array.isArray(json) ? json : []);
+            const fetchedData = Array.isArray(json) ? json : [];
+            setData(fetchedData);
+            // Default to all selected
+            setSelectedIds(new Set(fetchedData.map((r, i) => r.campaignName || r.utmCampaign || `row-${i}`)));
         } catch (err) {
             console.error(err);
         } finally {
@@ -111,6 +115,21 @@ export function ExpensesReport() {
         }
     };
 
+    const toggleSelection = (id: string) => {
+        const next = new Set(selectedIds);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        setSelectedIds(next);
+    };
+
+    const toggleAll = () => {
+        if (selectedIds.size === data.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(data.map((r, i) => r.campaignName || r.utmCampaign || `row-${i}`)));
+        }
+    };
+
     const sortedData = React.useMemo(() => {
         if (!sortCol) return data;
         return [...data].sort((a, b) => {
@@ -121,13 +140,15 @@ export function ExpensesReport() {
     }, [data, sortCol, sortDir]);
 
     const totals = React.useMemo(() => {
-        return data.reduce((acc, curr) => ({
-            cost: acc.cost + (curr.totalCost || 0),
-            visits: acc.visits + (curr.totalVisits || 0),
-            leads: acc.leads + (curr.leadCount || 0),
-            clicks: acc.clicks + (curr.totalClicks || 0)
-        }), { cost: 0, visits: 0, leads: 0, clicks: 0 });
-    }, [data]);
+        return data
+            .filter((r, i) => selectedIds.has(r.campaignName || r.utmCampaign || `row-${i}`))
+            .reduce((acc, curr) => ({
+                cost: acc.cost + (curr.totalCost || 0),
+                visits: acc.visits + (curr.totalVisits || 0),
+                leads: acc.leads + (curr.leadCount || 0),
+                clicks: acc.clicks + (curr.totalClicks || 0)
+            }), { cost: 0, visits: 0, leads: 0, clicks: 0 });
+    }, [data, selectedIds]);
 
     return (
         <div className="space-y-6">
@@ -160,7 +181,7 @@ export function ExpensesReport() {
                 </Card>
                 <Card>
                     <CardHeader className="py-4">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Всего лидов</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Выбранные лиды</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{totals.leads}</div>
@@ -187,13 +208,25 @@ export function ExpensesReport() {
             </div>
 
             <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Эффективность рекламных кампаний</CardTitle>
+                    <div className="text-sm text-muted-foreground">
+                        Выбрано строк: {selectedIds.size} из {data.length}
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-[40px] px-2 text-center">
+                                    <input 
+                                        type="checkbox" 
+                                        className="h-4 w-4 rounded cursor-pointer accent-primary" 
+                                        checked={data.length > 0 && selectedIds.size === data.length}
+                                        onChange={toggleAll}
+                                        title="Выбрать все"
+                                    />
+                                </TableHead>
                                 <TableHead>Кампания</TableHead>
                                 <SortableHead label="Визиты" col="totalVisits" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                                 <SortableHead label="Расход" col="totalCost" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
@@ -205,28 +238,40 @@ export function ExpensesReport() {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-10">Загрузка данных...</TableCell>
+                                    <TableCell colSpan={7} className="text-center py-10">Загрузка данных...</TableCell>
                                 </TableRow>
                             ) : sortedData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground text-sm">
+                                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground text-sm">
                                         {selectedProjectId ? "Нет данных за выбранный период. Запустите синхронизацию в настройках проекта." : "Выберите проект для отображения отчета"}
                                     </TableCell>
                                 </TableRow>
-                            ) : sortedData.map((row, i) => (
-                                <TableRow key={i}>
-                                    <TableCell className="font-medium">{row.campaignName || row.utmCampaign || "—"}</TableCell>
-                                    <TableCell className="text-right">{row.totalVisits.toLocaleString('ru-RU')}</TableCell>
-                                    <TableCell className="text-right">{row.totalCost.toLocaleString('ru-RU')} ₽</TableCell>
-                                    <TableCell className="text-right font-semibold">{row.leadCount}</TableCell>
-                                    <TableCell className="text-right">{row.cpl.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                            {row.conversion.toFixed(2)}%
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            ) : sortedData.map((row, i) => {
+                                const id = row.campaignName || row.utmCampaign || `row-${i}`;
+                                const isSelected = selectedIds.has(id);
+                                return (
+                                    <TableRow key={id} className={!isSelected ? "opacity-50 grayscale-[50%]" : ""}>
+                                        <TableCell className="px-2 text-center">
+                                            <input 
+                                                type="checkbox" 
+                                                className="h-4 w-4 rounded cursor-pointer accent-primary"
+                                                checked={isSelected}
+                                                onChange={() => toggleSelection(id)}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="font-medium">{id}</TableCell>
+                                        <TableCell className="text-right">{row.totalVisits.toLocaleString('ru-RU')}</TableCell>
+                                        <TableCell className="text-right">{row.totalCost.toLocaleString('ru-RU')} ₽</TableCell>
+                                        <TableCell className="text-right font-semibold">{row.leadCount}</TableCell>
+                                        <TableCell className="text-right">{row.cpl.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                                {row.conversion.toFixed(2)}%
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 </CardContent>

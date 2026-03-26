@@ -250,6 +250,16 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         // Save to DB
         let processedCount = 0;
         const keys = Array.from(mergedData.keys());
+
+        // Delete existing expenses for this project in the synced date range to prevent orphaned duplicate rows when mappings change
+        await db.delete(expenses).where(
+            and(
+                eq(expenses.projectId, projectId),
+                gte(expenses.date, new Date(dateFrom)),
+                lte(expenses.date, new Date(dateTo))
+            )
+        );
+
         for (const [, data] of mergedData.entries()) {
             const [dateStr] = keys[processedCount].split('|');
             const fallbackUtm = data.utmCampaign || data.directOrder || "unknown"; // Ensures conflict target never fails
