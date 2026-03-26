@@ -24,6 +24,11 @@ const navItems = [
     icon: FolderKanban,
   },
   {
+    title: "Лиды",
+    href: "/admin/leads",
+    icon: ClipboardList,
+  },
+  {
     title: "Логи",
     href: "/admin/logs",
     icon: ClipboardList,
