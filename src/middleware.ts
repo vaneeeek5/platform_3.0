@@ -8,24 +8,40 @@ export default async function middleware(req: NextRequest) {
   const isPublicRoute = publicRoutes.includes(path);
 
   const cookie = req.cookies.get("auth_token")?.value;
-  const session = cookie ? await decrypt(cookie).catch(() => null) : null;
+  let session = null;
+  
+  if (cookie) {
+    try {
+      session = await decrypt(cookie);
+    } catch (e) {
+      // Invalid token, redirect to login
+      if (!isPublicRoute) {
+        return NextResponse.redirect(new URL("/login", req.nextUrl));
+      }
+    }
+  }
 
+  // Redirect unauthenticated users
   if (!isPublicRoute && !session) {
     return NextResponse.redirect(new URL("/login", req.nextUrl));
   }
 
+  // Redirect authenticated users away from public routes
   if (isPublicRoute && session) {
-    // Redirect logged in users away from login page
-    // Based on requirement: SUPER_ADMIN/ADMIN -> / projects list, USER -> /{slug} (but we don't know slug yet without project_links)
-    // For now, redirect to / projects list
     return NextResponse.redirect(new URL("/", req.nextUrl));
   }
 
-  // Handle /{slug} routing as per CONTEXT.md
-  // /{slug} -> dashboard
-  // /{slug}/leads -> only ADMIN+
-  // We'll implement more granular role-based checks in the page components or layouts
-  // but let's do a basic check here if needed.
+  // Role-based redirects for the root "/" path
+  if (path === "/" && session) {
+    if (session.role === "SUPER_ADMIN" || session.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin/projects", req.nextUrl));
+    }
+  }
+
+  // Handle /admin root redirect
+  if (path === "/admin") {
+    return NextResponse.redirect(new URL("/admin/projects", req.nextUrl));
+  }
 
   return NextResponse.next();
 }
