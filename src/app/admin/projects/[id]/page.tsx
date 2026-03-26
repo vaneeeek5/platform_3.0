@@ -26,13 +26,13 @@ export default function EditProjectPage() {
   const [project, setProject] = useState<Project | null>(null)
 
   useEffect(() => {
-    fetch(`/api/projects/${params.id}`)
+    fetch(`/api/projects/${id}`)
       .then((res) => res.json())
       .then((data) => {
         setProject(data)
         setLoading(false)
       })
-  }, [params.id])
+  }, [id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,7 +40,7 @@ export default function EditProjectPage() {
     setSaving(true)
 
     try {
-      const res = await fetch(`/api/projects/${params.id}`, {
+      const res = await fetch(`/api/projects/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

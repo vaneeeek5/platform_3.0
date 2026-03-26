@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react";
+import { useParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { YandexSettings } from "@/components/projects/yandex-settings";
@@ -51,28 +52,28 @@ export default function ProjectSettingsPage() {
         </TabsList>
 
         <TabsContent value="yandex" active={activeTab === "yandex"}>
-           <YandexSettings projectId={parseInt(params.id)} />
+            <YandexSettings projectId={parseInt(id)} />
         </TabsContent>
 
         <TabsContent value="sync" active={activeTab === "sync"}>
-           <SyncSettings projectId={parseInt(params.id)} />
+            <SyncSettings projectId={parseInt(id)} />
         </TabsContent>
 
         <TabsContent value="general" active={activeTab === "general"}>
-           <Card>
-             <CardHeader>
-               <CardTitle>Общая информация</CardTitle>
-               <CardDescription>Основные детали проекта и видимость.</CardDescription>
-             </CardHeader>
-             <CardContent>
-               <p className="text-sm text-muted-foreground">
-                 Настройки названия и пути (slug) управляются в основной форме проекта.
-               </p>
-               <Button variant="outline" className="mt-4" asChild>
-                  <Link href={`/admin/projects/${params.id}`}>Изменить Название и Slug</Link>
-               </Button>
-             </CardContent>
-           </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Общая информация</CardTitle>
+                <CardDescription>Основные детали проекта и видимость.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Настройки названия и пути (slug) управляются в основной форме проекта.
+                </p>
+                <Button variant="outline" className="mt-4" asChild>
+                   <Link href={`/admin/projects/${id}`}>Изменить Название и Slug</Link>
+                </Button>
+              </CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
     </div>
