@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Search, Filter, Download, Edit2 } from "lucide-react"
+import { Search, Filter, Download, Edit2, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
 import { toast } from "sonner"
@@ -127,6 +127,12 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                Обновить
             </Button>
          </div>
+      </div>
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-2 flex items-start gap-2">
+         <AlertCircle className="h-4 w-4 text-blue-500 mt-0.5" />
+         <p className="text-[10px] text-blue-700">
+            Данные из Яндекс.Метрики (Logs API) поступают с задержкой. Актуальная статистика доступна за вчерашний день и ранее.
+         </p>
       </div>
 
       <div className="rounded-md border overflow-hidden">
