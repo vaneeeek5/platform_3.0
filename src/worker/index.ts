@@ -1,11 +1,11 @@
 import { Worker } from "bullmq";
 import { redis } from "@/lib/redis";
-import { SYNC_QUEUE_NAME } from "@/lib/queue";
+import { SYNC_QUEUE_NAME, CRON_QUEUE_NAME, cronQueue } from "@/lib/queue";
 import { syncMetrikaLeads } from "@/lib/sync/yandex-metrika";
 import { syncDirectExpenses } from "@/lib/sync/yandex-direct";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, notNull, and } from "drizzle-orm";
 
 console.log("Worker process starting...");
 
@@ -43,4 +43,27 @@ worker.on("failed", (job, err) => {
   console.error(`[Worker] Job ${job?.id} failed:`, err);
 });
 
-console.log(`[Worker] Listening on queue: ${SYNC_QUEUE_NAME}`);
+// --- CRON WORKER ---
+const cronWorker = new Worker(CRON_QUEUE_NAME, async (job) => {
+  console.log("[Cron] Starting global daily sync...");
+  const activeProjects = await db.select().from(projects).where(and(notNull(projects.yandexToken), notNull(projects.yandexCounterId)));
+  
+  for (const project of activeProjects) {
+     console.log(`[Cron] Queuing sync for project ${project.id} (${project.name})`);
+     // We can reuse the syncQueue logic here
+     await syncMetrikaLeads(project.id);
+     await syncDirectExpenses(project.id);
+     await db.update(projects).set({ lastSyncAt: new Date() }).where(eq(projects.id, project.id));
+  }
+  return { processed: activeProjects.length };
+}, {
+  connection: redis,
+});
+
+// Schedule the daily sync at 4 AM
+cronQueue.add("daily-sync", {}, {
+  repeat: { pattern: "0 4 * * *" },
+  removeOnComplete: true,
+});
+
+console.log(`[Worker] Listening on: ${SYNC_QUEUE_NAME} and ${CRON_QUEUE_NAME}`);
