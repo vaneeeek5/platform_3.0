@@ -208,9 +208,12 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         
         const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
 
-        const url = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=1000`;
+        const url = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits,ym:ad:RUBAdCost&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=1000`;
         const response = await fetch(url, { headers: { 'Authorization': `OAuth ${project.yandexToken}` } });
-        if (!response.ok) throw new Error(`Metrika API Error: ${await response.text()}`);
+        if (!response.ok) {
+            const txt = await response.text();
+            throw new Error(`Metrika stat API error: ${txt}`);
+        }
 
         const data = await response.json();
         const rows = data.data || [];
@@ -219,7 +222,8 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
             const [dateDim, campaignDim] = row.dimensions;
             const date = dateDim.name;
             let utmCampaign = campaignDim.name || "";
-            const visits = row.metrics[0];
+            const visits = Math.round(row.metrics[0] || 0);
+            const cost = (row.metrics[1] || 0).toFixed(2); // RUBAdCost — 0 if Direct not linked in Metrika
 
             const mapping = projectMappings.find(m => m.utmValue === utmCampaign);
             if (mapping) utmCampaign = mapping.displayName;
@@ -228,11 +232,11 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
                 projectId,
                 date: new Date(date),
                 utmCampaign,
-                visits: visits || 0,
-                cost: "0",
+                visits,
+                cost,
             }).onConflictDoUpdate({
                 target: [expenses.projectId, expenses.date, expenses.campaignId],
-                set: { visits: visits || 0 }
+                set: { visits, cost, utmCampaign }
             });
         }
 
