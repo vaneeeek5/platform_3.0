@@ -27,6 +27,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
   const [saving, setSaving] = useState(false);
   const [token, setToken] = useState("");
   const [counterId, setCounterId] = useState("");
+  const [directLogins, setDirectLogins] = useState("");
   const [availableGoals, setAvailableGoals] = useState<Goal[]>([]);
   const [trackedGoalsList, setTrackedGoalsList] = useState<TrackedGoal[]>([]);
   
@@ -58,6 +59,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
       if (project) {
         setToken(project.yandexToken || "");
         setCounterId(project.yandexCounterId || "");
+        setDirectLogins(project.yandexDirectLogins || "");
         if (project.yandexToken && project.yandexCounterId) {
            fetchGoals(project.yandexToken, project.yandexCounterId);
         }
@@ -127,6 +129,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
         body: JSON.stringify({
           yandexToken: token,
           yandexCounterId: counterId,
+          yandexDirectLogins: directLogins,
         }),
       });
 
@@ -173,6 +176,15 @@ export function YandexSettings({ projectId }: { projectId: number }) {
                 placeholder="12345678"
                 value={counterId}
                 onChange={(e) => setCounterId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="logins">Логины Директа (через запятую)</Label>
+              <Input
+                id="logins"
+                placeholder="login1, login2"
+                value={directLogins}
+                onChange={(e) => setDirectLogins(e.target.value)}
               />
             </div>
           </div>

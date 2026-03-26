@@ -34,6 +34,7 @@ export const projects = pgTable("projects", {
   slug: text("slug").unique().notNull(),
   yandexToken: text("yandex_token"),
   yandexCounterId: text("yandex_counter_id"),
+  yandexDirectLogins: text("yandex_direct_logins"), // Comma-separated logins
   syncSchedule: text("sync_schedule"),
   syncEnabled: boolean("sync_enabled").default(false),
   syncPeriodDays: integer("sync_period_days").default(1),

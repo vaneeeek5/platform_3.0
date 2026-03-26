@@ -24,6 +24,7 @@ import { DateRange } from "react-day-picker"
 
 interface ReportData {
     utmCampaign: string;
+    campaignName?: string;
     totalCost: number;
     totalVisits: number;
     totalClicks: number;
@@ -168,7 +169,7 @@ export function ExpensesReport() {
                                 </TableRow>
                             ) : data.map((row, i) => (
                                 <TableRow key={i}>
-                                    <TableCell className="font-medium">{row.utmCampaign || "—"}</TableCell>
+                                    <TableCell className="font-medium">{row.campaignName || row.utmCampaign || "—"}</TableCell>
                                     <TableCell className="text-right">{row.totalVisits.toLocaleString('ru-RU')}</TableCell>
                                     <TableCell className="text-right">{row.totalCost.toLocaleString('ru-RU')} ₽</TableCell>
                                     <TableCell className="text-right font-semibold">{row.leadCount}</TableCell>

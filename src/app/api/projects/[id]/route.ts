@@ -47,6 +47,7 @@ export async function PATCH(
     if (body.slug !== undefined) updateData.slug = body.slug;
     if (body.yandexToken !== undefined) updateData.yandexToken = body.yandexToken;
     if (body.yandexCounterId !== undefined) updateData.yandexCounterId = body.yandexCounterId;
+    if (body.yandexDirectLogins !== undefined) updateData.yandexDirectLogins = body.yandexDirectLogins;
     if (body.syncSchedule !== undefined) updateData.syncSchedule = body.syncSchedule;
     if (body.syncEnabled !== undefined) updateData.syncEnabled = body.syncEnabled;
     if (body.syncPeriodDays !== undefined) updateData.syncPeriodDays = body.syncPeriodDays;

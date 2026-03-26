@@ -28,15 +28,16 @@ export async function GET(request: Request) {
     const expenseData = await db
       .select({
         utmCampaign: expenses.utmCampaign,
+        campaignName: expenses.campaignName,
         totalCost: sql<number>`sum(${expenses.cost})`.mapWith(Number),
         totalVisits: sql<number>`sum(${expenses.visits})`.mapWith(Number),
         totalClicks: sql<number>`sum(${expenses.clicks})`.mapWith(Number),
       })
       .from(expenses)
       .where(and(...filters))
-      .groupBy(expenses.utmCampaign);
+      .groupBy(expenses.utmCampaign, expenses.campaignName);
 
-    // 2. Aggregate Leads (Total Leads and Goal-specific counts)
+    // 2. Aggregate Leads
     const leadFilters = [eq(leads.projectId, projectId)];
     if (dateFrom) leadFilters.push(gte(leads.date, new Date(dateFrom)));
     if (dateTo) leadFilters.push(lte(leads.date, new Date(dateTo)));
@@ -69,6 +70,7 @@ export async function GET(request: Request) {
         if (!report.find(r => r.utmCampaign === l.utmCampaign)) {
             report.push({
                 utmCampaign: l.utmCampaign || "Unknown",
+                campaignName: l.utmCampaign || "Unknown",
                 totalCost: 0,
                 totalVisits: 0,
                 totalClicks: 0,
