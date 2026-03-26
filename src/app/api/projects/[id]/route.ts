@@ -39,10 +39,21 @@ export async function PATCH(
   try {
     const { id } = await params;
     const projectId = parseInt(id);
-    const { name, slug } = await request.json();
+    const body = await request.json();
+
+    // Map allowed fields from request body
+    const updateData: any = {};
+    if (body.name !== undefined) updateData.name = body.name;
+    if (body.slug !== undefined) updateData.slug = body.slug;
+    if (body.yandexToken !== undefined) updateData.yandexToken = body.yandexToken;
+    if (body.yandexCounterId !== undefined) updateData.yandexCounterId = body.yandexCounterId;
+    if (body.syncSchedule !== undefined) updateData.syncSchedule = body.syncSchedule;
+    if (body.syncEnabled !== undefined) updateData.syncEnabled = body.syncEnabled;
+    if (body.syncPeriodDays !== undefined) updateData.syncPeriodDays = body.syncPeriodDays;
+    if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
     const [updatedProject] = await db.update(projects)
-      .set({ name, slug })
+      .set(updateData)
       .where(eq(projects.id, projectId))
       .returning();
 
