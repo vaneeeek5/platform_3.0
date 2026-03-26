@@ -20,6 +20,9 @@ import { LeadEditDialog } from "./lead-edit-dialog"
 import * as XLSX from "xlsx"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DatePickerWithRange } from "@/components/ui/date-range-picker"
+import { DateRange } from "react-day-picker"
+import { subDays, startOfDay, endOfDay } from "date-fns"
 
 interface LeadsListProps {
   projectId: number;
@@ -33,6 +36,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  })
   const [filterSources, setFilterSources] = useState<string[]>([])
   const [filterGoals, setFilterGoals] = useState<string[]>([])
   const [targetStatuses, setTargetStatuses] = useState<any[]>([])
@@ -62,6 +69,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     const params = new URLSearchParams()
     if (projectId) params.append("projectId", projectId.toString())
     if (query) params.append("query", query)
+    if (dateRange?.from) params.append("dateFrom", dateRange.from.toISOString())
+    if (dateRange?.to) params.append("dateTo", dateRange.to.toISOString())
     if (filterSources.length > 0) params.append("sources", filterSources.join(","))
     if (filterGoals.length > 0) params.append("goals", filterGoals.join(","))
     if (filterTargetStatusIds.length > 0) params.append("targetStatusIds", filterTargetStatusIds.join(","))
@@ -96,15 +105,18 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   return (
     <div className="space-y-4">
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-         <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-               placeholder="Поиск по ClientID или Кампании..." 
-               className="pl-9 h-9 text-xs"
-               value={query}
-               onChange={(e) => setQuery(e.target.value)}
-               onKeyDown={(e) => e.key === 'Enter' && fetchLeads()}
-            />
+         <div className="flex flex-1 gap-2 items-center w-full">
+            <div className="relative flex-1 max-w-sm">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+               <Input 
+                  placeholder="Поиск по ClientID или Кампании..." 
+                  className="pl-9 h-9 text-xs"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && fetchLeads()}
+               />
+            </div>
+            <DatePickerWithRange date={dateRange} setDate={setDateRange} />
          </div>
          <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleExport} disabled={leads.length === 0}>

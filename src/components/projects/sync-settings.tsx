@@ -4,21 +4,37 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { RefreshCw, Clock, Upload, FileSpreadsheet, CheckCircle2, AlertCircle } from "lucide-react";
+import { RefreshCw, Clock, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Calendar as CalendarIcon } from "lucide-react";
 import * as XLSX from "xlsx";
+import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { DateRange } from "react-day-picker";
+import { subDays } from "date-fns";
 
 export function SyncSettings({ projectId }: { projectId: number }) {
   const [syncing, setSyncing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 2),
+    to: subDays(new Date(), 1)
+  });
   const [fileData, setFileData] = useState<any[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleManualSync = async () => {
+    if (!dateRange?.from || !dateRange?.to) {
+        toast.error("Выберите период для синхронизации");
+        return;
+    }
     setSyncing(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/sync`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+           dateFrom: dateRange.from.toISOString(),
+           dateTo: dateRange.to.toISOString()
+        })
       });
       if (res.ok) {
         toast.success("Задание на синхронизацию добавлено в очередь");
@@ -105,12 +121,15 @@ export function SyncSettings({ projectId }: { projectId: number }) {
            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
               <div className="space-y-1">
                  <p className="text-sm font-medium">Ручной запуск</p>
-                 <p className="text-xs text-muted-foreground">Запустить немедленное обновление данных (за последние 2 дня).</p>
+                 <p className="text-xs text-muted-foreground">Запустить немедленное обновление данных за выбранный период.</p>
               </div>
-              <Button onClick={handleManualSync} disabled={syncing} size="sm">
-                 <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-                 {syncing ? "Запуск..." : "Запустить сейчас"}
-              </Button>
+              <div className="flex items-center gap-2">
+                 <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                 <Button onClick={handleManualSync} disabled={syncing} size="sm">
+                    <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
+                    {syncing ? "Запуск..." : "Запустить"}
+                 </Button>
+              </div>
            </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4 flex justify-between items-center text-xs text-muted-foreground">
