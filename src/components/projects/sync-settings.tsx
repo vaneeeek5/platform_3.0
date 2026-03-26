@@ -14,8 +14,8 @@ export function SyncSettings({ projectId }: { projectId: number }) {
   const [syncing, setSyncing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 2),
-    to: subDays(new Date(), 1)
+    from: subDays(new Date(), 30),
+    to: new Date()
   });
   const [fileData, setFileData] = useState<any[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
