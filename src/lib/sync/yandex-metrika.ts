@@ -121,7 +121,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
             if (trackedAchieved.length === 0) continue;
 
             // Mapping: Apply campaign mapping
-            const mapping = projectMappings.find(m => m.campaignName === utmCampaign || m.externalId === utmCampaign);
+            const mapping = projectMappings.find(m => m.utmValue === utmCampaign);
             if (mapping) {
                 utmCampaign = mapping.displayName || utmCampaign;
             }

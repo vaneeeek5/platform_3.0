@@ -5,7 +5,7 @@ import { syncMetrikaLeads } from "@/lib/sync/yandex-metrika";
 import { syncDirectExpenses } from "@/lib/sync/yandex-direct";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
-import { eq, notNull, and } from "drizzle-orm";
+import { eq, isNotNull, and } from "drizzle-orm";
 
 console.log("Worker process starting...");
 
@@ -46,7 +46,7 @@ worker.on("failed", (job, err) => {
 // --- CRON WORKER ---
 const cronWorker = new Worker(CRON_QUEUE_NAME, async (job) => {
   console.log("[Cron] Starting global daily sync...");
-  const activeProjects = await db.select().from(projects).where(and(notNull(projects.yandexToken), notNull(projects.yandexCounterId)));
+  const activeProjects = await db.select().from(projects).where(and(isNotNull(projects.yandexToken), isNotNull(projects.yandexCounterId)));
   
   for (const project of activeProjects) {
      console.log(`[Cron] Queuing sync for project ${project.id} (${project.name})`);
