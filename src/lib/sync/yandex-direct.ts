@@ -1,5 +1,6 @@
 import { db } from "@/db";
-import { expenses } from "@/db/schema";
+import { expenses, campaignMappings } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function syncDirectExpenses(projectId: number, dateFromStr?: string, dateToStr?: string) {
   const project = await db.query.projects.findFirst({
@@ -18,6 +19,8 @@ export async function syncDirectExpenses(projectId: number, dateFromStr?: string
   // Cap to yesterday for consistency
   if (dateTo > yesterday) dateTo = yesterday;
   if (dateFrom > dateTo) dateFrom = dateTo;
+
+  const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
 
   const reportDefinition = {
     params: {
@@ -69,22 +72,30 @@ export async function syncDirectExpenses(projectId: number, dateFromStr?: string
         
         if (!date || !campaignId) continue;
 
+        // Apply Mapping
+        let utmCampaign = campaignId;
+        const mapping = projectMappings.find(m => m.utmValue === campaignId || m.utmValue === campaignName);
+        if (mapping) {
+            utmCampaign = mapping.displayName;
+        }
+
         await db.insert(expenses).values({
           projectId,
           date: new Date(date),
           campaignId: campaignId,
           campaignName: campaignName,
+          utmCampaign: utmCampaign,
           cost: cost ? cost.replace(',', '.') : "0",
           clicks: clicks ? parseInt(clicks) : 0,
           impressions: impressions ? parseInt(impressions) : 0,
-          utmCampaign: campaignId // Fallback for utmCampaign field
         }).onConflictDoUpdate({
             target: [expenses.projectId, expenses.date, expenses.campaignId],
             set: {
                 cost: cost ? cost.replace(',', '.') : "0",
                 clicks: clicks ? parseInt(clicks) : 0,
                 impressions: impressions ? parseInt(impressions) : 0,
-                campaignName: campaignName
+                campaignName: campaignName,
+                utmCampaign: utmCampaign
             }
         });
         count++;
