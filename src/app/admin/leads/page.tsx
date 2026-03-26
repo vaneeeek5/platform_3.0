@@ -37,6 +37,7 @@ import { ru } from "date-fns/locale"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { LeadEditDialog } from "@/components/leads/lead-edit-dialog"
+import * as XLSX from "xlsx"
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<any[]>([])
