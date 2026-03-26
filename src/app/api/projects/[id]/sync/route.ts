@@ -15,6 +15,7 @@ export async function POST(
   try {
     const body = await request.json().catch(() => ({}));
     const { dateFrom, dateTo } = body;
+    console.log(`[Sync Route] Triggering sync for project ${projectId}, period: ${dateFrom} to ${dateTo}`);
     
     await addSyncJob(projectId, dateFrom, dateTo);
     return NextResponse.json({ success: true, message: "Sync job added to queue" });
