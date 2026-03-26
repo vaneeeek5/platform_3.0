@@ -36,6 +36,7 @@ import { format } from "date-fns"
 import { ru } from "date-fns/locale"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
+import { LeadEditDialog } from "@/components/leads/lead-edit-dialog"
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<any[]>([])
@@ -47,6 +48,8 @@ export default function LeadsPage() {
     dateFrom: "",
     dateTo: ""
   })
+  const [selectedLead, setSelectedLead] = useState<any>(null)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   useEffect(() => {
     fetchProjects()
@@ -179,7 +182,15 @@ export default function LeadsPage() {
                       {item.achievements?.reduce((acc: number, a: any) => acc + parseFloat(a.saleAmount || "0"), 0).toLocaleString()} ₽
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setSelectedLead(item)
+                          setIsEditDialogOpen(true)
+                        }}
+                      >
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>
@@ -190,6 +201,14 @@ export default function LeadsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <LeadEditDialog 
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSave={fetchLeads}
+        lead={selectedLead}
+        projectId={selectedLead?.project.id}
+      />
     </div>
   )
 }
