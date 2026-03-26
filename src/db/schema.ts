@@ -112,7 +112,8 @@ export const leads = pgTable(
     metrikaClientId: text("metrika_client_id"),
     date: timestamp("date").notNull(),
     utmCampaign: text("utm_campaign"),
-    utmSource: text("utm_source"),
+    yandexCounterId: text("yandex_counter_id"),
+    lastSyncAt: timestamp("last_sync_at"),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => ({
@@ -154,13 +155,17 @@ export const expenses = pgTable(
       .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
     date: timestamp("date").notNull(),
+    campaignId: text("campaign_id"),
     utmCampaign: text("utm_campaign"),
     campaignName: text("campaign_name"),
     visits: integer("visits").default(0),
+    clicks: integer("clicks").default(0),
+    impressions: integer("impressions").default(0),
     cost: numeric("cost", { precision: 12, scale: 2 }).notNull(),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => ({
+    unq: unique().on(t.projectId, t.date, t.campaignId),
     dateIdx: index("expenses_date_idx").on(t.projectId, t.date),
     campaignIdx: index("expenses_campaign_idx").on(t.projectId, t.utmCampaign),
   })
