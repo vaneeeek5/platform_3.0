@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { format } from "date-fns"
+import { ru } from "date-fns/locale"
 import { Calendar as CalendarIcon } from "lucide-react"
 import { DateRange } from "react-day-picker"
 
@@ -23,9 +24,17 @@ export function DatePickerWithRange({
   date: DateRange | undefined
   setDate: (date: DateRange | undefined) => void
 }) {
+  const [tempDate, setTempDate] = React.useState<DateRange | undefined>(date)
+  const [open, setOpen] = React.useState(false)
+
+  // Sync tempDate when prop date changes (e.g. externally)
+  React.useEffect(() => {
+    setTempDate(date)
+  }, [date])
+
   return (
     <div className={cn("grid gap-2", className)}>
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
@@ -39,11 +48,11 @@ export function DatePickerWithRange({
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
+                  {format(date.from, "dd MMM y", { locale: ru })} -{" "}
+                  {format(date.to, "dd MMM y", { locale: ru })}
                 </>
               ) : (
-                format(date.from, "LLL dd, y")
+                format(date.from, "dd MMM y", { locale: ru })
               )
             ) : (
               <span>Выберите период</span>
@@ -51,13 +60,27 @@ export function DatePickerWithRange({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
+          <div className="p-3 border-b border-border flex justify-between items-center bg-muted/20">
+            <span className="text-xs font-medium">Выберите период</span>
+            <Button 
+                size="sm" 
+                className="h-7 text-xs" 
+                onClick={() => {
+                    setDate(tempDate)
+                    setOpen(false)
+                }}
+            >
+              Применить
+            </Button>
+          </div>
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={setDate}
+            defaultMonth={tempDate?.from}
+            selected={tempDate}
+            onSelect={setTempDate}
             numberOfMonths={2}
+            locale={ru}
           />
         </PopoverContent>
       </Popover>

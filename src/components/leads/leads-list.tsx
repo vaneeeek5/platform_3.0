@@ -139,7 +139,22 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-[140px] text-xs">Дата</TableHead>
+              <TableHead className="w-[140px] text-xs">
+                <div className="flex items-center gap-1">
+                  Дата
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+                        <Filter className="h-3 w-3 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <div className="p-2 border-b text-[10px] font-medium bg-muted/30">Фильтр по дате</div>
+                      <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </TableHead>
               {showProjectColumn && <TableHead className="text-xs">Проект</TableHead>}
               <TableHead className="text-xs">
                  <div className="flex items-center gap-1">
