@@ -131,6 +131,9 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                  </Button>
               </div>
            </div>
+           <p className="text-[10px] text-muted-foreground mt-2 bg-muted p-2 rounded italic">
+              * Внимание: Яндекс отдает полные данные (Logs API) только за вчера и ранее. Попытка синхронизации за сегодня может не вернуть новых лидов.
+           </p>
         </CardContent>
         <CardFooter className="border-t px-6 py-4 flex justify-between items-center text-xs text-muted-foreground">
            <div className="flex items-center gap-1">
