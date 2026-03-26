@@ -29,7 +29,7 @@ const worker = new Worker(SYNC_QUEUE_NAME, async (job) => {
     // 4. Update Last Sync Time
     await db.update(projects).set({ lastSyncAt: new Date() }).where(eq(projects.id, projectId));
 
-    return { metrikaResult, directResult };
+    return { metrikaLeadsResult, metrikaVisitsResult, directResult };
   } catch (error) {
     console.error(`[Worker] Error syncing project ${projectId}:`, error);
     throw error;

@@ -8,7 +8,8 @@ import {
   FolderKanban, 
   ClipboardList, 
   Settings, 
-  LogOut 
+  LogOut,
+  Banknote
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +28,11 @@ const navItems = [
     title: "Лиды",
     href: "/admin/leads",
     icon: ClipboardList,
+  },
+  {
+    title: "Расходы",
+    href: "/admin/expenses",
+    icon: Banknote,
   },
   {
     title: "Логи",
