@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { leads, goalAchievements, trackedGoals, campaignMappings } from "@/db/schema";
+import { leads, goalAchievements, trackedGoals, campaignMappings, expenses } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
 export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, dateToStr?: string) {
@@ -28,7 +28,6 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
   try {
     // 1. Create Log Request
-    // Note: We MUST include all fields we need in the log request
     const fields = "ym:s:visitID,ym:s:dateTime,ym:s:clientID,ym:s:lastUTMCampaign,ym:s:lastUTMSource,ym:s:goalsID";
     const requestUrl = `https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequests?date1=${dateFrom}&date2=${dateTo}&fields=${fields}&source=visits`;
     
@@ -90,7 +89,6 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
         const rows = tsvOutput.split('\n');
         const header = rows[0].split('\t');
         
-        // Find column indices
         const idxVisitID = header.indexOf('ym:s:visitID');
         const idxClientID = header.indexOf('ym:s:clientID');
         const idxDateTime = header.indexOf('ym:s:dateTime');
@@ -111,7 +109,6 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
             if (!rawGoalIds || rawGoalIds === "[]" || rawGoalIds === "''") continue;
             
-            // GoalsID in Logs API visits can look like [123,456]
             const achievedStrings = rawGoalIds.replace('[','').replace(']','').split(',').map(s => s.trim().replace(/'/g, '')).filter(Boolean);
 
             const trackedAchieved = achievedStrings.filter(id => 
@@ -120,13 +117,11 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
             if (trackedAchieved.length === 0) continue;
 
-            // Mapping: Apply campaign mapping
             const mapping = projectMappings.find(m => m.utmValue === utmCampaign);
             if (mapping) {
                 utmCampaign = mapping.displayName || utmCampaign;
             }
 
-            // 1. Insert/Get Lead
             const [lead] = await db.insert(leads).values({
                 projectId,
                 metrikaVisitId: visitId,
@@ -141,59 +136,6 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
             totalLeadsCount++;
 
-export async function syncMetrikaVisits(projectId: number, dateFromStr?: string, dateToStr?: string) {
-  const project = await db.query.projects.findFirst({
-    where: (projects, { eq }) => eq(projects.id, projectId),
-  });
-
-  if (!project || !project.yandexToken || !project.yandexCounterId) return { error: "Missing credentials" };
-
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  let dateTo = dateToStr ? new Date(dateToStr).toISOString().split('T')[0] : yesterday;
-  let dateFrom = dateFromStr ? new Date(dateFromStr).toISOString().split('T')[0] : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  
-  const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
-
-  const url = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=1000`;
-  
-  const response = await fetch(url, {
-    headers: { 'Authorization': `OAuth ${project.yandexToken}` }
-  });
-
-  if (!response.ok) throw new Error(`Metrika API Error: ${await response.text()}`);
-
-  const data = await response.json();
-  const rows = data.data || [];
-
-  for (const row of rows) {
-    const [dateDim, campaignDim] = row.dimensions;
-    const date = dateDim.name;
-    let utmCampaign = campaignDim.name || "";
-    const visits = row.metrics[0];
-
-    // Apply Mapping
-    const mapping = projectMappings.find(m => m.utmValue === utmCampaign);
-    if (mapping) {
-        utmCampaign = mapping.displayName;
-    }
-
-    // We store this in the expenses table (ignoring clicks/impressions/cost from Metrika as Direct is source of truth for these)
-    await db.insert(expenses).values({
-        projectId,
-        date: new Date(date),
-        utmCampaign,
-        visits: visits || 0,
-        cost: "0",
-    }).onConflictDoUpdate({
-        target: [expenses.projectId, expenses.date, expenses.campaignId], // Use null campaignId for Metrika-only rows if needed, or specific ID
-        set: { visits: visits || 0 }
-    });
-  }
-
-  return { success: true, count: rows.length };
-}
-
-            // 2. Insert Goal Achievements
             for (const gId of trackedAchieved) {
                 const tg = projectTrackedGoals.find(g => g.goalId.toString() === gId.toString());
                 if (!tg) continue;
@@ -202,7 +144,6 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
                     leadId: lead.id,
                     goalId: gId.toString(),
                     goalName: tg.goalName,
-                    // Inherit from goal settings
                     targetStatusId: tg.targetStatusId,
                     qualificationStatusId: tg.qualificationStatusId
                 }).onConflictDoNothing();
@@ -212,7 +153,6 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         }
     }
 
-    // 4. Cleanup
     await fetch(`https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequest/${requestId}/clean`, {
         method: 'POST',
         headers: { 'Authorization': `OAuth ${project.yandexToken}` }
@@ -224,4 +164,54 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
     console.error(`[Logs API Error]`, error);
     return { error: error.message };
   }
+}
+
+export async function syncMetrikaVisits(projectId: number, dateFromStr?: string, dateToStr?: string) {
+    const project = await db.query.projects.findFirst({
+        where: (projects, { eq }) => eq(projects.id, projectId),
+    });
+
+    if (!project || !project.yandexToken || !project.yandexCounterId) return { error: "Missing credentials" };
+
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    let dateTo = dateToStr ? new Date(dateToStr).toISOString().split('T')[0] : yesterday;
+    let dateFrom = dateFromStr ? new Date(dateFromStr).toISOString().split('T')[0] : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
+
+    const url = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=1000`;
+    
+    const response = await fetch(url, {
+        headers: { 'Authorization': `OAuth ${project.yandexToken}` }
+    });
+
+    if (!response.ok) throw new Error(`Metrika API Error: ${await response.text()}`);
+
+    const data = await response.json();
+    const rows = data.data || [];
+
+    for (const row of rows) {
+        const [dateDim, campaignDim] = row.dimensions;
+        const date = dateDim.name;
+        let utmCampaign = campaignDim.name || "";
+        const visits = row.metrics[0];
+
+        const mapping = projectMappings.find(m => m.utmValue === utmCampaign);
+        if (mapping) {
+            utmCampaign = mapping.displayName;
+        }
+
+        await db.insert(expenses).values({
+            projectId,
+            date: new Date(date),
+            utmCampaign,
+            visits: visits || 0,
+            cost: "0",
+        }).onConflictDoUpdate({
+            target: [expenses.projectId, expenses.date, expenses.campaignId],
+            set: { visits: visits || 0 }
+        });
+    }
+
+    return { success: true, count: rows.length };
 }
