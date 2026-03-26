@@ -77,6 +77,25 @@ export default function LeadsPage() {
     }
   }
 
+  const handleExport = () => {
+    if (leads.length === 0) return;
+    
+    const exportData = leads.map(item => ({
+      "Дата": format(new Date(item.lead.date), "dd.MM.yyyy HH:mm"),
+      "Проект": item.project.name,
+      "Источник": item.lead.utmSource || "direct",
+      "Кампания": item.lead.utmCampaign || "—",
+      "Цели": item.achievements?.map((a: any) => a.goalName).join(", "),
+      "ClientID": item.lead.metrikaClientId || "—",
+      "Сумма": item.achievements?.reduce((acc: number, a: any) => acc + parseFloat(a.saleAmount || "0"), 0)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    XLSX.writeFile(wb, `Leads_Export_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -84,7 +103,7 @@ export default function LeadsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Лиды и Конверсии</h1>
           <p className="text-muted-foreground">Просмотр и управление заявками из всех источников.</p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExport} disabled={leads.length === 0}>
           <Download className="h-4 w-4 mr-2" />
           Экспорт в Excel
         </Button>
