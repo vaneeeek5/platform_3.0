@@ -112,8 +112,7 @@ export const leads = pgTable(
     metrikaClientId: text("metrika_client_id"),
     date: timestamp("date").notNull(),
     utmCampaign: text("utm_campaign"),
-    yandexCounterId: text("yandex_counter_id"),
-    lastSyncAt: timestamp("last_sync_at"),
+    utmSource: text("utm_source"),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => ({
