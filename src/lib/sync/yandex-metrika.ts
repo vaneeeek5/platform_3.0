@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { leads, goalAchievements, trackedGoals } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 
-export async function syncMetrikaLeads(projectId: number, days: number = 2) {
+export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, dateToStr?: string) {
   const project = await db.query.projects.findFirst({
     where: (projects, { eq }) => eq(projects.id, projectId),
   });
@@ -14,8 +14,15 @@ export async function syncMetrikaLeads(projectId: number, days: number = 2) {
   const projectTrackedGoals = await db.select().from(trackedGoals).where(eq(trackedGoals.projectId, projectId));
   if (projectTrackedGoals.length === 0) return { skipped: true, reason: "No tracked goals" };
 
-  const dateTo = new Date().toISOString().split('T')[0];
-  const dateFrom = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Yandex Metrika Logs-like data is best for yesterday and earlier
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  let dateTo = dateToStr ? new Date(dateToStr).toISOString().split('T')[0] : yesterday;
+  let dateFrom = dateFromStr ? new Date(dateFromStr).toISOString().split('T')[0] : new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // Cap to yesterday
+  if (dateTo > yesterday) dateTo = yesterday;
+  if (dateFrom > dateTo) dateFrom = dateTo;
 
   // We use the "Log-like" report to get individual visit data with goals
   // ids: counter id

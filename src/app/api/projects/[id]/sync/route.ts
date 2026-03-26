@@ -13,7 +13,10 @@ export async function POST(
   const projectId = parseInt(id);
 
   try {
-    await addSyncJob(projectId);
+    const body = await request.json().catch(() => ({}));
+    const { dateFrom, dateTo } = body;
+    
+    await addSyncJob(projectId, dateFrom, dateTo);
     return NextResponse.json({ success: true, message: "Sync job added to queue" });
   } catch (error) {
     console.error("Failed to add sync job:", error);

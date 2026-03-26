@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { expenses } from "@/db/schema";
 
-export async function syncDirectExpenses(projectId: number, days: number = 2) {
+export async function syncDirectExpenses(projectId: number, dateFromStr?: string, dateToStr?: string) {
   const project = await db.query.projects.findFirst({
     where: (projects, { eq }) => eq(projects.id, projectId),
   });
@@ -10,8 +10,14 @@ export async function syncDirectExpenses(projectId: number, days: number = 2) {
     return { error: "Missing Yandex credentials" };
   }
 
-  const dateTo = new Date().toISOString().split('T')[0];
-  const dateFrom = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  let dateTo = dateToStr ? new Date(dateToStr).toISOString().split('T')[0] : yesterday;
+  let dateFrom = dateFromStr ? new Date(dateFromStr).toISOString().split('T')[0] : new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // Cap to yesterday for consistency
+  if (dateTo > yesterday) dateTo = yesterday;
+  if (dateFrom > dateTo) dateFrom = dateTo;
 
   const reportDefinition = {
     params: {

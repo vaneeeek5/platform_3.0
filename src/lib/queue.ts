@@ -12,8 +12,8 @@ export const cronQueue = new Queue(CRON_QUEUE_NAME, {
   connection: redis,
 });
 
-export async function addSyncJob(projectId: number) {
-  await syncQueue.add(`sync-project-${projectId}`, { projectId }, {
+export async function addSyncJob(projectId: number, dateFrom?: string, dateTo?: string) {
+  await syncQueue.add(`sync-project-${projectId}`, { projectId, dateFrom, dateTo }, {
     removeOnComplete: true,
     removeOnFail: false,
   });

@@ -10,16 +10,16 @@ import { eq } from "drizzle-orm";
 console.log("Worker process starting...");
 
 const worker = new Worker(SYNC_QUEUE_NAME, async (job) => {
-  const { projectId } = job.data;
-  console.log(`[Worker] Starting sync for project ${projectId}...`);
+  const { projectId, dateFrom, dateTo } = job.data;
+  console.log(`[Worker] Starting sync for project ${projectId} from ${dateFrom || 'default'} to ${dateTo || 'default'}...`);
 
   try {
     // 1. Sync Leads from Metrika
-    const metrikaResult = await syncMetrikaLeads(projectId);
+    const metrikaResult = await syncMetrikaLeads(projectId, dateFrom, dateTo);
     console.log(`[Worker] Metrika Sync for project ${projectId}:`, metrikaResult);
 
     // 2. Sync Expenses from Direct
-    const directResult = await syncDirectExpenses(projectId);
+    const directResult = await syncDirectExpenses(projectId, dateFrom, dateTo);
     console.log(`[Worker] Direct Sync for project ${projectId}:`, directResult);
 
     // 3. Update Last Sync Time
