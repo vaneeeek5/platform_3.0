@@ -174,22 +174,19 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         
         const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
 
-        // 1. Prepare URLs
-        // Visits metric
-        const visitsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
+        // KEY FIX: Group visits by date + directCampaignID + UTMCampaign so we can merge with costs by ID
+        const visitsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastDirectCampaignID,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
         
-        // Multi-currency cost metrics from Statistics API
+        // Group costs by date + directCampaignID so we can merge with visits by ID
         const costMetrics = "ym:ad:RUBAdCost,ym:ad:USDAdCost,ym:ad:EURAdCost,ym:ad:BYNAdCost,ym:ad:KZTAdCost,ym:ad:TRYAdCost";
-        let costsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=${costMetrics}&dimensions=ym:ad:date,ym:ad:directOrder&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
+        let costsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=${costMetrics}&dimensions=ym:ad:date,ym:ad:directCampaignID,ym:ad:directOrder&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
         
-        // Add direct_client_logins (Crucial for cost data retrieval via Metrika)
         if (project.yandexDirectLogins) {
             costsUrl += `&direct_client_logins=${project.yandexDirectLogins}`;
         }
 
         console.log(`[Visits Sync] Fetching data for project ${projectId}...`);
 
-        // 2. Parallel Fetch using Promise.all
         const [visitsRes, costsRes] = await Promise.all([
             fetch(visitsUrl, { headers: { 'Authorization': `Bearer ${project.yandexToken}` } }),
             fetch(costsUrl, { headers: { 'Authorization': `Bearer ${project.yandexToken}` } })
@@ -201,68 +198,68 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         let costsData: any = { data: [] };
 
         if (!costsRes.ok) {
-            const errText = await costsRes.text();
-            console.warn(`[Visits Sync] Costs API failed (logins might be invalid): ${errText}`);
-            // We proceed with visits even if costs fail, as per user specification
+            console.warn(`[Visits Sync] Costs API failed: ${await costsRes.text()}`);
         } else {
             costsData = await costsRes.json();
         }
 
-        // 3. Process and Merge Data
-        // Map key: "date|campaign_name_or_utm"
-        const mergedData = new Map<string, { visits: number, cost: number, utmCampaign: string }>();
+        // Merge key: "date|campaignId" — both visits and costs grouped by the same ID
+        type MergedRow = { visits: number, cost: number, utmCampaign: string, campaignId: string, campaignName: string };
+        const mergedData = new Map<string, MergedRow>();
 
-        // Map visits (by UTM)
+        // Process visits: keyed by date + directCampaignID
         for (const row of visitsData.data || []) {
-            const [dateDim, campDim] = row.dimensions;
+            const [dateDim, campIdDim, utmDim] = row.dimensions;
             const date = dateDim.name;
-            const utm = campDim.name || "";
-            const key = `${date}|${utm}`;
-            mergedData.set(key, { visits: Math.round(row.metrics[0] || 0), cost: 0, utmCampaign: utm });
-        }
+            const campId = campIdDim.name || ""; // Yandex Direct Campaign ID
+            const utm = utmDim.name || "";
+            const key = `${date}|${campId || utm}`; // fallback to UTM if no ID (organic traffic)
+            const visits = Math.round(row.metrics[0] || 0);
 
-        // Map costs (by Direct Order Name)
-        for (const row of costsData.data || []) {
-            const [dateDim, campDim] = row.dimensions;
-            const date = dateDim.name;
-            const campName = campDim.name || "";
-            
-            // Try to find mapping using normalized campaign name
-            const mapping = projectMappings.find(m => 
-                m.normalizedName === campName.toLowerCase() || 
-                m.utmValue === campName
-            );
-            
-            const utm = mapping ? mapping.utmValue : campName;
-            const key = `${date}|${utm}`;
-            const totalCost = row.metrics.reduce((acc: number, val: number) => acc + (val || 0), 0);
-            
+            const mapping = projectMappings.find(m => m.utmValue === utm);
+            const displayName = mapping?.displayName || utm;
+
             if (mergedData.has(key)) {
-                const existing = mergedData.get(key)!;
-                existing.cost += totalCost;
+                mergedData.get(key)!.visits += visits;
             } else {
-                mergedData.set(key, { visits: 0, cost: totalCost, utmCampaign: utm });
+                mergedData.set(key, { visits, cost: 0, utmCampaign: utm, campaignId: campId, campaignName: displayName });
             }
         }
 
-        // 4. Update Database
-        let processedCount = 0;
-        for (const [key, data] of mergedData.entries()) {
-            const [dateStr, utm] = key.split('|');
-            let displayName = utm;
-            const mapping = projectMappings.find(m => m.utmValue === utm);
-            if (mapping) displayName = mapping.displayName;
+        // Process costs: keyed by date + directCampaignID — merges into existing visits rows
+        for (const row of costsData.data || []) {
+            const [dateDim, campIdDim, orderDim] = row.dimensions;
+            const date = dateDim.name;
+            const campId = campIdDim.name || "";
+            const orderName = orderDim.name || "";
+            const key = `${date}|${campId}`;
+            const totalCost = row.metrics.reduce((acc: number, val: number) => acc + (val || 0), 0);
 
+            if (mergedData.has(key)) {
+                mergedData.get(key)!.cost += totalCost;
+            } else {
+                // Cost without matching visit row: use order name as label
+                const mapping = projectMappings.find(m => m.normalizedName === orderName.toLowerCase());
+                const utm = mapping?.utmValue || orderName;
+                mergedData.set(key, { visits: 0, cost: totalCost, utmCampaign: utm, campaignId: campId, campaignName: mapping?.displayName || orderName });
+            }
+        }
+
+        // Save to DB
+        let processedCount = 0;
+        for (const [, data] of mergedData.entries()) {
+            const [dateStr] = Array.from(mergedData.keys())[processedCount].split('|');
             await db.insert(expenses).values({
                 projectId,
                 date: new Date(dateStr),
-                utmCampaign: utm,
-                campaignName: displayName,
+                campaignId: data.campaignId || null,
+                utmCampaign: data.utmCampaign,
+                campaignName: data.campaignName,
                 visits: data.visits,
                 cost: data.cost.toFixed(2),
             }).onConflictDoUpdate({
                 target: [expenses.projectId, expenses.date, expenses.campaignId],
-                set: { visits: data.visits, cost: data.cost.toFixed(2), utmCampaign: utm, campaignName: displayName }
+                set: { visits: data.visits, cost: data.cost.toFixed(2), utmCampaign: data.utmCampaign, campaignName: data.campaignName }
             });
             processedCount++;
         }

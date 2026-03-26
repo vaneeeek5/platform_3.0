@@ -3,6 +3,7 @@
 import * as React from "react"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { 
     Table, 
     TableBody, 
@@ -20,6 +21,7 @@ import {
     SelectValue 
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { DateRange } from "react-day-picker"
 
 interface ReportData {
@@ -34,6 +36,30 @@ interface ReportData {
     conversion: number;
 }
 
+type SortKey = keyof ReportData;
+type SortDir = "asc" | "desc";
+
+function SortableHead({ label, col, sortCol, sortDir, onSort }: {
+    label: string;
+    col: SortKey;
+    sortCol: SortKey | null;
+    sortDir: SortDir;
+    onSort: (col: SortKey) => void;
+}) {
+    const active = sortCol === col;
+    return (
+        <TableHead className="text-right cursor-pointer select-none" onClick={() => onSort(col)}>
+            <div className="flex items-center justify-end gap-1">
+                {label}
+                {active
+                    ? sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    : <ArrowUpDown className="h-3 w-3 text-muted-foreground/40" />
+                }
+            </div>
+        </TableHead>
+    );
+}
+
 export function ExpensesReport() {
     const [projects, setProjects] = React.useState<any[]>([]);
     const [selectedProjectId, setSelectedProjectId] = React.useState<string>("");
@@ -43,6 +69,8 @@ export function ExpensesReport() {
     });
     const [data, setData] = React.useState<ReportData[]>([]);
     const [loading, setLoading] = React.useState(false);
+    const [sortCol, setSortCol] = React.useState<SortKey | null>("totalCost");
+    const [sortDir, setSortDir] = React.useState<SortDir>("desc");
 
     React.useEffect(() => {
         fetch("/api/projects")
@@ -73,6 +101,24 @@ export function ExpensesReport() {
     React.useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const handleSort = (col: SortKey) => {
+        if (sortCol === col) {
+            setSortDir(d => d === "asc" ? "desc" : "asc");
+        } else {
+            setSortCol(col);
+            setSortDir("desc");
+        }
+    };
+
+    const sortedData = React.useMemo(() => {
+        if (!sortCol) return data;
+        return [...data].sort((a, b) => {
+            const av = a[sortCol] as number;
+            const bv = b[sortCol] as number;
+            return sortDir === "asc" ? av - bv : bv - av;
+        });
+    }, [data, sortCol, sortDir]);
 
     const totals = React.useMemo(() => {
         return data.reduce((acc, curr) => ({
@@ -148,12 +194,12 @@ export function ExpensesReport() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Кампания (Маппинг)</TableHead>
-                                <TableHead className="text-right">Визиты</TableHead>
-                                <TableHead className="text-right">Расход</TableHead>
-                                <TableHead className="text-right">Лиды</TableHead>
-                                <TableHead className="text-right">CPL</TableHead>
-                                <TableHead className="text-right">Конверсия</TableHead>
+                                <TableHead>Кампания</TableHead>
+                                <SortableHead label="Визиты" col="totalVisits" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                                <SortableHead label="Расход" col="totalCost" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                                <SortableHead label="Лиды" col="leadCount" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                                <SortableHead label="CPL" col="cpl" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
+                                <SortableHead label="Конверсия" col="conversion" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -161,13 +207,13 @@ export function ExpensesReport() {
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-10">Загрузка данных...</TableCell>
                                 </TableRow>
-                            ) : data.length === 0 ? (
+                            ) : sortedData.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center py-10 text-muted-foreground text-sm">
                                         {selectedProjectId ? "Нет данных за выбранный период. Запустите синхронизацию в настройках проекта." : "Выберите проект для отображения отчета"}
                                     </TableCell>
                                 </TableRow>
-                            ) : data.map((row, i) => (
+                            ) : sortedData.map((row, i) => (
                                 <TableRow key={i}>
                                     <TableCell className="font-medium">{row.campaignName || row.utmCampaign || "—"}</TableCell>
                                     <TableCell className="text-right">{row.totalVisits.toLocaleString('ru-RU')}</TableCell>
