@@ -181,9 +181,10 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     return { success: true, leadsCount: totalLeadsCount, goalsCount: totalGoalsCount };
 
   } catch (error: any) {
-    console.error(`[Logs API Error]`, error);
-    await db.update(syncLogs).set({ status: "ERROR", error: error.message, finishedAt: new Date() }).where(eq(syncLogs.id, logEntry.id));
-    return { error: error.message };
+    const errMsg = error.cause?.message ? `${error.message}: ${error.cause.message}` : error.message;
+    console.error(`[Logs API Error]`, errMsg);
+    await db.update(syncLogs).set({ status: "ERROR", error: errMsg, finishedAt: new Date() }).where(eq(syncLogs.id, logEntry.id));
+    return { error: errMsg };
   }
 }
 
