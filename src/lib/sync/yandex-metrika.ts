@@ -44,6 +44,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
   const data = await response.json();
   const rows = data.data || [];
+  console.log(`[Metrika Sync] Counter ${project.yandexCounterId}: Found ${rows.length} visit rows for period ${dateFrom} - ${dateTo}`);
 
   let leadsCount = 0;
   let goalsCount = 0;
@@ -54,7 +55,12 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     const dateTime = row.dimensions[2].name;
     const utmCampaign = row.dimensions[3]?.name || "";
     const utmSource = row.dimensions[4]?.name || "";
-    const achievedGoalIds = row.dimensions[5]?.id || []; // This is an array of IDs
+    const rawGoalIds = row.dimensions[5]?.id;
+
+    // Normalize goal IDs to an array of strings
+    const achievedGoalIds: string[] = Array.isArray(rawGoalIds) 
+      ? rawGoalIds.map((id: any) => id.toString()) 
+      : (rawGoalIds ? [rawGoalIds.toString()] : []);
 
     // Filter goals to only those we are tracking
     const trackedAchieved = achievedGoalIds.filter((id: string) => 
@@ -62,6 +68,8 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     );
 
     if (trackedAchieved.length === 0) continue;
+    
+    console.log(`[Metrika Sync] Visit ${visitId} from ${utmSource} reached tracked goals: ${trackedAchieved.join(', ')}`);
 
     // 1. Insert/Get Lead
     const [lead] = await db.insert(leads).values({
