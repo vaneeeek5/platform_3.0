@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2, GripVertical } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Plus, Trash2, GripVertical, Save } from "lucide-react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
@@ -17,6 +17,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
   const [targetStatuses, setTargetStatuses] = useState<Status[]>([])
   const [qualStatuses, setQualStatuses] = useState<Status[]>([])
   const [loading, setLoading] = useState(true)
+  const [savingId, setSavingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchStatuses()
@@ -69,18 +70,29 @@ export function StatusSettings({ projectId }: { projectId: number }) {
   }
 
   const updateStatus = async (type: 'target' | 'qualification', id: number, updates: Partial<Status>) => {
+    const sId = `${type}-${id}`;
+    setSavingId(sId);
     try {
-      await fetch(`/api/projects/${projectId}/statuses/${type}/${id}`, {
+      const res = await fetch(`/api/projects/${projectId}/statuses/${type}/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
       })
+      if (res.ok) {
+        // We don't toast on every character change, but since it's onBlur, we should confirm
+        toast.success("Изменения сохранены", { duration: 1000 })
+        fetchStatuses()
+      } else {
+        toast.error("Ошибка при сохранении")
+      }
     } catch (e) {
-      console.error(e)
+      toast.error("Произошла ошибка")
+    } finally {
+      setSavingId(null)
     }
   }
 
-  if (loading) return <div>Загрузка статусов...</div>
+  if (loading) return <div className="p-8 text-center">Загрузка статусов проекта...</div>
 
   return (
     <div className="grid gap-6 md:grid-cols-2">
@@ -88,42 +100,50 @@ export function StatusSettings({ projectId }: { projectId: number }) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle>Целевые статусы</CardTitle>
-            <CardDescription>Статусы финального результата (напр. Продажа, Отказ)</CardDescription>
+            <CardDescription>Конечные результаты (напр. Продажа, Отказ)</CardDescription>
           </div>
           <Button size="sm" onClick={() => addStatus('target')}>
             <Plus className="h-4 w-4 mr-1" /> Добавить
           </Button>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {targetStatuses.map((status) => (
             <div key={status.id} className="flex items-center gap-2 group">
               <GripVertical className="h-4 w-4 text-muted-foreground/30" />
-              <div 
-                className="w-4 h-4 rounded-full border" 
-                style={{ backgroundColor: status.color }}
-              />
               <Input 
-                className="h-8 text-sm" 
+                className="h-9 text-sm" 
                 defaultValue={status.label}
-                onBlur={(e) => updateStatus('target', status.id, { label: e.target.value })}
+                onBlur={(e) => {
+                   if (e.target.value !== status.label) {
+                      updateStatus('target', status.id, { label: e.target.value })
+                   }
+                }}
               />
               <Input 
                 type="color" 
-                className="w-10 h-8 p-1 rounded cursor-pointer" 
+                className="w-12 h-9 p-1 rounded cursor-pointer border-none" 
                 defaultValue={status.color}
-                onBlur={(e) => updateStatus('target', status.id, { color: e.target.value })}
+                onBlur={(e) => {
+                   if (e.target.value !== status.color) {
+                      updateStatus('target', status.id, { color: e.target.value })
+                   }
+                }}
               />
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-9 w-9 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => deleteStatus('target', status.id)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           ))}
-          {targetStatuses.length === 0 && <p className="text-sm text-muted-foreground italic text-center py-4">Нет статусов</p>}
+          {targetStatuses.length === 0 && (
+             <p className="text-sm text-muted-foreground italic text-center py-6 border-2 border-dashed rounded-lg">
+                Статусы не добавлены
+             </p>
+          )}
         </CardContent>
       </Card>
 
@@ -131,42 +151,50 @@ export function StatusSettings({ projectId }: { projectId: number }) {
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div>
             <CardTitle>Квалификационные статусы</CardTitle>
-            <CardDescription>Статусы воронки (напр. В работе, КЦ, Перезвонить)</CardDescription>
+            <CardDescription>Этапы воронки (напр. В работе, КЦ)</CardDescription>
           </div>
           <Button size="sm" onClick={() => addStatus('qualification')}>
             <Plus className="h-4 w-4 mr-1" /> Добавить
           </Button>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           {qualStatuses.map((status) => (
             <div key={status.id} className="flex items-center gap-2 group">
               <GripVertical className="h-4 w-4 text-muted-foreground/30" />
-              <div 
-                className="w-4 h-4 rounded-full border" 
-                style={{ backgroundColor: status.color }}
-              />
               <Input 
-                className="h-8 text-sm" 
+                className="h-9 text-sm" 
                 defaultValue={status.label}
-                onBlur={(e) => updateStatus('qualification', status.id, { label: e.target.value })}
+                onBlur={(e) => {
+                   if (e.target.value !== status.label) {
+                      updateStatus('qualification', status.id, { label: e.target.value })
+                   }
+                }}
               />
               <Input 
                 type="color" 
-                className="w-10 h-8 p-1 rounded cursor-pointer" 
+                className="w-12 h-9 p-1 rounded cursor-pointer border-none" 
                 defaultValue={status.color}
-                onBlur={(e) => updateStatus('qualification', status.id, { color: e.target.value })}
+                onBlur={(e) => {
+                   if (e.target.value !== status.color) {
+                      updateStatus('qualification', status.id, { color: e.target.value })
+                   }
+                }}
               />
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-9 w-9 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => deleteStatus('qualification', status.id)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
           ))}
-          {qualStatuses.length === 0 && <p className="text-sm text-muted-foreground italic text-center py-4">Нет статусов</p>}
+          {qualStatuses.length === 0 && (
+             <p className="text-sm text-muted-foreground italic text-center py-6 border-2 border-dashed rounded-lg">
+                Статусы не добавлены
+             </p>
+          )}
         </CardContent>
       </Card>
     </div>
