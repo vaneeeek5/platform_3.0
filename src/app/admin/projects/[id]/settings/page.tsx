@@ -20,7 +20,7 @@ export default function ProjectSettingsPage({ params }: { params: { id: string }
             <ChevronLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h2 className="text-3xl font-bold tracking-tight">Project Settings</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Настройки проекта</h2>
       </div>
 
       <Tabs>
@@ -30,21 +30,21 @@ export default function ProjectSettingsPage({ params }: { params: { id: string }
             active={activeTab === "yandex"} 
             onClick={() => setActiveTab("yandex")}
           >
-            Yandex Metrika
+            Яндекс.Метрика
           </TabsTrigger>
           <TabsTrigger 
             value="sync" 
             active={activeTab === "sync"} 
             onClick={() => setActiveTab("sync")}
           >
-            Sync & CRM
+            Синхронизация и CRM
           </TabsTrigger>
           <TabsTrigger 
             value="general" 
             active={activeTab === "general"} 
             onClick={() => setActiveTab("general")}
           >
-            General
+            Общие
           </TabsTrigger>
         </TabsList>
 
@@ -59,15 +59,15 @@ export default function ProjectSettingsPage({ params }: { params: { id: string }
         <TabsContent value="general" active={activeTab === "general"}>
            <Card>
              <CardHeader>
-               <CardTitle>General Information</CardTitle>
-               <CardDescription>Basic project details and visibility.</CardDescription>
+               <CardTitle>Общая информация</CardTitle>
+               <CardDescription>Основные детали проекта и видимость.</CardDescription>
              </CardHeader>
              <CardContent>
                <p className="text-sm text-muted-foreground">
-                 General settings are managed in the main project form.
+                 Настройки названия и пути (slug) управляются в основной форме проекта.
                </p>
                <Button variant="outline" className="mt-4" asChild>
-                  <Link href={`/admin/projects/${params.id}`}>Edit Name & Slug</Link>
+                  <Link href={`/admin/projects/${params.id}`}>Изменить Название и Slug</Link>
                </Button>
              </CardContent>
            </Card>

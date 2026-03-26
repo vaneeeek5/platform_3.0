@@ -10,98 +10,103 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "sonner"
 
 interface SyncLog {
-  id: number;
-  projectId: number;
-  type: string;
-  status: string;
-  details: any;
-  startedAt: string;
+  id: number
+  type: string
+  status: string
+  details: string
+  startedAt: string
 }
 
 export default function LogsPage() {
-  const [logs, setLogs] = useState<SyncLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState<SyncLog[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/admin/logs")
-      .then((res) => res.json())
-      .then((data) => {
-        setLogs(data);
-        setLoading(false);
-      });
-  }, []);
+    fetchLogs()
+  }, [])
+
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch("/api/admin/logs")
+      const data = await res.json()
+      setLogs(data)
+    } catch (error) {
+      toast.error("Не удалось загрузить логи")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">System Logs</h2>
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Логи синхронизации</h2>
+        <p className="text-muted-foreground">История запусков и результаты работы воркеров.</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Sync Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Time</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Details</TableHead>
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Время</TableHead>
+              <TableHead>Тип</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead>Детали</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              Array.from({ length: 10 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-64" /></TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                      No logs found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="whitespace-nowrap">
-                        {new Date(log.startedAt).toLocaleString()}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{log.type}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            log.status === "success"
-                              ? "default"
-                              : log.status === "error"
-                              ? "destructive"
-                              : "secondary"
-                          }
-                        >
-                          {log.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-md truncate font-mono text-xs">
-                        {JSON.stringify(log.details)}
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+              ))
+            ) : logs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                  Логов пока нет.
+                </TableCell>
+              </TableRow>
+            ) : (
+              logs.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell className="text-xs font-mono">
+                    {new Date(log.startedAt).toLocaleString("ru-RU")}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{log.type}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant={
+                        log.status === "COMPLETED" || log.status === "SUCCESS" 
+                          ? "default" 
+                          : log.status === "FAILED" || log.status === "ERROR"
+                            ? "destructive"
+                            : "secondary"
+                      }
+                    >
+                      {log.status === "SUCCESS" || log.status === "COMPLETED" ? "Успех" : 
+                       log.status === "ERROR" || log.status === "FAILED" ? "Ошибка" : 
+                       log.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm max-w-md truncate" title={log.details}>
+                    {log.details}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }

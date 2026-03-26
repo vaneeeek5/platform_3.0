@@ -1,41 +1,55 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { LayoutDashboard, FolderKanban, ClipboardList, LogOut, Settings } from "lucide-react"
-import { cn } from "@/lib/utils"
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { 
+  LayoutDashboard, 
+  FolderKanban, 
+  ClipboardList, 
+  Settings, 
+  LogOut 
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
   {
-    title: "Dashboard",
+    title: "Дашборд",
     href: "/admin",
     icon: LayoutDashboard,
   },
   {
-    title: "Projects",
+    title: "Проекты",
     href: "/admin/projects",
     icon: FolderKanban,
   },
   {
-    title: "Logs",
+    title: "Логи",
     href: "/admin/logs",
     icon: ClipboardList,
   },
   {
-    title: "Settings",
+    title: "Настройки",
     href: "/admin/settings",
     icon: Settings,
   },
-]
+];
 
 export function AdminNav() {
-  const pathname = usePathname()
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  };
 
   return (
-    <div className="flex flex-col w-64 border-r bg-muted/30 h-screen sticky top-0">
+    <div className="w-64 border-r bg-card h-screen flex flex-col">
       <div className="p-6 border-b">
-        <h1 className="text-xl font-bold tracking-tight">Platform v2.0</h1>
-        <p className="text-xs text-muted-foreground mt-1 text-primary font-semibold">SUPER ADMIN</p>
+        <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
+          Platform v2.0
+        </h1>
       </div>
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => (
@@ -43,8 +57,10 @@ export function AdminNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:bg-accent hover:text-accent-foreground",
-              pathname === item.href ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground"
+              "flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:bg-accent",
+              pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href))
+                ? "bg-accent text-accent-foreground font-medium"
+                : "text-muted-foreground"
             )}
           >
             <item.icon className="h-4 w-4" />
@@ -53,17 +69,15 @@ export function AdminNav() {
         ))}
       </nav>
       <div className="p-4 border-t">
-        <button
-          onClick={async () => {
-            await fetch("/api/auth/logout", { method: "POST" });
-            window.location.href = "/login";
-          }}
-          className="flex items-center gap-3 px-3 py-2 w-full text-left rounded-md text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+        <Button 
+          variant="ghost" 
+          className="w-full justify-start gap-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          onClick={handleLogout}
         >
           <LogOut className="h-4 w-4" />
-          Logout
-        </button>
+          Выйти
+        </Button>
       </div>
     </div>
-  )
+  );
 }

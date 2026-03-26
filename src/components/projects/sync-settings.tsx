@@ -42,34 +42,34 @@ export function SyncSettings({ projectId }: { projectId: number }) {
       });
 
       if (res.ok) {
-        toast.success("Sync settings saved");
+        toast.success("Настройки синхронизации сохранены");
       } else {
-        toast.error("Failed to save settings");
+        toast.error("Ошибка при сохранении");
       }
     } catch (e) {
-      toast.error("An error occurred");
+      toast.error("Произошла ошибка");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Загрузка...</div>;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Synchronization Schedule</CardTitle>
+          <CardTitle>Расписание синхронизации</CardTitle>
           <CardDescription>
-            Configure how often data is pulled from Yandex and CRM.
+            Настройте частоту автоматической загрузки данных из Яндекса и CRM.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Enable Auto-Sync</Label>
+              <Label>Автоматическая синхронизация</Label>
               <p className="text-sm text-muted-foreground">
-                Run background jobs according to the schedule.
+                Выполнять задачи в фоновом режиме по расписанию.
               </p>
             </div>
             <input 
@@ -82,21 +82,21 @@ export function SyncSettings({ projectId }: { projectId: number }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="schedule">Sync Frequency</Label>
+              <Label htmlFor="schedule">Частота синхронизации</Label>
               <Select value={schedule} onValueChange={setSchedule}>
                 <SelectTrigger id="schedule">
-                  <SelectValue placeholder="Select frequency" />
+                  <SelectValue placeholder="Выберите частоту" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0 * * * *">Every hour</SelectItem>
-                  <SelectItem value="0 */4 * * *">Every 4 hours</SelectItem>
-                  <SelectItem value="0 0 * * *">Daily at midnight</SelectItem>
-                  <SelectItem value="0 0 * * 0">Weekly on Sundays</SelectItem>
+                  <SelectItem value="0 * * * *">Каждый час</SelectItem>
+                  <SelectItem value="0 */4 * * *">Каждые 4 часа</SelectItem>
+                  <SelectItem value="0 0 * * *">Ежедневно в полночь</SelectItem>
+                  <SelectItem value="0 0 * * 0">Еженедельно по воскресеньям</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="period">Sync Period (Days)</Label>
+              <Label htmlFor="period">Период синхронизации (дней)</Label>
               <Input
                 id="period"
                 type="number"
@@ -106,28 +106,28 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                 onChange={(e) => setPeriodDays(parseInt(e.target.value))}
               />
               <p className="text-xs text-muted-foreground">
-                How many days of history to pull on each sync.
+                За сколько последних дней подтягивать данные при каждом запуске.
               </p>
             </div>
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save All Sync Settings"}
+            {saving ? "Сохранение..." : "Сохранить настройки синхронизации"}
           </Button>
         </CardFooter>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>CRM Status Mapping</CardTitle>
+          <CardTitle>Маппинг статусов CRM</CardTitle>
           <CardDescription>
-            Map incoming CRM statuses to platform internal statuses.
+            Сопоставьте статусы из CRM с внутренними статусами платформы.
           </CardDescription>
         </CardHeader>
         <CardContent>
            <p className="text-sm text-muted-foreground italic">
-             Status mapping configuration will be available after the first CRM sync.
+             Настройка маппинга будет доступна после первой успешной синхронизации с CRM.
            </p>
         </CardContent>
       </Card>

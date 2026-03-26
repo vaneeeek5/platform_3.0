@@ -55,12 +55,12 @@ export function YandexSettings({ projectId }: { projectId: number }) {
       });
 
       if (res.ok) {
-        toast.success("Tracked goals updated");
+        toast.success("Список отслеживаемых целей обновлен");
       } else {
-        toast.error("Failed to update goals");
+        toast.error("Не удалось сохранить цели");
       }
     } catch (e) {
-      toast.error("An error occurred");
+      toast.error("Произошла ошибка");
     } finally {
       setSaving(false);
     }
@@ -68,7 +68,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
 
   const fetchGoals = async () => {
     if (!token || !counterId) {
-       toast.error("Token and Counter ID are required");
+       toast.error("Введите токен и ID счетчика");
        return;
     }
     setFetchingGoals(true);
@@ -79,10 +79,10 @@ export function YandexSettings({ projectId }: { projectId: number }) {
         toast.error(data.error);
       } else {
         setAvailableGoals(data);
-        toast.success(`Found ${data.length} goals`);
+        toast.success(`Найдено целей: ${data.length}`);
       }
     } catch (e) {
-      toast.error("Failed to fetch goals");
+      toast.error("Ошибка при получении целей");
     } finally {
       setFetchingGoals(false);
     }
@@ -101,32 +101,32 @@ export function YandexSettings({ projectId }: { projectId: number }) {
       });
 
       if (res.ok) {
-        toast.success("Yandex settings saved");
+        toast.success("Доступы Яндекса сохранены");
       } else {
-        toast.error("Failed to save settings");
+        toast.error("Ошибка при сохранении");
       }
     } catch (e) {
-      toast.error("An error occurred");
+      toast.error("Произошла ошибка");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Загрузка...</div>;
 
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Yandex Metrika API</CardTitle>
+          <CardTitle>Яндекс.Метрика API</CardTitle>
           <CardDescription>
-            Configure Yandex Direct/Metrika credentials to fetch lead data.
+            Настройте учетные данные Яндекс.Метрики для получения данных о лидах.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="token">OAuth Token</Label>
+              <Label htmlFor="token">OAuth Токен</Label>
               <Input
                 id="token"
                 type="password"
@@ -136,7 +136,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="counter">Counter ID</Label>
+              <Label htmlFor="counter">ID Счетчика</Label>
               <Input
                 id="counter"
                 placeholder="12345678"
@@ -146,12 +146,12 @@ export function YandexSettings({ projectId }: { projectId: number }) {
             </div>
           </div>
           <Button onClick={fetchGoals} variant="outline" disabled={fetchingGoals}>
-            {fetchingGoals ? "Fetching..." : "Fetch Goals"}
+            {fetchingGoals ? "Загрузка..." : "Получить список целей"}
           </Button>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
           <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Credentials"}
+            {saving ? "Сохранение..." : "Сохранить доступы"}
           </Button>
         </CardFooter>
       </Card>
@@ -159,19 +159,19 @@ export function YandexSettings({ projectId }: { projectId: number }) {
       {availableGoals.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Metrika Goals</CardTitle>
+            <CardTitle>Цели Метрики</CardTitle>
             <CardDescription>
-              Select goals that should be tracked as leads.
+              Выберите цели, которые должны считаться «Лидами».
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Track</TableHead>
+                  <TableHead className="w-[100px]">Отсл.</TableHead>
                   <TableHead>Goal ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
+                  <TableHead>Название</TableHead>
+                  <TableHead>Тип</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -203,7 +203,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
              <Button onClick={handleSaveGoals} disabled={saving || availableGoals.length === 0}>
-                {saving ? "Saving..." : "Save Tracked Goals"}
+                {saving ? "Сохранение..." : "Сохранить выбранные цели"}
              </Button>
           </CardFooter>
         </Card>

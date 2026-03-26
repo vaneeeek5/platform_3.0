@@ -7,118 +7,130 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
-import { Skeleton } from "@/components/ui/skeleton"
+
+interface Project {
+  id: number
+  name: string
+  slug: string
+  isActive: boolean
+}
 
 export default function EditProjectPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    slug: "",
-  })
+  const [project, setProject] = useState<Project | null>(null)
 
   useEffect(() => {
     fetch(`/api/projects/${params.id}`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.error) {
-          toast.error(data.error)
-          router.push("/admin/projects")
-        } else {
-          setFormData({ name: data.name, slug: data.slug })
-          setLoading(false)
-        }
+        setProject(data)
+        setLoading(false)
       })
-      .catch(() => {
-        toast.error("Failed to load project")
-        router.push("/admin/projects")
-      })
-  }, [params.id, router])
+  }, [params.id])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!project) return
     setSaving(true)
 
     try {
       const res = await fetch(`/api/projects/${params.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: project.name,
+          slug: project.slug,
+          isActive: project.isActive,
+        }),
       })
 
       if (res.ok) {
-        toast.success("Project updated successfully")
+        toast.success("Проект обновлен")
         router.push("/admin/projects")
       } else {
-        const error = await res.json()
-        toast.error(error.error || "Failed to update project")
+        toast.error("Ошибка при обновлении")
       }
     } catch (error) {
-      toast.error("An error occurred")
+      toast.error("Произошла ошибка")
     } finally {
       setSaving(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="max-w-xl mx-auto py-8 space-y-4">
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
+  if (loading) return <div>Загрузка...</div>
 
   return (
-    <div className="max-w-xl mx-auto py-8">
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/admin/projects">
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <h2 className="text-3xl font-bold tracking-tight">Редактирование проекта</h2>
+      </div>
+
       <Card>
-        <CardHeader>
-          <CardTitle>Edit Project</CardTitle>
-        </CardHeader>
         <form onSubmit={handleSubmit}>
+          <CardHeader>
+            <CardTitle>Общая информация</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Project Name</Label>
+              <Label htmlFor="name">Название проекта</Label>
               <Input
                 id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={project?.name}
+                onChange={(e) => setProject({ ...project!, name: e.target.value })}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Project Slug (URL)</Label>
+              <Label htmlFor="slug">Slug (ссылка)</Label>
               <Input
                 id="slug"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                value={project?.slug}
+                onChange={(e) => setProject({ ...project!, slug: e.target.value })}
                 required
               />
             </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="active"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                checked={project?.isActive}
+                onChange={(e) => setProject({ ...project!, isActive: e.target.checked })}
+              />
+              <Label htmlFor="active">Активный проект</Label>
+            </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
+          <CardFooter className="flex justify-end gap-4 border-t px-6 py-4">
             <Button variant="outline" type="button" onClick={() => router.back()}>
-              Cancel
+              Отмена
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
+              {saving ? "Сохранение..." : "Сохранить изменения"}
             </Button>
           </CardFooter>
         </form>
       </Card>
-      
-      <Card className="mt-8 border-destructive/20 bg-destructive/5">
+
+      <Card className="border-destructive/20 bg-destructive/5">
          <CardHeader>
-            <CardTitle className="text-destructive">Advanced Settings</CardTitle>
+            <CardTitle className="text-destructive">Интеграции</CardTitle>
          </CardHeader>
          <CardContent>
             <p className="text-sm text-muted-foreground mb-4">
-               Project-specific settings (Yandex Direct, CRM, etc.) will be available here in the next update.
+               Настройки Яндекса, CRM и расписания находятся в отдельном разделе.
             </p>
             <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" asChild>
                <Link href={`/admin/projects/${params.id}/settings`}>
-                  Go to Project Settings
+                  Перейти к настройкам проекта
                </Link>
             </Button>
          </CardContent>
