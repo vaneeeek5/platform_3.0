@@ -158,6 +158,7 @@ export const expenses = pgTable(
     date: timestamp("date").notNull(),
     campaignId: text("campaign_id"),
     utmCampaign: text("utm_campaign"),
+    directOrder: text("direct_order"),
     campaignName: text("campaign_name"),
     visits: integer("visits").default(0),
     clicks: integer("clicks").default(0),
@@ -166,7 +167,7 @@ export const expenses = pgTable(
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => ({
-    unq: unique().on(t.projectId, t.date, t.campaignId),
+    unq: unique().on(t.projectId, t.date, t.utmCampaign),
     dateIdx: index("expenses_date_idx").on(t.projectId, t.date),
     campaignIdx: index("expenses_campaign_idx").on(t.projectId, t.utmCampaign),
   })
@@ -179,13 +180,11 @@ export const campaignMappings = pgTable(
     projectId: integer("project_id")
       .references(() => projects.id, { onDelete: "cascade" })
       .notNull(),
-    utmValue: text("utm_value").notNull(),
+    utmValue: text("utm_value"),
+    directValue: text("direct_value"),
     displayName: text("display_name").notNull(),
     normalizedName: text("normalized_name").notNull(),
-  },
-  (t) => ({
-    unq: unique().on(t.projectId, t.utmValue),
-  })
+  }
 );
 
 export const crmColumnMappings = pgTable("crm_column_mappings", {

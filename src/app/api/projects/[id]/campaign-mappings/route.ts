@@ -27,19 +27,20 @@ export async function POST(
 
   const { id } = await params;
   const projectId = parseInt(id);
-  const { mappings } = await request.json(); // Array of { utmValue, displayName }
+  const { mappings } = await request.json(); // Array of { utmValue, directValue, displayName }
 
   try {
     await db.transaction(async (tx) => {
       await tx.delete(campaignMappings).where(eq(campaignMappings.projectId, projectId));
       
       if (mappings.length > 0) {
-        // Filter valid mappings
+        // Filter valid mappings (must have at least one of utmValue/directValue AND a displayName)
         const validMappings = mappings
-          .filter((m: any) => m.utmValue && m.displayName)
+          .filter((m: any) => (m.utmValue || m.directValue) && m.displayName)
           .map((m: any) => ({
             projectId,
-            utmValue: m.utmValue,
+            utmValue: m.utmValue || null,
+            directValue: m.directValue || null,
             displayName: m.displayName,
             normalizedName: m.displayName.toLowerCase(),
           }));

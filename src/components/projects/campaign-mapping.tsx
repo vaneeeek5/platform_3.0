@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface Mapping {
   id: number
   utmValue: string
+  directValue: string
   displayName: string
 }
 
@@ -20,7 +21,8 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
   const [saving, setSaving] = useState(false)
   
   // For autocomplete
-  const [existingCampaigns, setExistingCampaigns] = useState<{utm: string, name: string}[]>([])
+  const [existingUtms, setExistingUtms] = useState<{utm: string, name: string}[]>([])
+  const [existingDirects, setExistingDirects] = useState<{direct: string, name: string}[]>([])
 
   useEffect(() => {
     fetchMappings()
@@ -31,7 +33,7 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
     try {
       const res = await fetch(`/api/projects/${projectId}/campaign-mappings`)
       const data = await res.json()
-      setMappings(Array.isArray(data) ? data : [])
+      setMappings(Array.isArray(data) ? data.map(d => ({ ...d, directValue: d.directValue || '', utmValue: d.utmValue || '' })) : [])
     } catch (e) {
       toast.error("Не удалось загрузить маппинг кампаний")
     } finally {
@@ -55,15 +57,23 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
       const data = await res.json();
       
       if (Array.isArray(data)) {
-        // Extract unique utm values and their current names
-        const campaigns = data.map((d: any) => ({
+        // Extract unique utm values
+        const utms = data.map((d: any) => ({
           utm: d.utmCampaign || "",
           name: d.campaignName || d.utmCampaign || ""
         })).filter((c: any) => c.utm);
         
-        // Remove duplicates
-        const unique = Array.from(new Map(campaigns.map((item: any) => [item.utm, item])).values()) as {utm: string, name: string}[];
-        setExistingCampaigns(unique);
+        const uniqueUtms = Array.from(new Map(utms.map((item: any) => [item.utm, item])).values()) as {utm: string, name: string}[];
+        setExistingUtms(uniqueUtms);
+
+        // Extract unique direct orders
+        const directs = data.map((d: any) => ({
+          direct: d.directOrder || "",
+          name: d.campaignName || d.directOrder || ""
+        })).filter((c: any) => c.direct);
+        
+        const uniqueDirects = Array.from(new Map(directs.map((item: any) => [item.direct, item])).values()) as {direct: string, name: string}[];
+        setExistingDirects(uniqueDirects);
       }
     } catch (e) {
        console.error("Failed to load existing campaigns for autocomplete");
@@ -71,7 +81,7 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
   }
 
   const addMapping = () => {
-    setMappings([...mappings, { id: Date.now() * -1, utmValue: "", displayName: "" }])
+    setMappings([...mappings, { id: Date.now() * -1, utmValue: "", directValue: "", displayName: "" }])
   }
 
   const updateMapping = (id: number, field: keyof Mapping, value: string) => {
@@ -80,11 +90,23 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
       
       const updated = { ...m, [field]: value };
       
-      // Auto-fill displayName if utmValue is selected from existing campaigns
+      // Auto-fill displayName if utmValue is selected
       if (field === 'utmValue' && !m.displayName) {
-        const match = existingCampaigns.find(c => c.utm === value);
+        const match = existingUtms.find(c => c.utm === value);
         if (match && match.name && match.name !== value) {
           updated.displayName = match.name;
+        } else if (value) {
+          updated.displayName = value;
+        }
+      }
+
+      // Auto-fill displayName if directValue is selected and name is empty (or same as utm)
+      if (field === 'directValue' && (!m.displayName || m.displayName === m.utmValue)) {
+        const match = existingDirects.find(c => c.direct === value);
+        if (match && match.name && match.name !== value) {
+          updated.displayName = match.name;
+        } else if (value) {
+          updated.displayName = value;
         }
       }
       
@@ -97,8 +119,8 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
   }
 
   const saveMappings = async () => {
-    // Prevent empty rows
-    const validMappings = mappings.filter(m => m.utmValue && m.displayName)
+    // Prevent empty rows (must have either UTM or Direct AND a display name)
+    const validMappings = mappings.filter(m => (m.utmValue || m.directValue) && m.displayName)
     
     setSaving(true)
     try {
@@ -128,7 +150,7 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
         <div>
           <CardTitle>Маппинг рекламных кампаний</CardTitle>
           <CardDescription>
-            Привяжите UTM-метки (или ID кампаний) к их понятным названиям.
+            Свяжите метки из Метрики и названия из Директа в одну кампанию на платформе.
           </CardDescription>
         </div>
         <Button size="sm" onClick={addMapping}>
@@ -136,17 +158,23 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
         </Button>
       </CardHeader>
       <CardContent>
-        <datalist id="existing-campaigns">
-          {existingCampaigns.map((camp) => (
+        <datalist id="existing-utms">
+          {existingUtms.map((camp) => (
             <option key={camp.utm} value={camp.utm} />
+          ))}
+        </datalist>
+        <datalist id="existing-directs">
+          {existingDirects.map((camp) => (
+            <option key={camp.direct} value={camp.direct} />
           ))}
         </datalist>
 
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[45%]">Метка (UTM / ID)</TableHead>
-              <TableHead className="w-[45%]">Отображаемое название</TableHead>
+              <TableHead className="w-[30%]">Метка в Метрике (UTM)</TableHead>
+              <TableHead className="w-[30%]">Название в Директе</TableHead>
+              <TableHead className="w-[30%]">Название на Платформе</TableHead>
               <TableHead className="w-[10%]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -159,15 +187,24 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
                     placeholder="Выберите или введите..." 
                     onChange={(e) => updateMapping(m.id, 'utmValue', e.target.value)}
                     className="h-8 font-mono text-xs"
-                    list="existing-campaigns"
+                    list="existing-utms"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input 
+                    value={m.directValue} 
+                    placeholder="Выберите или введите..." 
+                    onChange={(e) => updateMapping(m.id, 'directValue', e.target.value)}
+                    className="h-8 font-mono text-xs"
+                    list="existing-directs"
                   />
                 </TableCell>
                 <TableCell className="align-top">
                   <Input 
                     value={m.displayName} 
-                    placeholder="Напр. Поиск: Общие запросы" 
+                    placeholder="Напр. Поиск: Общие" 
                     onChange={(e) => updateMapping(m.id, 'displayName', e.target.value)}
-                    className="h-8 text-xs"
+                    className="h-8 text-xs font-medium"
                   />
                 </TableCell>
                 <TableCell className="align-top">

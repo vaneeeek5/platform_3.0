@@ -174,12 +174,12 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         
         const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
 
-        // Both visits and costs now use UTMCampaign as the merge key — fully compatible
+        // Visits use UTMCampaign
         const visitsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
         
+        // Costs use Direct Order
         const costMetrics = "ym:ad:RUBAdCost,ym:ad:USDAdCost,ym:ad:EURAdCost,ym:ad:BYNAdCost,ym:ad:KZTAdCost,ym:ad:TRYAdCost";
-        // Use ym:ad:UTMCampaign so costs are also keyed by UTM — same as visits
-        let costsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=${costMetrics}&dimensions=ym:ad:date,ym:ad:UTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
+        let costsUrl = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=${costMetrics}&dimensions=ym:ad:date,ym:ad:directOrder&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=10000`;
         
         if (project.yandexDirectLogins) {
             costsUrl += `&direct_client_logins=${project.yandexDirectLogins}`;
@@ -203,8 +203,8 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
             costsData = await costsRes.json();
         }
 
-        // Merge key: "date|utm" — both requests use the same UTM campaign value
-        type MergedRow = { visits: number, cost: number, utmCampaign: string, campaignName: string };
+        // Merge key: mapping ID if matched, else raw UTM/Direct
+        type MergedRow = { visits: number, cost: number, utmCampaign: string, directOrder: string, campaignName: string };
         const mergedData = new Map<string, MergedRow>();
 
         // Process visits
@@ -212,32 +212,38 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
             const [dateDim, utmDim] = row.dimensions;
             const date = dateDim.name;
             const utm = utmDim.name || "";
-            const key = `${date}|${utm}`;
             const visits = Math.round(row.metrics[0] || 0);
+            
             const mapping = projectMappings.find(m => m.utmValue === utm);
+            const key = mapping ? `${date}|map_${mapping.id}` : `${date}|utm_${utm}`;
             const displayName = mapping?.displayName || utm;
 
             if (mergedData.has(key)) {
-                mergedData.get(key)!.visits += visits;
+                const existing = mergedData.get(key)!;
+                existing.visits += visits;
+                if (!existing.utmCampaign && utm) existing.utmCampaign = utm;
             } else {
-                mergedData.set(key, { visits, cost: 0, utmCampaign: utm, campaignName: displayName });
+                mergedData.set(key, { visits, cost: 0, utmCampaign: utm, directOrder: mapping?.directValue || "", campaignName: displayName });
             }
         }
 
-        // Process costs — same UTM key, merges into visits rows automatically
+        // Process costs
         for (const row of costsData.data || []) {
-            const [dateDim, utmDim] = row.dimensions;
+            const [dateDim, orderDim] = row.dimensions;
             const date = dateDim.name;
-            const utm = utmDim.name || "";
-            const key = `${date}|${utm}`;
+            const orderName = orderDim.name || "";
             const totalCost = row.metrics.reduce((acc: number, val: number) => acc + (val || 0), 0);
-            const mapping = projectMappings.find(m => m.utmValue === utm);
-            const displayName = mapping?.displayName || utm;
+            
+            const mapping = projectMappings.find(m => m.directValue === orderName);
+            const key = mapping ? `${date}|map_${mapping.id}` : `${date}|dir_${orderName}`;
+            const displayName = mapping?.displayName || orderName;
 
             if (mergedData.has(key)) {
-                mergedData.get(key)!.cost += totalCost;
+                const existing = mergedData.get(key)!;
+                existing.cost += totalCost;
+                if (!existing.directOrder && orderName) existing.directOrder = orderName;
             } else {
-                mergedData.set(key, { visits: 0, cost: totalCost, utmCampaign: utm, campaignName: displayName });
+                mergedData.set(key, { visits: 0, cost: totalCost, utmCampaign: mapping?.utmValue || "", directOrder: orderName, campaignName: displayName });
             }
         }
 
@@ -246,18 +252,26 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
         const keys = Array.from(mergedData.keys());
         for (const [, data] of mergedData.entries()) {
             const [dateStr] = keys[processedCount].split('|');
+            const fallbackUtm = data.utmCampaign || data.directOrder || "unknown"; // Ensures conflict target never fails
+
             await db.insert(expenses).values({
                 projectId,
                 date: new Date(dateStr),
-                utmCampaign: data.utmCampaign,
-                campaignName: data.campaignName,
+                utmCampaign: fallbackUtm,
+                directOrder: data.directOrder || null,
+                campaignName: data.campaignName || fallbackUtm,
                 visits: data.visits,
                 cost: data.cost.toFixed(2),
             }).onConflictDoUpdate({
                 target: [expenses.projectId, expenses.date, expenses.utmCampaign],
-                set: { visits: data.visits, cost: data.cost.toFixed(2), campaignName: data.campaignName }
+                set: { 
+                    visits: data.visits, 
+                    cost: data.cost.toFixed(2), 
+                    directOrder: data.directOrder || null,
+                    campaignName: data.campaignName || fallbackUtm 
+                }
             }).catch(() => {
-                // Fallback: if UTM conflict logic fails, just update
+                // Fallback: if conflict logic fails, ignore for this row
             });
             processedCount++;
         }
