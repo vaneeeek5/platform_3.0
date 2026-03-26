@@ -86,7 +86,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     }
   }
 
-  const handleExport = () => {
+    const handleExport = () => {
     if (leads.length === 0) return;
     const exportData = leads.map(item => ({
       "Дата": format(new Date(item.lead.date), "dd.MM.yyyy HH:mm"),
@@ -100,6 +100,34 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Leads");
     XLSX.writeFile(wb, `Leads_Project_${projectId}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
+  const handleDedup = async () => {
+    try {
+      const checkRes = await fetch(`/api/leads/dedup?projectId=${projectId}`);
+      const checkData = await checkRes.json();
+      
+      if (checkData.duplicateCount === 0) {
+        toast.success("Дубликатов не найдено");
+        return;
+      }
+
+      const confirmDel = confirm(`Найдено дублей: ${checkData.duplicateCount}. Удалить их, оставив только уникальные записи?`);
+      if (!confirmDel) return;
+
+      setLoading(true);
+      const delRes = await fetch(`/api/leads/dedup?projectId=${projectId}`, { method: 'DELETE' });
+      if (delRes.ok) {
+        toast.success("Дубликаты успешно удалены");
+        fetchLeads();
+      } else {
+        toast.error("Ошибка при удалении дубликатов");
+      }
+    } catch (e) {
+      toast.error("Ошибка при проверке дубликатов");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -118,7 +146,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
             </div>
             <DatePickerWithRange date={dateRange} setDate={setDateRange} />
          </div>
-         <div className="flex gap-2">
+         <div className="flex gap-2 flex-wrap justify-end">
+            <Button variant="outline" size="sm" onClick={handleDedup} disabled={loading} title="Проверить и удалить дубликаты" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
+               Удалить дубли
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExport} disabled={leads.length === 0}>
                <Download className="h-4 w-4 mr-2" />
                Excel

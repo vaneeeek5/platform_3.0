@@ -144,6 +144,7 @@ export const goalAchievements = pgTable(
   (t) => ({
     leadIdx: index("ga_lead_idx").on(t.leadId),
     goalIdx: index("ga_goal_idx").on(t.goalId),
+    unq: unique("ga_lead_goal_unq").on(t.leadId, t.goalId),
   })
 );
 
