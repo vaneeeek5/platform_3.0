@@ -17,7 +17,10 @@ interface SyncLog {
   id: number
   type: string
   status: string
-  details: string
+  error: string | null
+  recordsProcessed: number
+  recordsCreated: number
+  recordsUpdated: number
   startedAt: string
 }
 
@@ -98,8 +101,17 @@ export default function LogsPage() {
                        log.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm max-w-md truncate" title={log.details}>
-                    {log.details}
+                  <TableCell className="text-sm max-w-md">
+                    {log.error ? (
+                      <span className="text-destructive font-medium">{log.error}</span>
+                    ) : (
+                      <div className="flex gap-2 text-xs">
+                        {log.recordsProcessed > 0 && <span>Обработано: {log.recordsProcessed}</span>}
+                        {log.recordsCreated > 0 && <span className="text-green-600">Создано: {log.recordsCreated}</span>}
+                        {log.recordsUpdated > 0 && <span className="text-blue-600">Обновлено: {log.recordsUpdated}</span>}
+                        {!log.recordsProcessed && !log.recordsCreated && !log.recordsUpdated && <span>—</span>}
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

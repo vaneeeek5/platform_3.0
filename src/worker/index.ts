@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Worker } from "bullmq";
 import { redis } from "@/lib/redis";
 import { SYNC_QUEUE_NAME, CRON_QUEUE_NAME, cronQueue } from "@/lib/queue";
