@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { YandexSettings } from "@/components/projects/yandex-settings";
 import { SyncSettings } from "@/components/projects/sync-settings";
 import { StatusSettings } from "@/components/projects/status-settings";
+import { CampaignMappingSettings } from "@/components/projects/campaign-mapping";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -44,6 +45,13 @@ export default function ProjectSettingsPage() {
             Статусы
           </TabsTrigger>
           <TabsTrigger 
+            value="campaigns" 
+            active={activeTab === "campaigns"} 
+            onClick={() => setActiveTab("campaigns")}
+          >
+            Маппинг кампаний
+          </TabsTrigger>
+          <TabsTrigger 
             value="sync" 
             active={activeTab === "sync"} 
             onClick={() => setActiveTab("sync")}
@@ -65,6 +73,10 @@ export default function ProjectSettingsPage() {
 
         <TabsContent value="statuses" active={activeTab === "statuses"}>
             <StatusSettings projectId={parseInt(id)} />
+        </TabsContent>
+
+        <TabsContent value="campaigns" active={activeTab === "campaigns"}>
+            <CampaignMappingSettings projectId={parseInt(id)} />
         </TabsContent>
 
         <TabsContent value="sync" active={activeTab === "sync"}>

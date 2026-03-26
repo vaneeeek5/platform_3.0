@@ -34,16 +34,26 @@ export async function POST(
   const projectId = parseInt(id);
   const { goals } = await request.json(); // Array of { goalId, goalName }
 
+  // Filter out duplicates in the input array to avoid unique constraint violations
+  const uniqueGoals = goals.reduce((acc: any[], current: any) => {
+    const x = acc.find(item => item.goalId === current.goalId);
+    if (!x) {
+      return acc.concat([current]);
+    } else {
+      return acc;
+    }
+  }, []);
+
   try {
     // Transactional update: delete old and insert new
     await db.transaction(async (tx) => {
       await tx.delete(trackedGoals).where(eq(trackedGoals.projectId, projectId));
       
-      if (goals.length > 0) {
+      if (uniqueGoals.length > 0) {
         await tx.insert(trackedGoals).values(
-          goals.map((g: any) => ({
+          uniqueGoals.map((g: any) => ({
             projectId,
-            goalId: g.goalId,
+            goalId: g.goalId.toString(),
             goalName: g.goalName,
             targetStatusId: g.targetStatusId || null,
             qualificationStatusId: g.qualificationStatusId || null,
