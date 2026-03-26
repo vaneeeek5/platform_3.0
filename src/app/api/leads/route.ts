@@ -16,6 +16,8 @@ export async function GET(request: Request) {
   const query = searchParams.get("query");
   const sources = searchParams.get("sources")?.split(",");
   const goals = searchParams.get("goals")?.split(",");
+  const targetStatusIds = searchParams.get("targetStatusIds")?.split(",").map(id => parseInt(id));
+  const qualStatusIds = searchParams.get("qualStatusIds")?.split(",").map(id => parseInt(id));
 
   try {
     let baseWhere = [];
@@ -29,6 +31,14 @@ export async function GET(request: Request) {
     
     if (sources && sources.length > 0) {
         baseWhere.push(sql`${leads.utmSource} IN ${sources}`);
+    }
+
+    if (targetStatusIds && targetStatusIds.length > 0) {
+        baseWhere.push(sql`${goalAchievements.targetStatusId} IN ${targetStatusIds}`);
+    }
+
+    if (qualStatusIds && qualStatusIds.length > 0) {
+        baseWhere.push(sql`${goalAchievements.qualificationStatusId} IN ${qualStatusIds}`);
     }
 
     // Search by client ID or Campaign

@@ -35,11 +35,27 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [mounted, setMounted] = useState(false)
   const [filterSources, setFilterSources] = useState<string[]>([])
   const [filterGoals, setFilterGoals] = useState<string[]>([])
+  const [targetStatuses, setTargetStatuses] = useState<any[]>([])
+  const [qualStatuses, setQualStatuses] = useState<any[]>([])
+  const [filterTargetStatusIds, setFilterTargetStatusIds] = useState<string[]>([])
+  const [filterQualStatusIds, setFilterQualStatusIds] = useState<string[]>([])
 
   useEffect(() => {
     setMounted(true)
-    if (projectId) fetchLeads()
+    if (projectId) {
+       fetchLeads()
+       fetchStatuses()
+    }
   }, [projectId])
+
+  const fetchStatuses = async () => {
+    const [tRes, qRes] = await Promise.all([
+      fetch(`/api/projects/${projectId}/statuses/target`),
+      fetch(`/api/projects/${projectId}/statuses/qualification`)
+    ])
+    if (tRes.ok) setTargetStatuses(await tRes.json())
+    if (qRes.ok) setQualStatuses(await qRes.json())
+  }
 
   const fetchLeads = async () => {
     setLoading(true)
@@ -48,6 +64,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     if (query) params.append("query", query)
     if (filterSources.length > 0) params.append("sources", filterSources.join(","))
     if (filterGoals.length > 0) params.append("goals", filterGoals.join(","))
+    if (filterTargetStatusIds.length > 0) params.append("targetStatusIds", filterTargetStatusIds.join(","))
+    if (filterQualStatusIds.length > 0) params.append("qualStatusIds", filterQualStatusIds.join(","))
     
     try {
       const res = await fetch(`/api/leads?${params.toString()}`)
@@ -126,6 +144,28 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                  </div>
               </TableHead>
               <TableHead className="text-xs">ClientID</TableHead>
+              <TableHead className="text-xs">
+                 <div className="flex items-center gap-1">
+                    Статус
+                    <FilterPopover 
+                       options={targetStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
+                       selected={filterTargetStatusIds} 
+                       onChange={setFilterTargetStatusIds} 
+                       useObjects
+                    />
+                 </div>
+              </TableHead>
+              <TableHead className="text-xs">
+                 <div className="flex items-center gap-1">
+                    Квал
+                    <FilterPopover 
+                       options={qualStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
+                       selected={filterQualStatusIds} 
+                       onChange={setFilterQualStatusIds} 
+                       useObjects
+                    />
+                 </div>
+              </TableHead>
               <TableHead className="text-right text-xs">Сумма</TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
@@ -163,6 +203,30 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                 <TableCell className="text-[10px] font-mono text-muted-foreground">
                   {item.lead.metrikaClientId || '—'}
                 </TableCell>
+                <TableCell>
+                   <div className="flex flex-wrap gap-1">
+                      {item.achievements?.map((a: any) => {
+                         const ts = targetStatuses.find(s => s.id === a.targetStatusId);
+                         return ts ? (
+                            <Badge key={ts.id} style={{ backgroundColor: ts.color + '20', color: ts.color, borderColor: ts.color + '40' }} variant="outline" className="text-[9px] px-1 py-0">
+                               {ts.label}
+                            </Badge>
+                         ) : null;
+                      })}
+                   </div>
+                </TableCell>
+                <TableCell>
+                   <div className="flex flex-wrap gap-1">
+                      {item.achievements?.map((a: any) => {
+                         const qs = qualStatuses.find(s => s.id === a.qualificationStatusId);
+                         return qs ? (
+                            <Badge key={qs.id} style={{ backgroundColor: qs.color + '20', color: qs.color, borderColor: qs.color + '40' }} variant="outline" className="text-[9px] px-1 py-0">
+                               {qs.label}
+                            </Badge>
+                         ) : null;
+                      })}
+                   </div>
+                </TableCell>
                 <TableCell className="text-right text-xs font-bold">
                   {item.achievements?.reduce((acc: number, a: any) => acc + parseFloat(a.saleAmount || "0"), 0).toLocaleString()} ₽
                 </TableCell>
@@ -196,7 +260,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   )
 }
 
-function FilterPopover({ options, selected, onChange }: { options: string[], selected: string[], onChange: (val: string[]) => void }) {
+function FilterPopover({ options, selected, onChange, useObjects = false }: { options: any[], selected: string[], onChange: (val: string[]) => void, useObjects?: boolean }) {
    return (
       <Popover>
          <PopoverTrigger asChild>
@@ -208,19 +272,23 @@ function FilterPopover({ options, selected, onChange }: { options: string[], sel
             <div className="space-y-2">
                <p className="text-xs font-medium px-1">Фильтр</p>
                <div className="max-h-48 overflow-y-auto space-y-1">
-                  {options.map(opt => (
-                     <div key={opt} className="flex items-center space-x-2 px-1 py-1 hover:bg-muted rounded">
-                        <Checkbox 
-                           id={opt} 
-                           checked={selected.includes(opt)} 
-                           onCheckedChange={(checked) => {
-                              if (checked) onChange([...selected, opt])
-                              else onChange(selected.filter(s => s !== opt))
-                           }}
-                        />
-                        <label htmlFor={opt} className="text-xs cursor-pointer truncate flex-1">{opt}</label>
-                     </div>
-                  ))}
+                  {options.map(opt => {
+                     const label = useObjects ? opt.label : opt;
+                     const value = useObjects ? opt.value : opt;
+                     return (
+                        <div key={value} className="flex items-center space-x-2 px-1 py-1 hover:bg-muted rounded">
+                           <Checkbox 
+                              id={value} 
+                              checked={selected.includes(value)} 
+                              onCheckedChange={(checked) => {
+                                 if (checked) onChange([...selected, value])
+                                 else onChange(selected.filter(s => s !== value))
+                              }}
+                           />
+                           <label htmlFor={value} className="text-xs cursor-pointer truncate flex-1">{label}</label>
+                        </div>
+                     )
+                  })}
                </div>
                {selected.length > 0 && (
                   <Button variant="ghost" size="sm" className="w-full h-7 text-[10px]" onClick={() => onChange([])}>
