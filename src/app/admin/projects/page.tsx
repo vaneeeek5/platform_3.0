@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, Settings } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -102,6 +102,11 @@ export default function ProjectsPage() {
                       <TableCell className="text-muted-foreground">{project.slug}</TableCell>
                       <TableCell>{new Date(project.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right space-x-2">
+                        <Button variant="ghost" size="icon" asChild>
+                          <Link href={`/admin/projects/${project.id}/settings`}>
+                            <Settings className="h-4 w-4" />
+                          </Link>
+                        </Button>
                         <Button variant="ghost" size="icon" asChild>
                           <Link href={`/admin/projects/${project.id}`}>
                             <Edit className="h-4 w-4" />

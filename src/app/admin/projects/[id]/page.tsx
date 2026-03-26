@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -115,8 +116,10 @@ export default function EditProjectPage({ params }: { params: { id: string } }) 
             <p className="text-sm text-muted-foreground mb-4">
                Project-specific settings (Yandex Direct, CRM, etc.) will be available here in the next update.
             </p>
-            <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground">
-               Go to Project Settings
+            <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground" asChild>
+               <Link href={`/admin/projects/${params.id}/settings`}>
+                  Go to Project Settings
+               </Link>
             </Button>
          </CardContent>
       </Card>
