@@ -141,6 +141,58 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
 
             totalLeadsCount++;
 
+export async function syncMetrikaVisits(projectId: number, dateFromStr?: string, dateToStr?: string) {
+  const project = await db.query.projects.findFirst({
+    where: (projects, { eq }) => eq(projects.id, projectId),
+  });
+
+  if (!project || !project.yandexToken || !project.yandexCounterId) return { error: "Missing credentials" };
+
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  let dateTo = dateToStr ? new Date(dateToStr).toISOString().split('T')[0] : yesterday;
+  let dateFrom = dateFromStr ? new Date(dateFromStr).toISOString().split('T')[0] : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  
+  const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
+
+  const url = `https://api-metrika.yandex.net/stat/v1/data?ids=${project.yandexCounterId}&metrics=ym:s:visits&dimensions=ym:s:date,ym:s:lastUTMCampaign&date1=${dateFrom}&date2=${dateTo}&accuracy=full&limit=1000`;
+  
+  const response = await fetch(url, {
+    headers: { 'Authorization': `OAuth ${project.yandexToken}` }
+  });
+
+  if (!response.ok) throw new Error(`Metrika API Error: ${await response.text()}`);
+
+  const data = await response.json();
+  const rows = data.data || [];
+
+  for (const row of rows) {
+    const [dateDim, campaignDim] = row.dimensions;
+    const date = dateDim.name;
+    let utmCampaign = campaignDim.name || "";
+    const visits = row.metrics[0];
+
+    // Apply Mapping
+    const mapping = projectMappings.find(m => m.utmValue === utmCampaign);
+    if (mapping) {
+        utmCampaign = mapping.displayName;
+    }
+
+    // We store this in the expenses table (ignoring clicks/impressions/cost from Metrika as Direct is source of truth for these)
+    await db.insert(expenses).values({
+        projectId,
+        date: new Date(date),
+        utmCampaign,
+        visits: visits || 0,
+        cost: "0",
+    }).onConflictDoUpdate({
+        target: [expenses.projectId, expenses.date, expenses.campaignId], // Use null campaignId for Metrika-only rows if needed, or specific ID
+        set: { visits: visits || 0 }
+    });
+  }
+
+  return { success: true, count: rows.length };
+}
+
             // 2. Insert Goal Achievements
             for (const gId of trackedAchieved) {
                 const tg = projectTrackedGoals.find(g => g.goalId.toString() === gId.toString());
