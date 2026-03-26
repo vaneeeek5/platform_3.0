@@ -36,14 +36,19 @@ export async function GET(request: Request) {
     const results = await db.select({
       lead: leads,
       project: projects,
-      achievements: sql`json_agg(json_build_object(
-        'id', ${goalAchievements.id},
-        'goalName', ${goalAchievements.goalName},
-        'goalId', ${goalAchievements.goalId},
-        'saleAmount', ${goalAchievements.saleAmount},
-        'targetStatusId', ${goalAchievements.targetStatusId},
-        'qualificationStatusId', ${goalAchievements.qualificationStatusId}
-      ))`.as("achievements")
+      achievements: sql`COALESCE(
+        json_agg(
+          json_build_object(
+            'id', ${goalAchievements.id},
+            'goalName', ${goalAchievements.goalName},
+            'goalId', ${goalAchievements.goalId},
+            'saleAmount', ${goalAchievements.saleAmount},
+            'targetStatusId', ${goalAchievements.targetStatusId},
+            'qualificationStatusId', ${goalAchievements.qualificationStatusId}
+          )
+        ) FILTER (WHERE ${goalAchievements.id} IS NOT NULL),
+        '[]'
+      )`.as("achievements")
     })
     .from(leads)
     .innerJoin(projects, eq(leads.projectId, projects.id))

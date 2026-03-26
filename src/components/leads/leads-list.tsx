@@ -30,8 +30,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [query, setQuery] = useState("")
   const [selectedLead, setSelectedLead] = useState<any>(null)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     if (projectId) fetchLeads()
   }, [projectId])
 
@@ -112,10 +114,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
             ) : leads.map((item) => (
               <TableRow key={item.lead.id}>
                 <TableCell className="text-[10px] whitespace-nowrap">
-                  {format(new Date(item.lead.date), "dd.MM.yyyy HH:mm", { locale: ru })}
+                  {mounted && item.lead?.date ? format(new Date(item.lead.date), "dd.MM.yyyy HH:mm", { locale: ru }) : '—'}
                 </TableCell>
                 {showProjectColumn && (
-                   <TableCell className="text-xs">{item.project.name}</TableCell>
+                   <TableCell className="text-xs">{item.project?.name}</TableCell>
                 )}
                 <TableCell>
                   <div className="flex flex-col">
