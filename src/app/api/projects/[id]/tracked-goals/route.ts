@@ -36,7 +36,7 @@ export async function POST(
 
   // Filter out duplicates in the input array to avoid unique constraint violations
   const uniqueGoals = goals.reduce((acc: any[], current: any) => {
-    const x = acc.find(item => item.goalId === current.goalId);
+    const x = acc.find(item => item.goalId.toString() === current.goalId.toString());
     if (!x) {
       return acc.concat([current]);
     } else {
@@ -55,6 +55,7 @@ export async function POST(
             projectId,
             goalId: g.goalId.toString(),
             goalName: g.goalName,
+            displayName: g.displayName || g.goalName,
             targetStatusId: g.targetStatusId || null,
             qualificationStatusId: g.qualificationStatusId || null,
             isActive: true,

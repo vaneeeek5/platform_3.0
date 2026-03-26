@@ -19,6 +19,7 @@ interface Goal {
 interface TrackedGoal {
   goalId: string;
   goalName: string;
+  displayName: string;
   targetStatusId?: number | null;
   qualificationStatusId?: number | null;
 }
@@ -76,7 +77,13 @@ export function YandexSettings({ projectId }: { projectId: number }) {
         }
       }
       if (Array.isArray(goals)) {
-        setTrackedGoalsList(goals);
+        setTrackedGoalsList(goals.map((g: any) => ({
+           goalId: g.goalId,
+           goalName: g.goalName,
+           displayName: g.displayName || g.goalName,
+           targetStatusId: g.targetStatusId,
+           qualificationStatusId: g.qualificationStatusId
+        })));
       }
       if (Array.isArray(targets)) setTargetStatuses(targets);
       if (Array.isArray(quals)) setQualStatuses(quals);
@@ -94,9 +101,10 @@ export function YandexSettings({ projectId }: { projectId: number }) {
       });
 
       if (res.ok) {
-        toast.success("Список отслеживаемых целей и маппинг обновлены");
+        toast.success("Список целей и маппинг сохранены");
       } else {
-        toast.error("Не удалось сохранить цели");
+        const data = await res.json();
+        toast.error(data.error || "Не удалось сохранить цели");
       }
     } catch (e) {
       toast.error("Произошла ошибка");
@@ -107,23 +115,26 @@ export function YandexSettings({ projectId }: { projectId: number }) {
 
   const toggleGoal = (goal: Goal, checked: boolean) => {
      if (checked) {
-        setTrackedGoalsList([...trackedGoalsList, { 
-           goalId: goal.id, 
-           goalName: goal.name,
-           targetStatusId: null,
-           qualificationStatusId: null
-        }]);
+        if (!trackedGoalsList.find(g => g.goalId === goal.id)) {
+           setTrackedGoalsList([...trackedGoalsList, { 
+              goalId: goal.id, 
+              goalName: goal.name,
+              displayName: goal.name,
+              targetStatusId: null,
+              qualificationStatusId: null
+           }]);
+        }
      } else {
         setTrackedGoalsList(trackedGoalsList.filter(g => g.goalId !== goal.id));
      }
   };
 
-  const updateGoalMapping = (goalId: string, type: 'target' | 'qual', statusId: string) => {
+  const updateGoalField = (goalId: string, field: keyof TrackedGoal, value: any) => {
      setTrackedGoalsList(trackedGoalsList.map(g => {
         if (g.goalId === goalId) {
            return {
               ...g,
-              [type === 'target' ? 'targetStatusId' : 'qualificationStatusId']: statusId === "none" ? null : parseInt(statusId)
+              [field]: value === "none" ? null : value
            };
         }
         return g;
@@ -204,7 +215,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
           <CardHeader>
             <CardTitle>Цели Метрики и Маппинг</CardTitle>
             <CardDescription>
-              Выберите цели-лиды и соответствующие им статусы в платформе.
+              Выберите цели-лиды и настройте их отображение в платформе.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
@@ -217,8 +228,8 @@ export function YandexSettings({ projectId }: { projectId: number }) {
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-[50px] pl-6"></TableHead>
-                    <TableHead>Название / ID</TableHead>
-                    <TableHead>Тип</TableHead>
+                    <TableHead>Ориг. название / ID</TableHead>
+                    <TableHead>Название в платформе</TableHead>
                     <TableHead>Целевой статус</TableHead>
                     <TableHead>Квал. статус</TableHead>
                   </TableRow>
@@ -238,20 +249,26 @@ export function YandexSettings({ projectId }: { projectId: number }) {
                         </TableCell>
                         <TableCell>
                            <div className="flex flex-col">
-                              <span className="font-medium text-sm">{goal.name}</span>
-                              <span className="font-mono text-[10px] text-muted-foreground">{goal.id}</span>
+                              <span className="text-xs text-muted-foreground line-clamp-1">{goal.name}</span>
+                              <span className="font-mono text-[10px] text-muted-foreground/50">{goal.id}</span>
                            </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="text-[10px]">{goal.type}</Badge>
+                           <Input 
+                              disabled={!tracked}
+                              value={tracked?.displayName || ""}
+                              onChange={(e) => updateGoalField(goal.id, 'displayName', e.target.value)}
+                              className="h-8 text-xs min-w-[150px]"
+                              placeholder="Напр. Лид: Заявка"
+                           />
                         </TableCell>
                         <TableCell>
                            <Select 
                               disabled={!tracked} 
                               value={tracked?.targetStatusId?.toString() || "none"}
-                              onValueChange={(val) => updateGoalMapping(goal.id, 'target', val)}
+                              onValueChange={(val) => updateGoalField(goal.id, 'targetStatusId', val === "none" ? null : parseInt(val))}
                            >
-                              <SelectTrigger className="h-8 text-xs w-[140px]">
+                              <SelectTrigger className="h-8 text-xs w-[130px]">
                                  <SelectValue placeholder="Нет" />
                               </SelectTrigger>
                               <SelectContent>
@@ -266,9 +283,9 @@ export function YandexSettings({ projectId }: { projectId: number }) {
                            <Select 
                               disabled={!tracked} 
                               value={tracked?.qualificationStatusId?.toString() || "none"}
-                              onValueChange={(val) => updateGoalMapping(goal.id, 'qual', val)}
+                              onValueChange={(val) => updateGoalField(goal.id, 'qualificationStatusId', val === "none" ? null : parseInt(val))}
                            >
-                              <SelectTrigger className="h-8 text-xs w-[140px]">
+                              <SelectTrigger className="h-8 text-xs w-[130px]">
                                  <SelectValue placeholder="Нет" />
                               </SelectTrigger>
                               <SelectContent>
