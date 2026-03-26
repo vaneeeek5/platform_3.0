@@ -97,21 +97,21 @@ export function YandexSettings({ projectId }: { projectId: number }) {
 
   const toggleGoal = (goal: Goal, checked: boolean) => {
      if (checked) {
-        if (!trackedGoalsList.find(g => g.goalId === goal.id)) {
+        if (!trackedGoalsList.find(g => g.goalId.toString() === goal.id.toString())) {
            setTrackedGoalsList([...trackedGoalsList, { 
-              goalId: goal.id, 
+              goalId: goal.id.toString(), 
               goalName: goal.name,
               displayName: goal.name
            }]);
         }
      } else {
-        setTrackedGoalsList(trackedGoalsList.filter(g => g.goalId !== goal.id));
+        setTrackedGoalsList(trackedGoalsList.filter(g => g.goalId.toString() !== goal.id.toString()));
      }
   };
 
   const updateGoalDisplayName = (goalId: string, value: string) => {
      setTrackedGoalsList(trackedGoalsList.map(g => {
-        if (g.goalId === goalId) {
+        if (g.goalId.toString() === goalId.toString()) {
            return { ...g, displayName: value };
         }
         return g;
@@ -213,7 +213,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
                 </TableHeader>
                 <TableBody>
                   {availableGoals.map((goal) => {
-                    const tracked = trackedGoalsList.find(g => g.goalId === goal.id);
+                    const tracked = trackedGoalsList.find(g => g.goalId.toString() === goal.id.toString());
                     return (
                       <TableRow key={goal.id} className={tracked ? "bg-primary/5" : ""}>
                         <TableCell className="pl-6">
@@ -229,7 +229,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
                            <Input 
                               disabled={!tracked}
                               value={tracked?.displayName || ""}
-                              onChange={(e) => updateGoalDisplayName(goal.id, e.target.value)}
+                              onChange={(e) => updateGoalDisplayName(goal.id.toString(), e.target.value)}
                               className="h-8 text-xs max-w-[200px]"
                               placeholder="Название для отчетов"
                            />
