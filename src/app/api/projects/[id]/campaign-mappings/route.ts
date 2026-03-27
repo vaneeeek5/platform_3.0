@@ -14,8 +14,24 @@ export async function GET(
   const { id } = await params;
   const projectId = parseInt(id);
 
-  const results = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
-  return NextResponse.json(results);
+  try {
+    // Try to select all including new isHidden column
+    const results = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
+    return NextResponse.json(results);
+  } catch (e) {
+    // FALLBACK: If DB is not migrated yet, select only old columns
+    console.warn("[CampaignMappings] Column is_hidden likely missing, falling back...");
+    const results = await db.select({
+      id: campaignMappings.id,
+      projectId: campaignMappings.projectId,
+      utmValue: campaignMappings.utmValue,
+      directValue: campaignMappings.directValue,
+      displayName: campaignMappings.displayName
+    })
+    .from(campaignMappings)
+    .where(eq(campaignMappings.projectId, projectId));
+    return NextResponse.json(results);
+  }
 }
 
 export async function POST(
@@ -27,14 +43,13 @@ export async function POST(
 
   const { id } = await params;
   const projectId = parseInt(id);
-  const { mappings } = await request.json(); // Array of { utmValue, directValue, displayName }
+  const { mappings } = await request.json(); 
 
   try {
     await db.transaction(async (tx) => {
       await tx.delete(campaignMappings).where(eq(campaignMappings.projectId, projectId));
       
       if (mappings.length > 0) {
-        // Filter valid mappings (must have at least one of utmValue/directValue AND a displayName)
         const validMappings = mappings
           .filter((m: any) => (m.utmValue || m.directValue) && m.displayName)
           .map((m: any) => ({
@@ -42,6 +57,7 @@ export async function POST(
             utmValue: m.utmValue || null,
             directValue: m.directValue || null,
             displayName: m.displayName,
+            isHidden: m.isHidden || false,
           }));
 
         if (validMappings.length > 0) {
@@ -53,6 +69,6 @@ export async function POST(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to update campaign mappings:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error. Note: Schema migration might be needed." }, { status: 500 });
   }
 }

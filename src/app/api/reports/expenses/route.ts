@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { expenses, leads, goalAchievements, campaignMappings } from "@/db/schema";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql, notInArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -24,6 +24,17 @@ export async function GET(request: Request) {
     const filters = [eq(expenses.projectId, projectId)];
     if (dateFrom) filters.push(gte(expenses.date, new Date(dateFrom)));
     if (dateTo) filters.push(lte(expenses.date, new Date(dateTo)));
+
+    // Defensive fetch of mappings to check for hidden campaigns
+    try {
+      const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
+      const hiddenCampaignNames = projectMappings.filter((m: any) => m.isHidden).map((m: any) => m.displayName);
+      if (hiddenCampaignNames.length > 0) {
+        filters.push(notInArray(expenses.campaignName, hiddenCampaignNames));
+      }
+    } catch (e) {
+      console.warn("[ExpensesReport] Skipping isHidden filter as column likely doesn't exist yet");
+    }
 
     if (raw) {
       // Return raw unique terms for mapping UI

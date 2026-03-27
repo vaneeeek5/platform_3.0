@@ -183,6 +183,7 @@ export const campaignMappings = pgTable(
     utmValue: text("utm_value"),
     directValue: text("direct_value"),
     displayName: text("display_name").notNull(),
+    isHidden: boolean("is_hidden").default(false),
   }
 );
 
