@@ -71,13 +71,17 @@ export async function GET(request: Request) {
     // Step 1: Process Expense Data and Resolve Names
     expenseData.forEach(exp => {
       // Find mapping: check UTM first, then Direct Order
-      // We use a more robust check that handles empty strings
       const mapping = projectMappings.find(m => {
-        if (m.utmValue && m.utmValue === exp.utmCampaign) return true;
-        if (m.directValue && m.directValue === exp.directOrder) return true;
-        // Special case: if both are empty/null and mapping is also "empty", it's a match for Unknown
-        if (!exp.utmCampaign || exp.utmCampaign === "unknown") {
-          if (!m.utmValue && !m.directValue) return true;
+        const utmMatch = m.utmValue && m.utmValue === exp.utmCampaign;
+        const directMatch = m.directValue && m.directValue === exp.directOrder;
+        if (utmMatch || directMatch) return true;
+        
+        // Special case: if DB data is "unknown"/empty, match it if mapping explicitly says "unknown" OR is empty
+        const isDbUnknown = !exp.utmCampaign || exp.utmCampaign === "unknown" || !exp.directOrder || exp.directOrder === "unknown";
+        if (isDbUnknown) {
+           const mapUtmUnknown = !m.utmValue || m.utmValue.toLowerCase() === "unknown";
+           const mapDirectUnknown = !m.directValue || m.directValue.toLowerCase() === "unknown";
+           if (mapUtmUnknown || mapDirectUnknown) return true;
         }
         return false;
       });
@@ -113,8 +117,10 @@ export async function GET(request: Request) {
     leadData.forEach(lead => {
       const mapping = projectMappings.find(m => {
         if (m.utmValue && m.utmValue === lead.utmCampaign) return true;
-        if (!lead.utmCampaign || lead.utmCampaign === "unknown") {
-           if (!m.utmValue && !m.directValue) return true;
+        const isDbUnknown = !lead.utmCampaign || lead.utmCampaign === "unknown";
+        if (isDbUnknown) {
+           const mapUtmUnknown = !m.utmValue || m.utmValue.toLowerCase() === "unknown";
+           if (mapUtmUnknown) return true;
         }
         return false;
       });
