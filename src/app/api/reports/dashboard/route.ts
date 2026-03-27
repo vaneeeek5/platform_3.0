@@ -73,7 +73,7 @@ export async function GET(request: Request) {
       .from(leads)
       .where(and(...filters))
       .groupBy(leads.utmSource)
-      .orderBy(desc(sql`agg_count`))
+      .orderBy(desc(sql`count(${leads.id})`))
       .limit(10);
 
     // 4. Top Campaigns (by Lead Count)
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
       .from(leads)
       .where(and(...filters))
       .groupBy(leads.utmCampaign)
-      .orderBy(desc(sql`lead_count`))
+      .orderBy(desc(sql`count(${leads.id})`))
       .limit(5);
 
     // 5. Merge Trends for Chart
