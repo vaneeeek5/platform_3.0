@@ -25,19 +25,12 @@ export async function GET(request: Request) {
     if (dateFrom) filters.push(gte(expenses.date, new Date(dateFrom)));
     if (dateTo) filters.push(lte(expenses.date, new Date(dateTo)));
 
-    // Defensive fetch of mappings to check for hidden campaigns
-    try {
-      const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
-      const hiddenCampaignNames = projectMappings.filter((m: any) => m.isHidden).map((m: any) => m.displayName);
-      if (hiddenCampaignNames.length > 0) {
-        filters.push(notInArray(expenses.campaignName, hiddenCampaignNames));
-      }
-    } catch (e) {
-      console.warn("[ExpensesReport] Skipping isHidden filter as column likely doesn't exist yet");
-    }
+    // Fetch mappings once to resolve names in real-time
+    const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
+    const hiddenDisplayNames = new Set(projectMappings.filter(m => m.isHidden).map(m => m.displayName));
 
     if (raw) {
-      // Return raw unique terms for mapping UI
+      // Return raw unique terms for mapping UI (still needs raw data)
       const rawExpenseData = await db
         .select({
           utmCampaign: expenses.utmCampaign,
@@ -50,9 +43,11 @@ export async function GET(request: Request) {
       return NextResponse.json(rawExpenseData);
     }
 
-    // 1. Aggregate Expenses and Visits by mapped CampaignName
+    // Aggregated report
     const expenseData = await db
       .select({
+        utmCampaign: expenses.utmCampaign,
+        directOrder: expenses.directOrder,
         campaignName: expenses.campaignName,
         totalCost: sql<number>`sum(${expenses.cost})`.mapWith(Number),
         totalVisits: sql<number>`sum(${expenses.visits})`.mapWith(Number),
@@ -60,49 +55,71 @@ export async function GET(request: Request) {
       })
       .from(expenses)
       .where(and(...filters))
-      .groupBy(expenses.campaignName);
+      .groupBy(expenses.utmCampaign, expenses.directOrder, expenses.campaignName);
 
-    // 2. Aggregate Leads
-    const leadFilters = [eq(leads.projectId, projectId)];
-    if (dateFrom) leadFilters.push(gte(leads.date, new Date(dateFrom)));
-    if (dateTo) leadFilters.push(lte(leads.date, new Date(dateTo)));
-
-    const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
-
-    const leadDataRaw = await db
+    const leadData = await db
       .select({
-        id: leads.id,
         utmCampaign: leads.utmCampaign,
+        count: sql<number>`count(${leads.id})`.mapWith(Number),
       })
       .from(leads)
-      .where(and(...leadFilters));
+      .where(and(eq(leads.projectId, projectId), dateFrom ? gte(leads.date, new Date(dateFrom)) : undefined, dateTo ? lte(leads.date, new Date(dateTo)) : undefined))
+      .groupBy(leads.utmCampaign);
 
-    const leadCountsByCampaign = new Map<string, number>();
-    for (const lead of leadDataRaw) {
-        let mappedName = lead.utmCampaign || "Unknown";
-        const mapping = projectMappings.find(m => m.utmValue === lead.utmCampaign);
-        if (mapping) mappedName = mapping.displayName;
-        
-        leadCountsByCampaign.set(mappedName, (leadCountsByCampaign.get(mappedName) || 0) + 1);
-    }
-
-    // 3. Merge Data
     const reportData = new Map<string, any>();
-    
+
+    // Step 1: Process Expense Data and Resolve Names
     expenseData.forEach(exp => {
-      const mappedName = exp.campaignName || "Unknown";
-      reportData.set(mappedName, { ...exp, campaignName: mappedName, leadCount: 0 });
+      const mapping = projectMappings.find(m => 
+        (m.utmValue && m.utmValue === exp.utmCampaign) || 
+        (m.directValue && m.directValue === exp.directOrder)
+      );
+      
+      const displayName = mapping?.displayName || exp.campaignName || exp.utmCampaign || "Unknown";
+      
+      // SKIP HIDDEN ROWS
+      if (mapping?.isHidden || (displayName !== "Unknown" && hiddenDisplayNames.has(displayName))) {
+        return;
+      }
+
+      if (reportData.has(displayName)) {
+        const existing = reportData.get(displayName);
+        existing.totalCost += exp.totalCost;
+        existing.totalVisits += exp.totalVisits;
+        existing.totalClicks += exp.totalClicks;
+      } else {
+        reportData.set(displayName, {
+          campaignName: displayName,
+          totalCost: exp.totalCost,
+          totalVisits: exp.totalVisits,
+          totalClicks: exp.totalClicks,
+          leadCount: 0,
+        });
+      }
     });
 
-    leadCountsByCampaign.forEach((count, mappedName) => {
-      if (reportData.has(mappedName)) {
-          reportData.get(mappedName).leadCount = count;
+    // Step 2: Map Lead Data to Resolved Names
+    leadData.forEach(lead => {
+      const mapping = projectMappings.find(m => m.utmValue === lead.utmCampaign);
+      const displayName = mapping?.displayName || lead.utmCampaign || "Unknown";
+      
+      // SKIP HIDDEN ROWS (leads should follow campaign visibility)
+      if (mapping?.isHidden || (displayName !== "Unknown" && hiddenDisplayNames.has(displayName))) {
+        return;
+      }
+
+      const row = reportData.get(displayName);
+      if (row) {
+        row.leadCount += lead.count;
       } else {
-          reportData.set(mappedName, {
-              campaignName: mappedName,
-              totalCost: 0, totalVisits: 0, totalClicks: 0,
-              leadCount: count
-          });
+        // If we have leads but no expenses for this campaign
+        reportData.set(displayName, {
+          campaignName: displayName,
+          totalCost: 0,
+          totalVisits: 0,
+          totalClicks: 0,
+          leadCount: lead.count,
+        });
       }
     });
 

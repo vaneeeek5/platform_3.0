@@ -23,6 +23,14 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { subDays, startOfDay, endOfDay } from "date-fns"
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select"
+
 
 interface LeadsListProps {
   projectId: number;
@@ -129,6 +137,28 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
       setLoading(false);
     }
   };
+
+  const updateLeadStatus = async (achievementId: number, field: string, value: any) => {
+    try {
+      const res = await fetch("/api/leads", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: achievementId,
+          [field]: value === "none" ? null : parseInt(value)
+        })
+      });
+      if (res.ok) {
+        toast.success("Статус обновлен");
+        fetchLeads();
+      } else {
+        toast.error("Ошибка при обновлении статуса");
+      }
+    } catch (e) {
+      toast.error("Произошла ошибка");
+    }
+  };
+
 
   return (
     <div className="space-y-4">
@@ -268,29 +298,59 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                   {item.lead.metrikaClientId || '—'}
                 </TableCell>
                 <TableCell>
-                   <div className="flex flex-wrap gap-1">
-                      {item.achievements?.map((a: any) => {
-                         const ts = targetStatuses.find(s => s.id === a.targetStatusId);
-                         return ts ? (
-                            <Badge key={ts.id} style={{ backgroundColor: ts.color + '20', color: ts.color, borderColor: ts.color + '40' }} variant="outline" className="text-[9px] px-1 py-0">
-                               {ts.label}
-                            </Badge>
-                         ) : null;
-                      })}
+                   <div className="flex flex-col gap-1">
+                      {item.achievements?.map((a: any) => (
+                        <Select 
+                          key={a.id}
+                          value={a.targetStatusId?.toString() || "none"} 
+                          onValueChange={(val) => updateLeadStatus(a.id, 'targetStatusId', val)}
+                        >
+                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px]">
+                            <SelectValue placeholder="Статус" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none" className="text-[10px]">Не выбран</SelectItem>
+                            {targetStatuses.map(s => (
+                              <SelectItem key={s.id} value={s.id.toString()} className="text-[10px]">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                  {s.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ))}
                    </div>
                 </TableCell>
+
                 <TableCell>
-                   <div className="flex flex-wrap gap-1">
-                      {item.achievements?.map((a: any) => {
-                         const qs = qualStatuses.find(s => s.id === a.qualificationStatusId);
-                         return qs ? (
-                            <Badge key={qs.id} style={{ backgroundColor: qs.color + '20', color: qs.color, borderColor: qs.color + '40' }} variant="outline" className="text-[9px] px-1 py-0">
-                               {qs.label}
-                            </Badge>
-                         ) : null;
-                      })}
+                   <div className="flex flex-col gap-1">
+                      {item.achievements?.map((a: any) => (
+                        <Select 
+                          key={a.id}
+                          value={a.qualificationStatusId?.toString() || "none"} 
+                          onValueChange={(val) => updateLeadStatus(a.id, 'qualificationStatusId', val)}
+                        >
+                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px]">
+                            <SelectValue placeholder="Квал" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none" className="text-[10px]">Не выбран</SelectItem>
+                            {qualStatuses.map(s => (
+                              <SelectItem key={s.id} value={s.id.toString()} className="text-[10px]">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                  {s.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ))}
                    </div>
                 </TableCell>
+
                 <TableCell className="text-right text-xs font-bold">
                   {item.achievements?.reduce((acc: number, a: any) => acc + parseFloat(a.saleAmount || "0"), 0).toLocaleString()} ₽
                 </TableCell>
