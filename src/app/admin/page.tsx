@@ -9,7 +9,10 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   Filter,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Briefcase,
+  ShoppingBag,
+  RussianRuble
 } from "lucide-react"
 import { 
   Card, 
@@ -108,71 +111,97 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Всего Лидов</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{data?.summary?.leads.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">за выбранный период</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Расходы (₽)</CardTitle>
-            <DollarSign className="h-4 w-4 text-amber-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{Math.round(data?.summary?.cost || 0).toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">рекламный бюджет</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Средний CPL</CardTitle>
-            <Target className="h-4 w-4 text-emerald-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{Math.round(data?.summary?.cpl || 0).toLocaleString()} ₽</div>
-            <p className="text-xs text-muted-foreground mt-1">цена за один лид</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ROMI</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{Math.round(data?.summary?.romi || 0)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">окупаемость маркетинга</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+         <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">Всего лидов</CardTitle>
+             <Briefcase className="h-4 w-4 text-slate-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{data?.summary?.leads || 0}</div>
+             <p className="text-xs text-muted-foreground mt-1">за выбранный период</p>
+           </CardContent>
+         </Card>
+         <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">Целевые</CardTitle>
+             <Target className="h-4 w-4 text-emerald-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold text-emerald-600">{data?.summary?.targetLeads || 0}</div>
+             <p className="text-xs text-muted-foreground mt-1">целевых действий</p>
+           </CardContent>
+         </Card>
+         <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">Продажи</CardTitle>
+             <ShoppingBag className="h-4 w-4 text-amber-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold text-amber-600">{data?.summary?.sales || 0}</div>
+             <p className="text-xs text-muted-foreground mt-1">с чеком &gt; 0</p>
+           </CardContent>
+         </Card>
+         <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">CPL (Лид)</CardTitle>
+             <RussianRuble className="h-4 w-4 text-slate-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{Math.round(data?.summary?.cpl || 0).toLocaleString()} ₽</div>
+             <p className="text-xs text-muted-foreground mt-1">стоимость одного лида</p>
+           </CardContent>
+         </Card>
+         <Card className="bg-gradient-to-br from-white to-slate-50 border-none shadow-sm">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">ROMI</CardTitle>
+             <TrendingUp className="h-4 w-4 text-blue-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold text-blue-600">{Math.round(data?.summary?.romi || 0)}%</div>
+             <p className="text-xs text-muted-foreground mt-1">окупаемость</p>
+           </CardContent>
+         </Card>
       </div>
 
       <div className="grid gap-4 md:grid-cols-7">
-        {/* Custom Trends Chart (Tailwind based) */}
+        {/* Multi-Metric Trends Chart */}
         <Card className="md:col-span-4 border-none shadow-sm">
           <CardHeader>
             <CardTitle>Динамика лидов</CardTitle>
-            <CardDescription>Количество лидов по дням за период</CardDescription>
+            <CardDescription>Активность по дням: лиды, целевые, продажи</CardDescription>
           </CardHeader>
           <CardContent>
-             <div className="h-[200px] flex items-end gap-1 px-2 pt-6">
+             <div className="h-[200px] flex items-end gap-[2px] px-2 pt-6">
                 {data?.trends?.length > 0 ? (
                   data.trends.map((t: any, i: number) => {
-                    const maxLeads = Math.max(...data.trends.map((tr: any) => tr.leads), 1);
-                    const height = (t.leads / maxLeads) * 100;
+                    const maxVal = Math.max(...data.trends.map((tr: any) => tr.leads), 1);
+                    const hLeads = (t.leads / maxVal) * 100;
+                    const hTarget = (t.targetLeads / maxVal) * 100;
+                    const hSales = (t.sales / maxVal) * 100;
+
                     return (
-                      <div key={i} className="flex-1 flex flex-col items-center group relative">
-                        <div 
-                           className="w-full bg-primary/20 hover:bg-primary transition-colors rounded-t-sm"
-                           style={{ height: `${Math.max(height, 5)}%` }}
-                        />
-                        {/* Tooltip on hover */}
-                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-900 text-white text-[10px] p-2 rounded z-10 whitespace-nowrap">
-                            {t.label}: {t.leads} лидов
+                      <div key={i} className="flex-1 flex flex-col items-center group relative min-w-[4px]">
+                        <div className="w-full flex items-end justify-center gap-[1px] h-full">
+                           <div
+                              className="w-[30%] bg-blue-400/40 group-hover:bg-blue-500 transition-colors rounded-t-[1px]"
+                              style={{ height: `${Math.max(hLeads, 2)}%` }}
+                           />
+                           <div
+                              className="w-[30%] bg-emerald-400/60 group-hover:bg-emerald-600 transition-colors rounded-t-[1px]"
+                              style={{ height: `${Math.max(hTarget, 2)}%` }}
+                           />
+                           <div
+                              className="w-[30%] bg-amber-400 group-hover:bg-amber-600 transition-colors rounded-t-[1px]"
+                              style={{ height: `${Math.max(hSales, 2)}%` }}
+                           />
+                        </div>
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-900 text-white text-[10px] p-2 rounded z-20 shadow-xl whitespace-nowrap">
+                            <div className="font-bold border-b border-white/20 mb-1 pb-1">{t.period}</div>
+                            <div className="flex justify-between gap-4"><span>Всего:</span> <span>{t.leads}</span></div>
+                            <div className="flex justify-between gap-4 text-emerald-300"><span>Целевые:</span> <span>{t.targetLeads}</span></div>
+                            <div className="flex justify-between gap-4 text-amber-300"><span>Продажи:</span> <span>{t.sales}</span></div>
                         </div>
                       </div>
                     )
@@ -183,13 +212,30 @@ export default function DashboardPage() {
                   </div>
                 )}
              </div>
-             <div className="flex justify-between text-[10px] text-muted-foreground mt-2 border-t pt-2">
-                 {data?.trends?.length > 0 && (
-                   <>
-                    <span>{data.trends[0].label}</span>
-                    <span>{data.trends[data.trends.length - 1].label}</span>
-                   </>
-                 )}
+             {/* Legend & X-Axis */}
+             <div className="mt-4 pt-2 border-t flex items-center justify-between">
+                <div className="flex gap-4">
+                   <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                      <span className="text-[10px] text-muted-foreground">Все лиды</span>
+                   </div>
+                   <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-emerald-400 rounded-full" />
+                      <span className="text-[10px] text-muted-foreground">Целевые</span>
+                   </div>
+                   <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-amber-400 rounded-full" />
+                      <span className="text-[10px] text-muted-foreground">Продажи</span>
+                   </div>
+                </div>
+                <div className="flex gap-4 text-[10px] text-muted-foreground">
+                   {data?.trends?.length > 0 && (
+                     <>
+                      <span>{data.trends[0].period}</span>
+                      <span>{data.trends[data.trends.length - 1].period}</span>
+                     </>
+                   )}
+                </div>
              </div>
           </CardContent>
         </Card>

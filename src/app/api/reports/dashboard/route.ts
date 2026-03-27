@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { leads, expenses, goalAchievements, campaignMappings } from "@/db/schema";
+import { leads, expenses, goalAchievements, trackedGoals, campaignMappings } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { eachDayOfInterval, format, startOfDay } from "date-fns";
@@ -31,11 +31,15 @@ export async function GET(request: Request) {
       expFilters.push(eq(expenses.projectId, projectId));
     }
 
-    // 1. Fetch Mappings
-    const mappings = await db.select().from(campaignMappings).where(projectId ? eq(campaignMappings.projectId, projectId) : undefined);
+    // 1. Fetch Mappings and Tracked Goals
+    const [projectMappings, activeGoals] = await Promise.all([
+      db.select().from(campaignMappings).where(projectId ? eq(campaignMappings.projectId, projectId) : undefined),
+      db.select().from(trackedGoals).where(and(projectId ? eq(trackedGoals.projectId, projectId) : undefined, eq(trackedGoals.isActive, true)))
+    ]);
+    const targetGoalIds = new Set(activeGoals.map(g => g.goalId));
 
     const resolveName = (utmCampaign: string | null, directOrder: string | null) => {
-      const mapping = mappings.find(m => {
+      const mapping = projectMappings.find(m => {
         if (m.utmValue && m.utmValue === utmCampaign) return true;
         if (m.directValue && m.directValue === directOrder) return true;
         return false;
@@ -45,17 +49,28 @@ export async function GET(request: Request) {
 
     const isHidden = (utmCampaign: string | null, directOrder: string | null) => {
         const name = resolveName(utmCampaign, directOrder);
-        const mapping = mappings.find(m => m.displayName === name);
+        const mapping = projectMappings.find(m => m.displayName === name);
         return mapping?.isHidden;
     };
 
-    // 2. Fetch Data (Get raw timestamps and resolve in JS for maximum reliability)
+    // 2. Fetch Data
     const dbLeads = await db
       .select({
+        id: leads.id,
         date: leads.date,
         utmCampaign: leads.utmCampaign,
       })
       .from(leads)
+      .where(and(...filters));
+
+    const dbAchievements = await db
+      .select({
+        leadId: goalAchievements.leadId,
+        goalId: goalAchievements.goalId,
+        saleAmount: goalAchievements.saleAmount,
+      })
+      .from(goalAchievements)
+      .innerJoin(leads, eq(goalAchievements.leadId, leads.id))
       .where(and(...filters));
 
     const dbExpenses = await db
@@ -68,36 +83,65 @@ export async function GET(request: Request) {
       .from(expenses)
       .where(and(...expFilters));
 
-    const [rawRevenue] = await db
-      .select({
-        sum: sql<number>`sum(CAST(${goalAchievements.saleAmount} AS FLOAT))`.mapWith(Number),
-      })
-      .from(goalAchievements)
-      .innerJoin(leads, eq(goalAchievements.leadId, leads.id))
-      .where(and(...filters));
+    // Map lead to its achievements for faster lookup
+    const leadMap = new Map<number, { isTarget: boolean, isSale: boolean, revenue: number }>();
+    dbAchievements.forEach(a => {
+      const current = leadMap.get(a.leadId) || { isTarget: false, isSale: false, revenue: 0 };
+      if (targetGoalIds.has(a.goalId)) current.isTarget = true;
+      const amt = Number(a.saleAmount) || 0;
+      if (amt > 0) {
+        current.isSale = true;
+        current.revenue += amt;
+      }
+      leadMap.set(a.leadId, current);
+    });
 
     // 3. Process Trends
     const days = eachDayOfInterval({ start: filterStart, end: filterEnd });
     const trendMap = new Map();
     days.forEach(day => {
       const key = format(day, 'yyyy-MM-dd');
-      trendMap.set(key, { date: key, label: format(day, 'dd.MM'), leads: 0, cost: 0 });
+      trendMap.set(key, { 
+        period: format(day, 'dd.MM'), // As in the reference
+        leads: 0, 
+        targetLeads: 0, 
+        sales: 0,
+        cost: 0 
+      });
     });
 
     let totalLeadsCount = 0;
+    let totalTargetCount = 0;
+    let totalSalesCount = 0;
+    let totalRevenueSum = 0;
     let totalCostSum = 0;
-    const campaignStats = new Map<string, { leads: number, cost: number }>();
+
+    const campaignStats = new Map<string, { leads: number, target: number, sales: number, cost: number, revenue: number }>();
 
     dbLeads.forEach(l => {
       if (isHidden(l.utmCampaign, null)) return;
+      
+      const lMeta = leadMap.get(l.id) || { isTarget: false, isSale: false, revenue: 0 };
+      
       totalLeadsCount++;
+      if (lMeta.isTarget) totalTargetCount++;
+      if (lMeta.isSale) totalSalesCount++;
+      totalRevenueSum += lMeta.revenue;
+
       const key = format(l.date, 'yyyy-MM-dd');
       const t = trendMap.get(key);
-      if (t) t.leads++;
+      if (t) {
+        t.leads++;
+        if (lMeta.isTarget) t.targetLeads++;
+        if (lMeta.isSale) t.sales++;
+      }
       
       const name = resolveName(l.utmCampaign, null);
-      const stat = campaignStats.get(name) || { leads: 0, cost: 0 };
+      const stat = campaignStats.get(name) || { leads: 0, target: 0, sales: 0, cost: 0, revenue: 0 };
       stat.leads++;
+      if (lMeta.isTarget) stat.target++;
+      if (lMeta.isSale) stat.sales++;
+      stat.revenue += lMeta.revenue;
       campaignStats.set(name, stat);
     });
 
@@ -105,28 +149,18 @@ export async function GET(request: Request) {
       if (isHidden(e.utmCampaign, e.directOrder)) return;
       const costNum = Number(e.cost) || 0;
       totalCostSum += costNum;
+      
       const key = format(e.date, 'yyyy-MM-dd');
       const t = trendMap.get(key);
       if (t) t.cost += costNum;
       
       const name = resolveName(e.utmCampaign, e.directOrder);
-      const stat = campaignStats.get(name) || { leads: 0, cost: 0 };
+      const stat = campaignStats.get(name) || { leads: 0, target: 0, sales: 0, cost: 0, revenue: 0 };
       stat.cost += costNum;
       campaignStats.set(name, stat);
     });
 
-    // 4. Sources
-    const rawSources = await db
-      .select({
-        source: leads.utmSource,
-        count: sql<number>`count(${leads.id})`.mapWith(Number),
-      })
-      .from(leads)
-      .where(and(...filters))
-      .groupBy(leads.utmSource)
-      .orderBy(desc(sql`count(${leads.id})`))
-      .limit(10);
-
+    // 4. Formatting
     const efficientCampaigns = Array.from(campaignStats.entries())
       .filter(([_, s]) => s.leads > 0)
       .map(([name, s]) => ({ name, leads: s.leads, cpl: s.cost / s.leads }))
@@ -138,13 +172,26 @@ export async function GET(request: Request) {
       .sort((a, b) => b.leads - a.leads)
       .slice(0, 5);
 
+    const rawSources = await db
+      .select({
+        source: leads.utmSource,
+        count: sql<number>`count(${leads.id})`.mapWith(Number),
+      })
+      .from(leads)
+      .where(and(...filters))
+      .groupBy(leads.utmSource)
+      .orderBy(desc(sql`count(${leads.id})`))
+      .limit(10);
+
     return NextResponse.json({
       summary: {
         leads: totalLeadsCount,
+        targetLeads: totalTargetCount,
+        sales: totalSalesCount,
         cost: totalCostSum,
-        revenue: rawRevenue?.sum || 0,
+        revenue: totalRevenueSum,
         cpl: totalLeadsCount > 0 ? (totalCostSum / totalLeadsCount) : 0,
-        romi: totalCostSum > 0 ? (((rawRevenue?.sum || 0) - totalCostSum) / totalCostSum) * 100 : 0
+        romi: totalCostSum > 0 ? ((totalRevenueSum - totalCostSum) / totalCostSum) * 100 : 0
       },
       trends: Array.from(trendMap.values()),
       sources: rawSources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
