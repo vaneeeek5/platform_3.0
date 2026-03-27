@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,7 @@ interface Mapping {
   utmValue: string
   directValue: string
   displayName: string
+  isHidden?: boolean
 }
 
 export function CampaignMappingSettings({ projectId }: { projectId: number }) {
@@ -84,7 +85,7 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
     setMappings([...mappings, { id: Date.now() * -1, utmValue: "", directValue: "", displayName: "" }])
   }
 
-  const updateMapping = (id: number, field: keyof Mapping, value: string) => {
+  const updateMapping = (id: number, field: keyof Mapping, value: string | boolean) => {
     setMappings(mappings.map(m => {
       if (m.id !== id) return m;
       
@@ -95,7 +96,7 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
         const match = existingUtms.find(c => c.utm === value);
         if (match && match.name && match.name !== value) {
           updated.displayName = match.name;
-        } else if (value) {
+        } else if (typeof value === 'string' && value) {
           updated.displayName = value;
         }
       }
@@ -105,7 +106,7 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
         const match = existingDirects.find(c => c.direct === value);
         if (match && match.name && match.name !== value) {
           updated.displayName = match.name;
-        } else if (value) {
+        } else if (typeof value === 'string' && value) {
           updated.displayName = value;
         }
       }
@@ -175,6 +176,7 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
               <TableHead className="w-[30%]">Метка в Метрике (UTM)</TableHead>
               <TableHead className="w-[30%]">Название в Директе</TableHead>
               <TableHead className="w-[30%]">Название на Платформе</TableHead>
+              <TableHead className="w-[10%] text-center">Скрыть</TableHead>
               <TableHead className="w-[10%]"></TableHead>
             </TableRow>
           </TableHeader>
@@ -206,6 +208,17 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
                     onChange={(e) => updateMapping(m.id, 'displayName', e.target.value)}
                     className="h-8 text-xs font-medium"
                   />
+                </TableCell>
+                <TableCell className="align-top text-center">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 text-muted-foreground"
+                    onClick={() => updateMapping(m.id, 'isHidden', !m.isHidden)}
+                    title={m.isHidden ? "Показать в отчетах" : "Скрыть из отчетов"}
+                  >
+                    {m.isHidden ? <EyeOff className="h-4 w-4 text-orange-500" /> : <Eye className="h-4 w-4" />}
+                  </Button>
                 </TableCell>
                 <TableCell className="align-top">
                   <Button 

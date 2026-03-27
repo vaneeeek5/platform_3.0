@@ -43,6 +43,7 @@ export async function POST(
             directValue: m.directValue || null,
             displayName: m.displayName,
             normalizedName: m.displayName.toLowerCase(),
+            isHidden: m.isHidden || false,
           }));
 
         if (validMappings.length > 0) {
