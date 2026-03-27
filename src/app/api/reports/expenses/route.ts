@@ -72,24 +72,28 @@ export async function GET(request: Request) {
     expenseData.forEach(exp => {
       const mapping = projectMappings.find(m => 
         (m.utmValue && m.utmValue === exp.utmCampaign) || 
-        (m.directValue && m.directValue === exp.directOrder)
+        (m.directValue && m.directValue === exp.directOrder) ||
+        (exp.utmCampaign === "unknown" && m.utmValue === "") // Match raw unknown to empty mappings
       );
       
       const displayName = mapping?.displayName || exp.campaignName || exp.utmCampaign || "Unknown";
       
+      // Standardize "unknown" to "Unknown" for better matching
+      const finalDisplayName = (displayName.toLowerCase() === "unknown" || !displayName) ? "Unknown" : displayName;
+
       // SKIP HIDDEN ROWS
-      if (mapping?.isHidden || (displayName !== "Unknown" && hiddenDisplayNames.has(displayName))) {
+      if (mapping?.isHidden || hiddenDisplayNames.has(finalDisplayName)) {
         return;
       }
 
-      if (reportData.has(displayName)) {
-        const existing = reportData.get(displayName);
+      if (reportData.has(finalDisplayName)) {
+        const existing = reportData.get(finalDisplayName);
         existing.totalCost += exp.totalCost;
         existing.totalVisits += exp.totalVisits;
         existing.totalClicks += exp.totalClicks;
       } else {
-        reportData.set(displayName, {
-          campaignName: displayName,
+        reportData.set(finalDisplayName, {
+          campaignName: finalDisplayName,
           totalCost: exp.totalCost,
           totalVisits: exp.totalVisits,
           totalClicks: exp.totalClicks,
@@ -102,19 +106,20 @@ export async function GET(request: Request) {
     leadData.forEach(lead => {
       const mapping = projectMappings.find(m => m.utmValue === lead.utmCampaign);
       const displayName = mapping?.displayName || lead.utmCampaign || "Unknown";
+      const finalDisplayName = (displayName.toLowerCase() === "unknown" || !displayName) ? "Unknown" : displayName;
       
       // SKIP HIDDEN ROWS (leads should follow campaign visibility)
-      if (mapping?.isHidden || (displayName !== "Unknown" && hiddenDisplayNames.has(displayName))) {
+      if (mapping?.isHidden || hiddenDisplayNames.has(finalDisplayName)) {
         return;
       }
 
-      const row = reportData.get(displayName);
+      const row = reportData.get(finalDisplayName);
       if (row) {
         row.leadCount += lead.count;
       } else {
         // If we have leads but no expenses for this campaign
-        reportData.set(displayName, {
-          campaignName: displayName,
+        reportData.set(finalDisplayName, {
+          campaignName: finalDisplayName,
           totalCost: 0,
           totalVisits: 0,
           totalClicks: 0,
