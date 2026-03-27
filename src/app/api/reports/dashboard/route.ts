@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { leads, expenses, goalAchievements, campaignMappings } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { eachDayOfInterval, format, parseISO } from "date-fns";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -14,11 +15,9 @@ export async function GET(request: Request) {
   const dateFromStr = searchParams.get("dateFrom");
   const dateToStr = searchParams.get("dateTo");
 
-  // Normalize dates to start/end of day to avoid missing data due to time components
   const dateFrom = dateFromStr ? new Date(dateFromStr) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const dateTo = dateToStr ? new Date(dateToStr) : new Date();
   
-  // Create copies for filters - avoid mutating originals
   const filterStart = new Date(dateFrom);
   filterStart.setHours(0, 0, 0, 0);
   const filterEnd = new Date(dateTo);
@@ -37,7 +36,6 @@ export async function GET(request: Request) {
     const mappings = await db.select().from(campaignMappings).where(projectId ? eq(campaignMappings.projectId, projectId) : undefined);
     const hiddenDisplayNames = new Set(mappings.filter(m => m.isHidden).map(m => m.displayName));
 
-    // Helper to resolve display name (same logic as expenses report)
     const resolveName = (utmCampaign: string | null, directOrder: string | null) => {
       const mapping = mappings.find(m => {
         if (m.utmValue && m.utmValue === utmCampaign) return true;
@@ -59,13 +57,12 @@ export async function GET(request: Request) {
         return mapping?.isHidden || (name === "Unknown" && hiddenDisplayNames.has("Unknown"));
     };
 
-    // 2. Fetch Aggregated Data
+    // 2. Fetch Data
     const rawLeads = await db
       .select({
         id: leads.id,
         date: sql<string>`TO_CHAR(${leads.date}, 'YYYY-MM-DD')`.as("d"),
         utmCampaign: leads.utmCampaign,
-        projectId: leads.projectId
       })
       .from(leads)
       .where(and(...filters));
@@ -89,49 +86,54 @@ export async function GET(request: Request) {
       .innerJoin(leads, eq(goalAchievements.leadId, leads.id))
       .where(and(...filters));
 
-    // 3. Process and Filter (Apply Mappings)
+    // 3. Process Trends (Fill all days in range)
+    const days = eachDayOfInterval({ start: filterStart, end: filterEnd });
+    const trendMap = new Map();
+    days.forEach(day => {
+      const key = format(day, 'YYYY-MM-DD');
+      trendMap.set(key, { date: key, label: format(day, 'dd.MM'), leads: 0, cost: 0 });
+    });
+
     let totalLeadsCount = 0;
     let totalCostSum = 0;
-    const trendMap = new Map();
-    const campaignMap = new Map();
+    const campaignStats = new Map<string, { leads: number, cost: number }>();
 
-    // Process Leads
     rawLeads.forEach(l => {
       if (isHidden(l.utmCampaign, null)) return;
-      
       totalLeadsCount++;
+      const t = trendMap.get(l.date);
+      if (t) t.leads++;
       
-      // Trends
-      const t = trendMap.get(l.date) || { date: l.date, leads: 0, cost: 0 };
-      t.leads++;
-      trendMap.set(l.date, t);
-      
-      // Campaign (for Top List)
       const name = resolveName(l.utmCampaign, null);
-      campaignMap.set(name, (campaignMap.get(name) || 0) + 1);
+      const stat = campaignStats.get(name) || { leads: 0, cost: 0 };
+      stat.leads++;
+      campaignStats.set(name, stat);
     });
 
-    // Process Expenses
     rawExpenses.forEach(e => {
       if (isHidden(e.utmCampaign, e.directOrder)) return;
-      
       totalCostSum += e.cost;
+      const t = trendMap.get(e.date);
+      if (t) t.cost += e.cost;
       
-      // Trends
-      const t = trendMap.get(e.date) || { date: e.date, leads: 0, cost: 0 };
-      t.cost += e.cost;
-      trendMap.set(e.date, t);
+      const name = resolveName(e.utmCampaign, e.directOrder);
+      const stat = campaignStats.get(name) || { leads: 0, cost: 0 };
+      stat.cost += e.cost;
+      campaignStats.set(name, stat);
     });
 
-    const totalRevenueSum = rawRevenue[0]?.sum || 0;
-
     // 4. Final Format
-    const topCampaigns = Array.from(campaignMap.entries())
-      .map(([name, count]) => ({ name, leads: count }))
+    const sortedByLeads = Array.from(campaignStats.entries())
+      .map(([name, stat]) => ({ name, leads: stat.leads, cost: stat.cost, cpl: stat.leads > 0 ? stat.cost / stat.leads : 0 }))
       .sort((a, b) => b.leads - a.leads)
       .slice(0, 5);
 
-    // Get Source breakdown (re-fetching for simplicity in grouping)
+    const sortedByCPL = Array.from(campaignStats.entries())
+      .filter(([_, stat]) => stat.leads > 0)
+      .map(([name, stat]) => ({ name, leads: stat.leads, cost: stat.cost, cpl: stat.cost / stat.leads }))
+      .sort((a, b) => a.cpl - b.cpl) // Lowest CPL is best
+      .slice(0, 5);
+
     const rawSources = await db
       .select({
         source: leads.utmSource,
@@ -147,15 +149,15 @@ export async function GET(request: Request) {
       summary: {
         leads: totalLeadsCount,
         cost: totalCostSum,
-        revenue: totalRevenueSum,
+        revenue: rawRevenue[0]?.sum || 0,
         cpl: totalLeadsCount > 0 ? (totalCostSum / totalLeadsCount) : 0,
-        romi: totalCostSum > 0 ? ((totalRevenueSum - totalCostSum) / totalCostSum) * 100 : 0
+        romi: totalCostSum > 0 ? (((rawRevenue[0]?.sum || 0) - totalCostSum) / totalCostSum) * 100 : 0
       },
-      trends: Array.from(trendMap.values()).sort((a,b) => a.date.localeCompare(b.date)),
+      trends: Array.from(trendMap.values()),
       sources: rawSources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
-      topCampaigns
+      topCampaigns: sortedByLeads,
+      efficientCampaigns: sortedByCPL
     });
-
   } catch (error) {
     console.error("Dashboard API Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -172,7 +172,7 @@ export default function DashboardPage() {
                         />
                         {/* Tooltip on hover */}
                         <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-900 text-white text-[10px] p-2 rounded z-10 whitespace-nowrap">
-                            {format(new Date(t.date), 'dd.MM')}: {t.leads} лидов
+                            {t.label}: {t.leads} лидов
                         </div>
                       </div>
                     )
@@ -186,8 +186,8 @@ export default function DashboardPage() {
              <div className="flex justify-between text-[10px] text-muted-foreground mt-2 border-t pt-2">
                  {data?.trends?.length > 0 && (
                    <>
-                    <span>{format(new Date(data.trends[0].date), 'dd MMM')}</span>
-                    <span>{format(new Date(data.trends[data.trends.length - 1].date), 'dd MMM')}</span>
+                    <span>{data.trends[0].label}</span>
+                    <span>{data.trends[data.trends.length - 1].label}</span>
                    </>
                  )}
              </div>
@@ -233,62 +233,72 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2">
          {/* Top Performing Campaigns */}
-         <Card className="border-none shadow-sm">
+         <Card className="border-none shadow-sm h-full">
             <CardHeader>
                <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                     <CardTitle>Эффективные кампании</CardTitle>
-                     <CardDescription>Топ по количеству лидов</CardDescription>
+                     <CardTitle>Топ кампаний</CardTitle>
+                     <CardDescription>По количеству лидов</CardDescription>
                   </div>
-                  <Target className="w-5 h-5 opacity-20" />
+                  <Users className="w-5 h-5 opacity-20" />
                </div>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
                   {data?.topCampaigns?.length > 0 ? (
                     data.topCampaigns.map((c: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0">
-                         <div className="flex flex-col">
-                            <span className="text-xs font-semibold truncate max-w-[200px]">{c.name}</span>
-                            <span className="text-[10px] text-muted-foreground uppercase">UTM Campaign</span>
+                      <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0 hover:bg-slate-50 transition-colors px-1">
+                         <div className="flex flex-col overflow-hidden">
+                            <span className="text-sm font-semibold truncate max-w-[250px]">{c.name}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">Кампания</span>
                          </div>
-                         <div className="text-right">
-                            <div className="text-xs font-bold">{c.leads}</div>
+                         <div className="text-right flex-shrink-0">
+                            <div className="text-sm font-bold">{c.leads}</div>
                             <div className="text-[10px] text-muted-foreground">лидов</div>
                          </div>
                       </div>
                     ))
                   ) : (
                     <div className="text-sm text-center py-4 text-muted-foreground italic">
-                      Нет данных по кампаниям за период.
+                      Нет данных за период.
                     </div>
                   )}
                 </div>
             </CardContent>
          </Card>
 
-         <Card className="border-none shadow-sm bg-primary text-primary-foreground overflow-hidden relative">
-            <div className="absolute right-[-20px] top-[-20px] w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+         {/* Efficiency by CPL */}
+         <Card className="border-none shadow-sm h-full">
             <CardHeader>
-               <CardTitle>Быстрый обзор</CardTitle>
-               <CardDescription className="text-primary-foreground/70">Статус системы</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 relative z-10">
-               <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-white" />
+               <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                     <CardTitle>Эффективность (CPL)</CardTitle>
+                     <CardDescription>Топ по стоимости лида</CardDescription>
                   </div>
-                  <div>
-                    <div className="text-lg font-bold">Система активна</div>
-                    <div className="text-xs opacity-70">Синхронизация работает в штатном режиме</div>
-                  </div>
+                  <Target className="w-5 h-5 opacity-20" />
                </div>
-               <button 
-                  onClick={() => window.location.href = '/admin/logs'}
-                  className="w-full bg-white text-primary font-bold py-2 rounded-lg text-sm hover:bg-slate-100 transition-colors"
-                >
-                  Посмотреть логи
-               </button>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                  {data?.efficientCampaigns?.length > 0 ? (
+                    data.efficientCampaigns.map((c: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0 hover:bg-slate-50 transition-colors px-1">
+                         <div className="flex flex-col overflow-hidden">
+                            <span className="text-sm font-semibold truncate max-w-[250px]">{c.name}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">{c.leads} лидов</span>
+                         </div>
+                         <div className="text-right flex-shrink-0">
+                            <div className="text-sm font-bold text-emerald-600">{Math.round(c.cpl).toLocaleString()} ₽</div>
+                            <div className="text-[10px] text-muted-foreground">за лид</div>
+                         </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-center py-4 text-muted-foreground italic">
+                      Нет данных для расчета CPL.
+                    </div>
+                  )}
+                </div>
             </CardContent>
          </Card>
       </div>
