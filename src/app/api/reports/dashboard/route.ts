@@ -94,16 +94,27 @@ export async function GET(request: Request) {
       trendMap.set(key, { date: key, label: format(day, 'dd.MM'), leads: 0, cost: 0 });
     });
 
+    console.log(`[Dashboard] Total raw leads: ${rawLeads.length}`);
+    if (rawLeads.length > 0) {
+      console.log(`[Dashboard] Sample lead date: ${rawLeads[0].date}`);
+      console.log(`[Dashboard] TrendMap keys (sample): ${Array.from(trendMap.keys()).slice(0, 3)}`);
+    }
+
     let totalLeadsCount = 0;
     let totalCostSum = 0;
     const campaignStats = new Map<string, { leads: number, cost: number }>();
 
     rawLeads.forEach(l => {
       if (isHidden(l.utmCampaign, null)) return;
-      totalLeadsCount++;
-      const t = trendMap.get(l.date);
-      if (t) t.leads++;
       
+      totalLeadsCount++;
+      
+      const t = trendMap.get(l.date);
+      if (t) {
+        t.leads++;
+      }
+      
+      // Campaign (for Top List)
       const name = resolveName(l.utmCampaign, null);
       const stat = campaignStats.get(name) || { leads: 0, cost: 0 };
       stat.leads++;
