@@ -19,6 +19,7 @@ import {
   SelectValue 
 } from "@/components/ui/select"
 import { toast } from "sonner"
+import { Loader2 } from "lucide-react"
 
 interface LeadEditDialogProps {
   isOpen: boolean
@@ -31,38 +32,40 @@ interface LeadEditDialogProps {
 export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: LeadEditDialogProps) {
   const [targetStatuses, setTargetStatuses] = useState<any[]>([])
   const [qualStatuses, setQualStatuses] = useState<any[]>([])
+  const [leadStages, setLeadStages] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   
-  // We assume lead has achievements and we edit the first one for simplicity, 
-  // or add a switcher if there are multiple.
   const achievement = lead?.achievements?.[0]
+  const leadData = lead?.lead
   
   const [form, setForm] = useState({
     targetStatusId: "",
     qualificationStatusId: "",
+    stageId: "",
     saleAmount: ""
   })
 
   useEffect(() => {
     if (isOpen && projectId) {
       fetchStatuses()
-      if (achievement) {
-        setForm({
-          targetStatusId: achievement.targetStatusId?.toString() || "none",
-          qualificationStatusId: achievement.qualificationStatusId?.toString() || "none",
-          saleAmount: achievement.saleAmount || "0"
-        })
-      }
+      setForm({
+        targetStatusId: achievement?.targetStatusId?.toString() || "none",
+        qualificationStatusId: achievement?.qualificationStatusId?.toString() || "none",
+        stageId: leadData?.stageId?.toString() || "none",
+        saleAmount: achievement?.saleAmount || "0"
+      })
     }
-  }, [isOpen, projectId, achievement])
+  }, [isOpen, projectId, lead])
 
   const fetchStatuses = async () => {
-    const [tRes, qRes] = await Promise.all([
+    const [tRes, qRes, sRes] = await Promise.all([
       fetch(`/api/projects/${projectId}/statuses/target`),
-      fetch(`/api/projects/${projectId}/statuses/qualification`)
+      fetch(`/api/projects/${projectId}/statuses/qualification`),
+      fetch(`/api/projects/${projectId}/statuses/stages`)
     ])
     if (tRes.ok) setTargetStatuses(await tRes.json())
     if (qRes.ok) setQualStatuses(await qRes.json())
+    if (sRes.ok) setLeadStages(await sRes.json())
   }
 
   const handleSave = async () => {
@@ -72,7 +75,9 @@ export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: Lea
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: achievement.id,
+          id: achievement?.id,
+          leadId: leadData?.id,
+          stageId: form.stageId === "none" ? null : parseInt(form.stageId),
           targetStatusId: form.targetStatusId === "none" ? null : parseInt(form.targetStatusId),
           qualificationStatusId: form.qualificationStatusId === "none" ? null : parseInt(form.qualificationStatusId),
           saleAmount: form.saleAmount
@@ -97,57 +102,84 @@ export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: Lea
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Редактирование лида</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Редактирование лида</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-6 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="targetStatus">Целевой статус</Label>
+            <Label className="text-xs font-bold text-neutral-500 uppercase">Этап сделки</Label>
             <Select 
-              value={form.targetStatusId} 
-              onValueChange={(val) => setForm({...form, targetStatusId: val})}
+              value={form.stageId} 
+              onValueChange={(val) => setForm({...form, stageId: val})}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите статус" />
+              <SelectTrigger className="h-10 border-neutral-200">
+                <SelectValue placeholder="Выберите этап" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Не выбрано</SelectItem>
-                {targetStatuses.map(s => (
-                  <SelectItem key={s.id} value={s.id.toString()}>{s.label}</SelectItem>
+                {leadStages.map(s => (
+                  <SelectItem key={s.id} value={s.id.toString()}>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                      {s.label}
+                    </div>
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="qualStatus">Статус квалификации</Label>
-            <Select 
-              value={form.qualificationStatusId} 
-              onValueChange={(val) => setForm({...form, qualificationStatusId: val})}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите статус" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Не выбрано</SelectItem>
-                {qualStatuses.map(s => (
-                  <SelectItem key={s.id} value={s.id.toString()}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+                <Label className="text-xs font-bold text-neutral-500 uppercase">Целевой статус</Label>
+                <Select 
+                value={form.targetStatusId} 
+                onValueChange={(val) => setForm({...form, targetStatusId: val})}
+                >
+                <SelectTrigger className="h-10 border-neutral-200">
+                    <SelectValue placeholder="Статус" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="none">Не выбрано</SelectItem>
+                    {targetStatuses.map(s => (
+                    <SelectItem key={s.id} value={s.id.toString()}>{s.label}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
+            <div className="grid gap-2">
+                <Label className="text-xs font-bold text-neutral-500 uppercase">Квал</Label>
+                <Select 
+                value={form.qualificationStatusId} 
+                onValueChange={(val) => setForm({...form, qualificationStatusId: val})}
+                >
+                <SelectTrigger className="h-10 border-neutral-200">
+                    <SelectValue placeholder="Статус" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="none">Не выбрано</SelectItem>
+                    {qualStatuses.map(s => (
+                    <SelectItem key={s.id} value={s.id.toString()}>{s.label}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
           </div>
+
           <div className="grid gap-2">
-            <Label htmlFor="amount">Сумма продажи (₽)</Label>
+            <Label className="text-xs font-bold text-neutral-500 uppercase">Сумма продажи (₽)</Label>
             <Input 
-              id="amount" 
               type="number"
               value={form.saleAmount}
               onChange={(e) => setForm({...form, saleAmount: e.target.value})}
+              className="h-10 border-neutral-200 font-bold"
             />
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Отмена</Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? "Сохранение..." : "Сохранить изменения"}
+        <DialogFooter className="border-t pt-4 mt-2">
+          <Button variant="ghost" onClick={onClose} disabled={loading}>Отмена</Button>
+          <Button onClick={handleSave} disabled={loading} className="min-w-[150px]">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {loading ? "Сохранение..." : "Сохранить"}
           </Button>
         </DialogFooter>
       </DialogContent>

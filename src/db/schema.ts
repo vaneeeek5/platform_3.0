@@ -102,6 +102,16 @@ export const qualificationStatuses = pgTable("qualification_statuses", {
   sortOrder: integer("sort_order").default(0),
 });
 
+export const leadStages = pgTable("lead_stages", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id")
+    .references(() => projects.id, { onDelete: "cascade" })
+    .notNull(),
+  label: text("label").notNull(),
+  color: text("color").notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
 export const leads = pgTable(
   "leads",
   {
@@ -114,6 +124,8 @@ export const leads = pgTable(
     date: timestamp("date").notNull(),
     utmCampaign: text("utm_campaign"),
     utmSource: text("utm_source"),
+    stageId: integer("stage_id").references(() => leadStages.id, { onDelete: "set null" }),
+    campaignId: text("campaign_id"), // Added for better CRM matching if available
     createdAt: timestamp("created_at").defaultNow(),
   },
   (t) => ({
@@ -122,6 +134,17 @@ export const leads = pgTable(
     campaignIdx: index("leads_campaign_idx").on(t.projectId, t.utmCampaign),
   })
 );
+
+export const crmStageMappings = pgTable("crm_stage_mappings", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id")
+    .references(() => projects.id, { onDelete: "cascade" })
+    .notNull(),
+  crmStageName: text("crm_stage_name").notNull(),
+  targetStatusId: integer("target_status_id").references(() => targetStatuses.id),
+  qualificationStatusId: integer("qualification_status_id").references(() => qualificationStatuses.id),
+  leadStageId: integer("lead_stage_id").references(() => leadStages.id),
+});
 
 export const goalAchievements = pgTable(
   "goal_achievements",

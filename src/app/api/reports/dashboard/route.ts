@@ -66,7 +66,12 @@ export async function GET(request: Request) {
       .from(leads).where(and(...filters));
 
     const dbAchievements = await db
-      .select({ leadId: goalAchievements.leadId, goalId: goalAchievements.goalId, saleAmount: goalAchievements.saleAmount })
+      .select({ 
+        leadId: goalAchievements.leadId, 
+        goalId: goalAchievements.goalId, 
+        saleAmount: goalAchievements.saleAmount, 
+        targetStatusId: goalAchievements.targetStatusId 
+      })
       .from(goalAchievements)
       .innerJoin(leads, eq(goalAchievements.leadId, leads.id))
       .where(and(...filters));
@@ -79,7 +84,12 @@ export async function GET(request: Request) {
     const leadMetaMap = new Map<number, { isTarget: boolean, isSale: boolean, revenue: number }>();
     dbAchievements.forEach(a => {
       const current = leadMetaMap.get(a.leadId) || { isTarget: false, isSale: false, revenue: 0 };
-      if (targetGoalIds.has(a.goalId)) current.isTarget = true;
+      
+      // Update: Only count as Target if a status is actually set (not null)
+      if (targetGoalIds.has(a.goalId) && a.targetStatusId !== null) {
+        current.isTarget = true;
+      }
+      
       const amt = Number(a.saleAmount) || 0;
       if (amt > 0) { current.isSale = true; current.revenue += amt; }
       leadMetaMap.set(a.leadId, current);

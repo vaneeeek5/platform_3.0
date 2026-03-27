@@ -52,8 +52,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [filterGoals, setFilterGoals] = useState<string[]>([])
   const [targetStatuses, setTargetStatuses] = useState<any[]>([])
   const [qualStatuses, setQualStatuses] = useState<any[]>([])
+  const [leadStages, setLeadStages] = useState<any[]>([])
   const [filterTargetStatusIds, setFilterTargetStatusIds] = useState<string[]>([])
   const [filterQualStatusIds, setFilterQualStatusIds] = useState<string[]>([])
+  const [filterStageIds, setFilterStageIds] = useState<string[]>([])
 
   useEffect(() => {
     setMounted(true)
@@ -64,12 +66,14 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   }, [projectId])
 
   const fetchStatuses = async () => {
-    const [tRes, qRes] = await Promise.all([
+    const [tRes, qRes, sRes] = await Promise.all([
       fetch(`/api/projects/${projectId}/statuses/target`),
-      fetch(`/api/projects/${projectId}/statuses/qualification`)
+      fetch(`/api/projects/${projectId}/statuses/qualification`),
+      fetch(`/api/projects/${projectId}/statuses/stages`)
     ])
     if (tRes.ok) setTargetStatuses(await tRes.json())
     if (qRes.ok) setQualStatuses(await qRes.json())
+    if (sRes.ok) setLeadStages(await sRes.json())
   }
 
   const fetchLeads = async () => {
@@ -83,6 +87,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     if (filterGoals.length > 0) params.append("goals", filterGoals.join(","))
     if (filterTargetStatusIds.length > 0) params.append("targetStatusIds", filterTargetStatusIds.join(","))
     if (filterQualStatusIds.length > 0) params.append("qualStatusIds", filterQualStatusIds.join(","))
+    if (filterStageIds.length > 0) params.append("stageIds", filterStageIds.join(","))
     
     try {
       const res = await fetch(`/api/leads?${params.toString()}`)
@@ -159,6 +164,27 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     }
   };
 
+  const updateLeadStage = async (leadId: number, stageId: any) => {
+    try {
+      const res = await fetch("/api/leads", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadId: leadId,
+          stageId: stageId === "none" ? null : parseInt(stageId)
+        })
+      });
+      if (res.ok) {
+        toast.success("Этап обновлен");
+        fetchLeads();
+      } else {
+        toast.error("Ошибка при обновлении этапа");
+      }
+    } catch (e) {
+      toast.error("Произошла ошибка");
+    }
+  }
+
 
   return (
     <div className="space-y-4">
@@ -210,8 +236,13 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <div className="p-2 border-b text-[10px] font-medium bg-muted/30">Фильтр по дате</div>
-                      <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                      <div className="p-4 bg-white shadow-xl rounded-md border border-neutral-200">
+                        <div className="mb-4 text-xs font-semibold px-1">ФИЛЬТР ПО ДАТЕ</div>
+                        <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                        <div className="mt-4 flex justify-end">
+                            <Button size="sm" onClick={fetchLeads} className="h-8 text-[11px] px-4 font-bold">ОК / ПРИМЕНИТЬ</Button>
+                        </div>
+                      </div>
                     </PopoverContent>
                   </Popover>
                 </div>
@@ -221,9 +252,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                  <div className="flex items-center gap-1">
                     Источник
                     <FilterPopover 
+                       title="ФИЛЬТР ПО ИСТОЧНИКУ"
                        options={Array.from(new Set(leads.map(l => l.lead.utmSource || 'direct')))} 
                        selected={filterSources} 
-                       onChange={setFilterSources} 
+                       onChange={(val) => { setFilterSources(val); fetchLeads(); }} 
                     />
                  </div>
               </TableHead>
@@ -231,9 +263,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                  <div className="flex items-center gap-1">
                     Цели
                     <FilterPopover 
+                       title="ФИЛЬТР ПО ЦЕЛЯМ"
                        options={Array.from(new Set(leads.flatMap(l => l.achievements?.map((a: any) => a.goalName) || [])))} 
                        selected={filterGoals} 
-                       onChange={setFilterGoals} 
+                       onChange={(val) => { setFilterGoals(val); fetchLeads(); }} 
                     />
                  </div>
               </TableHead>
@@ -242,9 +275,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                  <div className="flex items-center gap-1">
                     Статус
                     <FilterPopover 
+                       title="ФИЛЬТР ПО СТАТУСУ"
                        options={targetStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
                        selected={filterTargetStatusIds} 
-                       onChange={setFilterTargetStatusIds} 
+                       onChange={(val) => { setFilterTargetStatusIds(val); fetchLeads(); }} 
                        useObjects
                     />
                  </div>
@@ -253,9 +287,22 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                  <div className="flex items-center gap-1">
                     Квал
                     <FilterPopover 
+                       title="ФИЛЬТР ПО КВАЛ"
                        options={qualStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
                        selected={filterQualStatusIds} 
-                       onChange={setFilterQualStatusIds} 
+                       onChange={(val) => { setFilterQualStatusIds(val); fetchLeads(); }} 
+                       useObjects
+                    />
+                 </div>
+              </TableHead>
+              <TableHead className="text-xs">
+                 <div className="flex items-center gap-1">
+                    Этап сделки
+                    <FilterPopover 
+                       title="ФИЛЬТР ПО ЭТАПУ"
+                       options={leadStages.map(s => ({ label: s.label, value: s.id.toString() }))} 
+                       selected={filterStageIds} 
+                       onChange={(val) => { setFilterStageIds(val); fetchLeads(); }} 
                        useObjects
                     />
                  </div>
@@ -266,11 +313,11 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={showProjectColumn ? 7 : 6} className="h-24 text-center text-xs">Загрузка...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={showProjectColumn ? 9 : 8} className="h-24 text-center text-xs text-muted-foreground bg-neutral-50/50">Загрузка...</TableCell></TableRow>
             ) : leads.length === 0 ? (
-              <TableRow><TableCell colSpan={showProjectColumn ? 7 : 6} className="h-24 text-center text-xs text-muted-foreground">Лиды не найдены</TableCell></TableRow>
+              <TableRow><TableCell colSpan={showProjectColumn ? 9 : 8} className="h-24 text-center text-xs text-muted-foreground">Лиды не найдены</TableCell></TableRow>
             ) : leads.map((item) => (
-              <TableRow key={item.lead.id}>
+              <TableRow key={item.lead.id} className="hover:bg-neutral-50 transition-colors">
                 <TableCell className="text-[10px] whitespace-nowrap">
                   {mounted && item.lead?.date ? format(new Date(item.lead.date), "dd.MM.yyyy HH:mm", { locale: ru }) : '—'}
                 </TableCell>
@@ -305,7 +352,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                           value={a.targetStatusId?.toString() || "none"} 
                           onValueChange={(val) => updateLeadStatus(a.id, 'targetStatusId', val)}
                         >
-                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px]">
+                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px] border-neutral-200">
                             <SelectValue placeholder="Статус" />
                           </SelectTrigger>
                           <SelectContent>
@@ -313,7 +360,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                             {targetStatuses.map(s => (
                               <SelectItem key={s.id} value={s.id.toString()} className="text-[10px]">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                  <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: s.color }} />
                                   {s.label}
                                 </div>
                               </SelectItem>
@@ -332,7 +379,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                           value={a.qualificationStatusId?.toString() || "none"} 
                           onValueChange={(val) => updateLeadStatus(a.id, 'qualificationStatusId', val)}
                         >
-                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px]">
+                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px] border-neutral-200">
                             <SelectValue placeholder="Квал" />
                           </SelectTrigger>
                           <SelectContent>
@@ -340,7 +387,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                             {qualStatuses.map(s => (
                               <SelectItem key={s.id} value={s.id.toString()} className="text-[10px]">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                  <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: s.color }} />
                                   {s.label}
                                 </div>
                               </SelectItem>
@@ -351,14 +398,36 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                    </div>
                 </TableCell>
 
-                <TableCell className="text-right text-xs font-bold">
+                <TableCell>
+                    <Select 
+                        value={item.lead.stageId?.toString() || "none"} 
+                        onValueChange={(val) => updateLeadStage(item.lead.id, val)}
+                    >
+                        <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px] border-neutral-200 bg-neutral-50/50">
+                        <SelectValue placeholder="Этап" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="none" className="text-[10px]">Не выбран</SelectItem>
+                        {leadStages.map(s => (
+                            <SelectItem key={s.id} value={s.id.toString()} className="text-[10px]">
+                            <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: s.color }} />
+                                {s.label}
+                            </div>
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </TableCell>
+
+                <TableCell className="text-right text-xs font-bold text-neutral-800">
                   {item.achievements?.reduce((acc: number, a: any) => acc + parseFloat(a.saleAmount || "0"), 0).toLocaleString()} ₽
                 </TableCell>
                 <TableCell>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-7 w-7"
+                    className="h-7 w-7 text-neutral-400 hover:text-black"
                     onClick={() => {
                        setSelectedLead(item)
                        setIsEditDialogOpen(true)
@@ -384,41 +453,62 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   )
 }
 
-function FilterPopover({ options, selected, onChange, useObjects = false }: { options: any[], selected: string[], onChange: (val: string[]) => void, useObjects?: boolean }) {
+function FilterPopover({ title, options, selected, onChange, useObjects = false }: { title: string, options: any[], selected: string[], onChange: (val: string[]) => void, useObjects?: boolean }) {
+   const [pending, setPending] = useState<string[]>(selected)
+
+   useEffect(() => {
+     setPending(selected)
+   }, [selected])
+
    return (
       <Popover>
          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
+            <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-neutral-100">
                <Filter className={`h-3 w-3 ${selected.length > 0 ? 'text-primary' : 'text-muted-foreground'}`} />
             </Button>
          </PopoverTrigger>
-         <PopoverContent className="w-56 p-2" align="start">
-            <div className="space-y-2">
-               <p className="text-xs font-medium px-1">Фильтр</p>
-               <div className="max-h-48 overflow-y-auto space-y-1">
-                  {options.map(opt => {
+         <PopoverContent className="w-64 p-0 bg-white shadow-2xl rounded-lg border border-neutral-200" align="start">
+            <div className="p-4 space-y-3">
+               <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">{title}</p>
+               <div className="max-h-60 overflow-y-auto space-y-1.5 custom-scrollbar pr-2">
+                  {options.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground italic px-1">Нет данных для фильтрации</p>
+                  ) : options.map(opt => {
                      const label = useObjects ? opt.label : opt;
                      const value = useObjects ? opt.value : opt;
                      return (
-                        <div key={value} className="flex items-center space-x-2 px-1 py-1 hover:bg-muted rounded">
+                        <div key={value} className="flex items-center space-x-3 px-2 py-2 hover:bg-neutral-50 rounded-md transition-colors cursor-pointer group" onClick={() => {
+                            if (pending.includes(value)) setPending(pending.filter(s => s !== value))
+                            else setPending([...pending, value])
+                        }}>
                            <Checkbox 
                               id={value} 
-                              checked={selected.includes(value)} 
-                              onCheckedChange={(checked) => {
-                                 if (checked) onChange([...selected, value])
-                                 else onChange(selected.filter(s => s !== value))
-                              }}
+                              checked={pending.includes(value)} 
+                              className="w-4 h-4 rounded border-neutral-300 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                            />
-                           <label htmlFor={value} className="text-xs cursor-pointer truncate flex-1">{label}</label>
+                           <label htmlFor={value} className="text-xs text-neutral-700 cursor-pointer truncate flex-1 group-hover:text-black transition-colors">{label}</label>
                         </div>
                      )
                   })}
                </div>
-               {selected.length > 0 && (
-                  <Button variant="ghost" size="sm" className="w-full h-7 text-[10px]" onClick={() => onChange([])}>
+               
+               <div className="pt-3 border-t flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1 h-8 text-[11px] font-medium border-neutral-200"
+                    onClick={() => { setPending([]); onChange([]); }}
+                  >
                      Сбросить
                   </Button>
-               )}
+                  <Button 
+                    size="sm" 
+                    className="flex-1 h-8 text-[11px] font-bold shadow-md shadow-primary/20"
+                    onClick={() => onChange(pending)}
+                  >
+                     ОК / ПРИМЕНИТЬ
+                  </Button>
+               </div>
             </div>
          </PopoverContent>
       </Popover>

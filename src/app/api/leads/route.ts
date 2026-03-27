@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { leads, goalAchievements, projects, targetStatuses, qualificationStatuses } from "@/db/schema";
-import { eq, and, desc, gte, lte, sql, or } from "drizzle-orm";
+import { leads, goalAchievements, projects, targetStatuses, qualificationStatuses, leadStages } from "@/db/schema";
+import { eq, and, desc, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -12,15 +12,15 @@ export async function GET(request: Request) {
   const projectId = searchParams.get("projectId");
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
-  const status = searchParams.get("status");
   const query = searchParams.get("query");
-  const sources = searchParams.get("sources")?.split(",");
-  const goals = searchParams.get("goals")?.split(",");
-  const targetStatusIds = searchParams.get("targetStatusIds")?.split(",").map(id => parseInt(id));
-  const qualStatusIds = searchParams.get("qualStatusIds")?.split(",").map(id => parseInt(id));
+  const sources = searchParams.get("sources")?.split(",").filter(Boolean);
+  const goals = searchParams.get("goals")?.split(",").filter(Boolean);
+  const targetStatusIds = searchParams.get("targetStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
+  const qualStatusIds = searchParams.get("qualStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
+  const stageIds = searchParams.get("stageIds")?.split(",").filter(Boolean).map(id => parseInt(id));
 
   try {
-    let baseWhere = [];
+    let baseWhere: any[] = [];
     if (projectId && projectId !== '0') baseWhere.push(eq(leads.projectId, parseInt(projectId)));
     if (dateFrom) baseWhere.push(gte(leads.date, new Date(dateFrom)));
     if (dateTo) {
@@ -30,15 +30,19 @@ export async function GET(request: Request) {
     }
     
     if (sources && sources.length > 0) {
-        baseWhere.push(sql`${leads.utmSource} IN ${sources}`);
+        baseWhere.push(inArray(leads.utmSource, sources));
+    }
+
+    if (stageIds && stageIds.length > 0) {
+        baseWhere.push(inArray(leads.stageId, stageIds));
     }
 
     if (targetStatusIds && targetStatusIds.length > 0) {
-        baseWhere.push(sql`${goalAchievements.targetStatusId} IN ${targetStatusIds}`);
+        baseWhere.push(inArray(goalAchievements.targetStatusId, targetStatusIds));
     }
 
     if (qualStatusIds && qualStatusIds.length > 0) {
-        baseWhere.push(sql`${goalAchievements.qualificationStatusId} IN ${qualStatusIds}`);
+        baseWhere.push(inArray(goalAchievements.qualificationStatusId, qualStatusIds));
     }
 
     // Search by client ID or Campaign
@@ -89,17 +93,24 @@ export async function PATCH(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { id, targetStatusId, qualificationStatusId, saleAmount } = await request.json();
+  const body = await request.json();
+  const { id, leadId, stageId, targetStatusId, qualificationStatusId, saleAmount } = body;
 
   try {
-    // Usually we update the goal achievement, since a lead can have multiple
-    // If id represents goalAchievement.id:
-    await db.update(goalAchievements).set({
-      targetStatusId: targetStatusId === undefined ? undefined : targetStatusId,
-      qualificationStatusId: qualificationStatusId === undefined ? undefined : qualificationStatusId,
-      saleAmount: saleAmount === undefined ? undefined : saleAmount.toString(),
-      updatedAt: new Date(),
-    }).where(eq(goalAchievements.id, id));
+    if (leadId && stageId !== undefined) {
+      await db.update(leads).set({
+        stageId: stageId === null ? null : stageId
+      }).where(eq(leads.id, leadId));
+    }
+
+    if (id && (targetStatusId !== undefined || qualificationStatusId !== undefined || saleAmount !== undefined)) {
+      await db.update(goalAchievements).set({
+        targetStatusId: targetStatusId === undefined ? undefined : targetStatusId,
+        qualificationStatusId: qualificationStatusId === undefined ? undefined : qualificationStatusId,
+        saleAmount: saleAmount === undefined ? undefined : saleAmount.toString(),
+        updatedAt: new Date(),
+      }).where(eq(goalAchievements.id, id));
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
