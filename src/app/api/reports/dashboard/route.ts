@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { leads, expenses, goalAchievements, trackedGoals, campaignMappings } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import { eachDayOfInterval, format, startOfDay } from "date-fns";
+import { eachDayOfInterval, format, startOfDay, addDays } from "date-fns";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -15,6 +15,7 @@ export async function GET(request: Request) {
   const dateFromStr = searchParams.get("dateFrom");
   const dateToStr = searchParams.get("dateTo");
 
+  // Normalize range
   const dateFrom = dateFromStr ? new Date(dateFromStr) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const dateTo = dateToStr ? new Date(dateToStr) : new Date();
   
@@ -55,78 +56,52 @@ export async function GET(request: Request) {
 
     // 2. Fetch Data
     const dbLeads = await db
-      .select({
-        id: leads.id,
-        date: leads.date,
-        utmCampaign: leads.utmCampaign,
-      })
-      .from(leads)
-      .where(and(...filters));
+      .select({ id: leads.id, date: leads.date, utmCampaign: leads.utmCampaign })
+      .from(leads).where(and(...filters));
 
     const dbAchievements = await db
-      .select({
-        leadId: goalAchievements.leadId,
-        goalId: goalAchievements.goalId,
-        saleAmount: goalAchievements.saleAmount,
-      })
+      .select({ leadId: goalAchievements.leadId, goalId: goalAchievements.goalId, saleAmount: goalAchievements.saleAmount })
       .from(goalAchievements)
       .innerJoin(leads, eq(goalAchievements.leadId, leads.id))
       .where(and(...filters));
 
     const dbExpenses = await db
-      .select({
-        date: expenses.date,
-        cost: expenses.cost,
-        utmCampaign: expenses.utmCampaign,
-        directOrder: expenses.directOrder
-      })
-      .from(expenses)
-      .where(and(...expFilters));
+      .select({ date: expenses.date, cost: expenses.cost, utmCampaign: expenses.utmCampaign, directOrder: expenses.directOrder })
+      .from(expenses).where(and(...expFilters));
 
-    // Map lead to its achievements for faster lookup
-    const leadMap = new Map<number, { isTarget: boolean, isSale: boolean, revenue: number }>();
+    // Map lead to its achievements
+    const leadMetaMap = new Map<number, { isTarget: boolean, isSale: boolean, revenue: number }>();
     dbAchievements.forEach(a => {
-      const current = leadMap.get(a.leadId) || { isTarget: false, isSale: false, revenue: 0 };
+      const current = leadMetaMap.get(a.leadId) || { isTarget: false, isSale: false, revenue: 0 };
       if (targetGoalIds.has(a.goalId)) current.isTarget = true;
       const amt = Number(a.saleAmount) || 0;
-      if (amt > 0) {
-        current.isSale = true;
-        current.revenue += amt;
-      }
-      leadMap.set(a.leadId, current);
+      if (amt > 0) { current.isSale = true; current.revenue += amt; }
+      leadMetaMap.set(a.leadId, current);
     });
 
     // 3. Process Trends
-    const days = eachDayOfInterval({ start: filterStart, end: filterEnd });
     const trendMap = new Map();
+    const days = eachDayOfInterval({ start: filterStart, end: filterEnd });
     days.forEach(day => {
       const key = format(day, 'yyyy-MM-dd');
-      trendMap.set(key, { 
-        period: format(day, 'dd.MM'), // As in the reference
-        leads: 0, 
-        targetLeads: 0, 
-        sales: 0,
-        cost: 0 
-      });
+      trendMap.set(key, { period: format(day, 'dd.MM'), leads: 0, targetLeads: 0, sales: 0, cost: 0 });
     });
 
     let totalLeadsCount = 0;
     let totalTargetCount = 0;
     let totalSalesCount = 0;
-    let totalRevenueSum = 0;
+    let totalRevSum = 0;
     let totalCostSum = 0;
-
-    const campaignStats = new Map<string, { leads: number, target: number, sales: number, cost: number, revenue: number }>();
+    const campaignStats = new Map<string, { leads: number, cost: number, rev: number }>();
 
     dbLeads.forEach(l => {
       if (isHidden(l.utmCampaign, null)) return;
-      
-      const lMeta = leadMap.get(l.id) || { isTarget: false, isSale: false, revenue: 0 };
+      const lMeta = leadMetaMap.get(l.id) || { isTarget: false, isSale: false, revenue: 0 };
       
       totalLeadsCount++;
       if (lMeta.isTarget) totalTargetCount++;
       if (lMeta.isSale) totalSalesCount++;
-      totalRevenueSum += lMeta.revenue;
+      totalRevSum += lMeta.revenue;
 
       const key = format(l.date, 'yyyy-MM-dd');
       const t = trendMap.get(key);
@@ -137,51 +112,42 @@ export async function GET(request: Request) {
       }
       
       const name = resolveName(l.utmCampaign, null);
-      const stat = campaignStats.get(name) || { leads: 0, target: 0, sales: 0, cost: 0, revenue: 0 };
-      stat.leads++;
-      if (lMeta.isTarget) stat.target++;
-      if (lMeta.isSale) stat.sales++;
-      stat.revenue += lMeta.revenue;
-      campaignStats.set(name, stat);
+      const s = campaignStats.get(name) || { leads: 0, cost: 0, rev: 0 };
+      s.leads++;
+      s.rev += lMeta.revenue;
+      campaignStats.set(name, s);
     });
 
     dbExpenses.forEach(e => {
       if (isHidden(e.utmCampaign, e.directOrder)) return;
-      const costNum = Number(e.cost) || 0;
-      totalCostSum += costNum;
-      
+      const c = Number(e.cost) || 0;
+      totalCostSum += c;
       const key = format(e.date, 'yyyy-MM-dd');
       const t = trendMap.get(key);
-      if (t) t.cost += costNum;
+      if (t) t.cost += c;
       
       const name = resolveName(e.utmCampaign, e.directOrder);
-      const stat = campaignStats.get(name) || { leads: 0, target: 0, sales: 0, cost: 0, revenue: 0 };
-      stat.cost += costNum;
-      campaignStats.set(name, stat);
+      const s = campaignStats.get(name) || { leads: 0, cost: 0, rev: 0 };
+      s.cost += c;
+      campaignStats.set(name, s);
     });
 
-    // 4. Formatting
+    // Logging for analysis
+    console.log(`[Dash] Range: ${format(filterStart, 'yyyy-MM-dd')} to ${format(filterEnd, 'yyyy-MM-dd')}`);
+    console.log(`[Dash] Total Leads: ${totalLeadsCount}, Total Trends with data: ${Array.from(trendMap.values()).filter(t => t.leads > 0 || t.cost > 0).length}`);
+
     const efficientCampaigns = Array.from(campaignStats.entries())
       .filter(([_, s]) => s.leads > 0)
       .map(([name, s]) => ({ name, leads: s.leads, cpl: s.cost / s.leads }))
-      .sort((a, b) => a.cpl - b.cpl)
-      .slice(0, 5);
+      .sort((a, b) => a.cpl - b.cpl).slice(0, 5);
 
-    const topCampaigns = Array.from(campaignStats.entries())
+    const topByLeads = Array.from(campaignStats.entries())
       .map(([name, s]) => ({ name, leads: s.leads }))
-      .sort((a, b) => b.leads - a.leads)
-      .slice(0, 5);
+      .sort((a, b) => b.leads - a.leads).slice(0, 5);
 
-    const rawSources = await db
-      .select({
-        source: leads.utmSource,
-        count: sql<number>`count(${leads.id})`.mapWith(Number),
-      })
-      .from(leads)
-      .where(and(...filters))
-      .groupBy(leads.utmSource)
-      .orderBy(desc(sql`count(${leads.id})`))
-      .limit(10);
+    const sources = await db
+      .select({ source: leads.utmSource, count: sql<number>`count(${leads.id})`.mapWith(Number) })
+      .from(leads).where(and(...filters)).groupBy(leads.utmSource).orderBy(desc(sql`count`)).limit(10);
 
     return NextResponse.json({
       summary: {
@@ -189,18 +155,17 @@ export async function GET(request: Request) {
         targetLeads: totalTargetCount,
         sales: totalSalesCount,
         cost: totalCostSum,
-        revenue: totalRevenueSum,
-        cpl: totalLeadsCount > 0 ? (totalCostSum / totalLeadsCount) : 0,
-        romi: totalCostSum > 0 ? ((totalRevenueSum - totalCostSum) / totalCostSum) * 100 : 0
+        revenue: totalRevSum,
+        cpl: totalLeadsCount > 0 ? totalCostSum / totalLeadsCount : 0,
+        romi: totalCostSum > 0 ? ((totalRevSum - totalCostSum) / totalCostSum) * 100 : 0
       },
       trends: Array.from(trendMap.values()),
-      sources: rawSources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
-      topCampaigns,
+      sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
+      topCampaigns: topByLeads,
       efficientCampaigns
     });
-
-  } catch (error) {
-    console.error("Dashboard API Error:", error);
+  } catch (err) {
+    console.error("Dashboard API Error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
