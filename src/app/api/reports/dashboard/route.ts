@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { leads, expenses, goalAchievements, trackedGoals, campaignMappings } from "@/db/schema";
-import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
+import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses } from "@/db/schema";
+import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { eachDayOfInterval, format, startOfDay, startOfWeek, startOfMonth, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -34,12 +34,15 @@ export async function GET(request: Request) {
       expFilters.push(eq(expenses.projectId, projectId));
     }
 
-    // 1. Fetch Mappings and Tracked Goals
-    const [projectMappings, activeGoals] = await Promise.all([
+    // 1. Fetch Mappings, Tracked Goals and Positive Statuses
+    const [projectMappings, activeGoals, allTargetStatuses] = await Promise.all([
       db.select().from(campaignMappings).where(projectId ? eq(campaignMappings.projectId, projectId) : undefined),
-      db.select().from(trackedGoals).where(and(projectId ? eq(trackedGoals.projectId, projectId) : undefined, eq(trackedGoals.isActive, true)))
+      db.select().from(trackedGoals).where(and(projectId ? eq(trackedGoals.projectId, projectId) : undefined, eq(trackedGoals.isActive, true))),
+      db.select().from(targetStatuses).where(projectId ? eq(targetStatuses.projectId, projectId) : undefined)
     ]);
+    
     const targetGoalIds = new Set(activeGoals.map(g => g.goalId));
+    const positiveStatusIds = new Set(allTargetStatuses.filter(s => s.isPositive).map(s => s.id));
 
     const resolveName = (utmCampaign: string | null, directOrder: string | null, utmSource: string | null = null) => {
       const mapping = projectMappings.find(m => {
@@ -85,8 +88,8 @@ export async function GET(request: Request) {
     dbAchievements.forEach(a => {
       const current = leadMetaMap.get(a.leadId) || { isTarget: false, isSale: false, revenue: 0 };
       
-      // Update: Only count as Target if a status is actually set (not null)
-      if (targetGoalIds.has(a.goalId) && a.targetStatusId !== null) {
+      // Update: Count as Target ONLY if goal is tracked AND status is marked as Positive
+      if (targetGoalIds.has(a.goalId) && a.targetStatusId !== null && positiveStatusIds.has(a.targetStatusId)) {
         current.isTarget = true;
       }
       

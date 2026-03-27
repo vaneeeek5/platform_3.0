@@ -15,10 +15,17 @@ export async function PATCH(
   const projectId = parseInt(id);
   const sId = parseInt(statusId);
   const body = await request.json();
-  const table = type === "target" ? targetStatuses : qualificationStatuses;
+  const isTarget = type === "target";
+  const table = isTarget ? targetStatuses : qualificationStatuses;
+
+  const updates: any = {};
+  if (body.label !== undefined) updates.label = body.label;
+  if (body.color !== undefined) updates.color = body.color;
+  if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder;
+  if (isTarget && body.isPositive !== undefined) updates.isPositive = body.isPositive;
 
   const [updated] = await db.update(table)
-    .set(body)
+    .set(updates)
     .where(and(eq(table.id, sId), eq(table.projectId, projectId)))
     .returning();
 

@@ -28,14 +28,21 @@ export async function POST(
 
   const { id, type } = await params;
   const projectId = parseInt(id);
-  const { label, color } = await request.json();
-  const table = type === "target" ? targetStatuses : qualificationStatuses;
+  const { label, color, isPositive } = await request.json();
+  const isTarget = type === "target";
+  const table = isTarget ? targetStatuses : qualificationStatuses;
 
-  const [newStatus] = await db.insert(table).values({
+  const values: any = {
     projectId,
     label,
     color,
-  }).returning();
+  };
+  
+  if (isTarget && isPositive !== undefined) {
+    values.isPositive = isPositive;
+  }
+
+  const [newStatus] = await db.insert(table).values(values).returning();
 
   return NextResponse.json(newStatus);
 }

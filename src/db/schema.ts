@@ -89,6 +89,7 @@ export const targetStatuses = pgTable("target_statuses", {
   label: text("label").notNull(),
   color: text("color").notNull(),
   isDefault: boolean("is_default").default(false),
+  isPositive: boolean("is_positive").default(true),
   sortOrder: integer("sort_order").default(0),
 });
 
