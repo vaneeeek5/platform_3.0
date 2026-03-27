@@ -68,8 +68,10 @@ export function AdminNav() {
             key={item.href}
             href={item.href}
             className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:bg-accent",
-              pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href))
+              "flex items-center gap-3 px-3 py-2 rounded-md transition-all hover:bg-accent cursor-pointer z-10",
+              (pathname === item.href || 
+               pathname === `${item.href}/` || 
+               (item.href !== "/admin" && pathname.startsWith(item.href)))
                 ? "bg-accent text-accent-foreground font-medium"
                 : "text-muted-foreground"
             )}
