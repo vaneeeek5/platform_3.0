@@ -8,7 +8,7 @@ import { RefreshCw, Clock, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, C
 import * as XLSX from "xlsx";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
-import { subDays } from "date-fns";
+import { subDays, format } from "date-fns";
 
 export function SyncSettings({ projectId }: { projectId: number }) {
   const [syncing, setSyncing] = useState(false);
@@ -32,8 +32,8 @@ export function SyncSettings({ projectId }: { projectId: number }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-           dateFrom: dateRange.from.toISOString(),
-           dateTo: dateRange.to.toISOString()
+           dateFrom: format(dateRange.from, 'yyyy-MM-dd'),
+           dateTo: format(dateRange.to, 'yyyy-MM-dd')
         })
       });
       if (res.ok) {

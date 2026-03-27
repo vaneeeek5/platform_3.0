@@ -86,8 +86,8 @@ export function ExpensesReport() {
         try {
             const params = new URLSearchParams({
                 projectId: selectedProjectId,
-                dateFrom: dateRange.from.toISOString(),
-                dateTo: dateRange.to.toISOString()
+                dateFrom: format(dateRange.from, 'yyyy-MM-dd'),
+                dateTo: format(dateRange.to, 'yyyy-MM-dd')
             });
             const res = await fetch(`/api/reports/expenses?${params}`);
             const json = await res.json();
