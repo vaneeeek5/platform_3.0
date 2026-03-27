@@ -232,7 +232,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-         {/* Top Performing Campaigns (Visual logic placeholder or list) */}
+         {/* Top Performing Campaigns */}
          <Card className="border-none shadow-sm">
             <CardHeader>
                <div className="flex items-center justify-between">
@@ -244,9 +244,26 @@ export default function DashboardPage() {
                </div>
             </CardHeader>
             <CardContent>
-                <div className="text-sm text-center py-4 text-muted-foreground">
-                  Данные доступны во вкладке «Расходы» для детального анализа.
-               </div>
+                <div className="space-y-4">
+                  {data?.topCampaigns?.length > 0 ? (
+                    data.topCampaigns.map((c: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between border-b pb-2 last:border-0">
+                         <div className="flex flex-col">
+                            <span className="text-xs font-semibold truncate max-w-[200px]">{c.name}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">UTM Campaign</span>
+                         </div>
+                         <div className="text-right">
+                            <div className="text-xs font-bold">{c.leads}</div>
+                            <div className="text-[10px] text-muted-foreground">лидов</div>
+                         </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-center py-4 text-muted-foreground italic">
+                      Нет данных по кампаниям за период.
+                    </div>
+                  )}
+                </div>
             </CardContent>
          </Card>
 

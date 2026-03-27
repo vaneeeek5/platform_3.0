@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     // 2. Daily Trends
     const leadTrends = await db
       .select({
-        date: sql<string>`DATE(${leads.date})`.as("d"),
+        date: sql<string>`TO_CHAR(${leads.date}, 'YYYY-MM-DD')`.as("d"),
         count: sql<number>`count(${leads.id})`.mapWith(Number),
       })
       .from(leads)
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
 
     const expenseTrends = await db
       .select({
-        date: sql<string>`DATE(${expenses.date})`.as("d"),
+        date: sql<string>`TO_CHAR(${expenses.date}, 'YYYY-MM-DD')`.as("d"),
         cost: sql<number>`sum(${expenses.cost})`.mapWith(Number),
       })
       .from(expenses)
@@ -76,7 +76,20 @@ export async function GET(request: Request) {
       .orderBy(desc(sql`count`))
       .limit(10);
 
-    // 4. Merge Trends for Chart (Frontend friendly)
+    // 4. Top Campaigns (by Lead Count)
+    // We'll aggregate from leads and match with expenses if possible
+    const topCampaignsData = await db
+      .select({
+        name: leads.utmCampaign,
+        leads: sql<number>`count(${leads.id})`.mapWith(Number),
+      })
+      .from(leads)
+      .where(and(...filters))
+      .groupBy(leads.utmCampaign)
+      .orderBy(desc(sql`leads`))
+      .limit(5);
+
+    // 5. Merge Trends for Chart (Frontend friendly)
     const trendMap = new Map();
     leadTrends.forEach(t => trendMap.set(t.date, { date: t.date, leads: t.count, cost: 0 }));
     expenseTrends.forEach(t => {
@@ -94,7 +107,8 @@ export async function GET(request: Request) {
         romi: totalCost?.sum > 0 ? ((totalRev?.sum - totalCost.sum) / totalCost.sum) * 100 : 0
       },
       trends: Array.from(trendMap.values()).sort((a,b) => a.date.localeCompare(b.date)),
-      sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.count }))
+      sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
+      topCampaigns: topCampaignsData.map(c => ({ name: c.name || "Unknown", leads: c.leads }))
     });
 
   } catch (error) {
