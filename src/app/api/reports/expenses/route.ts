@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { expenses, leads, goalAchievements, campaignMappings } from "@/db/schema";
-import { eq, and, gte, lte, sql, notInArray } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -24,12 +24,6 @@ export async function GET(request: Request) {
     const filters = [eq(expenses.projectId, projectId)];
     if (dateFrom) filters.push(gte(expenses.date, new Date(dateFrom)));
     if (dateTo) filters.push(lte(expenses.date, new Date(dateTo)));
-
-    const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
-    const hiddenCampaignNames = projectMappings.filter((m: any) => m.isHidden).map((m: any) => m.displayName);
-    if (hiddenCampaignNames.length > 0) {
-      filters.push(notInArray(expenses.campaignName, hiddenCampaignNames));
-    }
 
     if (raw) {
       // Return raw unique terms for mapping UI
@@ -62,6 +56,7 @@ export async function GET(request: Request) {
     if (dateFrom) leadFilters.push(gte(leads.date, new Date(dateFrom)));
     if (dateTo) leadFilters.push(lte(leads.date, new Date(dateTo)));
 
+    const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
 
     const leadDataRaw = await db
       .select({

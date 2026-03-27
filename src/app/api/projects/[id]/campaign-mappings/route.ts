@@ -42,8 +42,6 @@ export async function POST(
             utmValue: m.utmValue || null,
             directValue: m.directValue || null,
             displayName: m.displayName,
-            normalizedName: m.displayName.toLowerCase(),
-            isHidden: m.isHidden || false,
           }));
 
         if (validMappings.length > 0) {
