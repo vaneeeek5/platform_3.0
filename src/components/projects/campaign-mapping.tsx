@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { format, subDays } from "date-fns"
 import { Plus, Trash2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -43,14 +44,15 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
 
   const fetchExistingCampaigns = async () => {
     try {
-      // Fetch the expenses report to get a list of active campaigns
+      // Fetch the expenses report with raw mode to get unique UTM/Direct pairs
       const today = new Date();
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgo = subDays(today, 30);
       
       const params = new URLSearchParams({
           projectId: projectId.toString(),
-          dateFrom: thirtyDaysAgo.toISOString(),
-          dateTo: today.toISOString()
+          dateFrom: format(thirtyDaysAgo, 'yyyy-MM-dd'),
+          dateTo: format(today, 'yyyy-MM-dd'),
+          raw: 'true'
       });
       
       const res = await fetch(`/api/reports/expenses?${params}`);
