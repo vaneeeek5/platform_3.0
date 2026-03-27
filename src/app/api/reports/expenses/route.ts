@@ -70,19 +70,26 @@ export async function GET(request: Request) {
 
     // Step 1: Process Expense Data and Resolve Names
     expenseData.forEach(exp => {
-      const mapping = projectMappings.find(m => 
-        (m.utmValue && m.utmValue === exp.utmCampaign) || 
-        (m.directValue && m.directValue === exp.directOrder) ||
-        (exp.utmCampaign === "unknown" && m.utmValue === "") // Match raw unknown to empty mappings
-      );
+      // Find mapping: check UTM first, then Direct Order
+      // We use a more robust check that handles empty strings
+      const mapping = projectMappings.find(m => {
+        if (m.utmValue && m.utmValue === exp.utmCampaign) return true;
+        if (m.directValue && m.directValue === exp.directOrder) return true;
+        // Special case: if both are empty/null and mapping is also "empty", it's a match for Unknown
+        if (!exp.utmCampaign || exp.utmCampaign === "unknown") {
+          if (!m.utmValue && !m.directValue) return true;
+        }
+        return false;
+      });
       
-      const displayName = mapping?.displayName || exp.campaignName || exp.utmCampaign || "Unknown";
+      const rawName = exp.campaignName || exp.utmCampaign || "";
+      const displayName = mapping?.displayName || rawName || "Unknown";
       
-      // Standardize "unknown" to "Unknown" for better matching
+      // Standardize to "Unknown" if still empty or literally "unknown"
       const finalDisplayName = (displayName.toLowerCase() === "unknown" || !displayName) ? "Unknown" : displayName;
 
       // SKIP HIDDEN ROWS
-      if (mapping?.isHidden || hiddenDisplayNames.has(finalDisplayName)) {
+      if (mapping?.isHidden || (finalDisplayName === "Unknown" && hiddenDisplayNames.has("Unknown"))) {
         return;
       }
 
@@ -104,12 +111,19 @@ export async function GET(request: Request) {
 
     // Step 2: Map Lead Data to Resolved Names
     leadData.forEach(lead => {
-      const mapping = projectMappings.find(m => m.utmValue === lead.utmCampaign);
+      const mapping = projectMappings.find(m => {
+        if (m.utmValue && m.utmValue === lead.utmCampaign) return true;
+        if (!lead.utmCampaign || lead.utmCampaign === "unknown") {
+           if (!m.utmValue && !m.directValue) return true;
+        }
+        return false;
+      });
+
       const displayName = mapping?.displayName || lead.utmCampaign || "Unknown";
       const finalDisplayName = (displayName.toLowerCase() === "unknown" || !displayName) ? "Unknown" : displayName;
       
-      // SKIP HIDDEN ROWS (leads should follow campaign visibility)
-      if (mapping?.isHidden || hiddenDisplayNames.has(finalDisplayName)) {
+      // SKIP HIDDEN ROWS
+      if (mapping?.isHidden || (finalDisplayName === "Unknown" && hiddenDisplayNames.has("Unknown"))) {
         return;
       }
 
@@ -117,7 +131,6 @@ export async function GET(request: Request) {
       if (row) {
         row.leadCount += lead.count;
       } else {
-        // If we have leads but no expenses for this campaign
         reportData.set(finalDisplayName, {
           campaignName: finalDisplayName,
           totalCost: 0,
