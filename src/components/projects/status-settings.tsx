@@ -8,6 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface Status {
   id: number
@@ -147,6 +153,19 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                 />
                 <Label htmlFor={`pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer flex items-center gap-1">
                   Учитывать в «Целевых лидах» на дашборде
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3 w-3 text-neutral-400" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-[200px] text-[10px]">
+                          Если галочка стоит, лиды с этим статусом будут считаться успешными (целевыми). 
+                          Например: «Продажа» — да, «Отказ» или «Дубль» — нет.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </Label>
               </div>
             </div>
