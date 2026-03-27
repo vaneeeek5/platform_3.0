@@ -232,7 +232,9 @@ export async function syncMetrikaVisits(projectId: number, dateFromStr?: string,
             const [dateDim, orderDim] = row.dimensions;
             const date = dateDim.name;
             const orderName = orderDim.name || "";
-            const totalCost = row.metrics.reduce((acc: number, val: number) => acc + (val || 0), 0);
+            // Extract primary currency cost (metrics[0] is RUBAdCost based on our API request)
+            // Do not reduce/sum the array because Metrika returns the SAME cost converted into all requested currencies!
+            const totalCost = row.metrics[0] || row.metrics.find((m: number | null) => m !== null && m > 0) || 0;
             
             const mapping = projectMappings.find(m => m.directValue === orderName);
             const key = mapping ? `${date}|map_${mapping.id}` : `${date}|dir_${orderName}`;
