@@ -41,24 +41,28 @@ export async function GET(request: Request) {
     ]);
     const targetGoalIds = new Set(activeGoals.map(g => g.goalId));
 
-    const resolveName = (utmCampaign: string | null, directOrder: string | null) => {
+    const resolveName = (utmCampaign: string | null, directOrder: string | null, utmSource: string | null = null) => {
       const mapping = projectMappings.find(m => {
-        if (m.utmValue && m.utmValue === utmCampaign) return true;
-        if (m.directValue && m.directValue === directOrder) return true;
+        if (m.utmValue && utmCampaign && m.utmValue === utmCampaign) return true;
+        if (m.directValue && directOrder && m.directValue === directOrder) return true;
         return false;
       });
-      return mapping?.displayName || utmCampaign || directOrder || "Unknown";
+      if (mapping?.displayName) return mapping.displayName;
+      if (utmCampaign) return utmCampaign;
+      if (directOrder) return directOrder;
+      if (utmSource) return `Source: ${utmSource}`;
+      return "Direct / Unknown";
     };
 
-    const isHidden = (utmCampaign: string | null, directOrder: string | null) => {
-        const name = resolveName(utmCampaign, directOrder);
+    const isHidden = (utmCampaign: string | null, directOrder: string | null, utmSource: string | null = null) => {
+        const name = resolveName(utmCampaign, directOrder, utmSource);
         const mapping = projectMappings.find(m => m.displayName === name);
         return mapping?.isHidden;
     };
 
     // 2. Fetch Data
     const dbLeads = await db
-      .select({ id: leads.id, date: leads.date, utmCampaign: leads.utmCampaign })
+      .select({ id: leads.id, date: leads.date, utmCampaign: leads.utmCampaign, utmSource: leads.utmSource })
       .from(leads).where(and(...filters));
 
     const dbAchievements = await db
@@ -68,7 +72,7 @@ export async function GET(request: Request) {
       .where(and(...filters));
 
     const dbExpenses = await db
-      .select({ date: expenses.date, cost: expenses.cost, utmCampaign: expenses.utmCampaign, directOrder: expenses.directOrder })
+      .select({ date: expenses.date, cost: expenses.cost, utmCampaign: expenses.utmCampaign, directOrder: expenses.directOrder, utmSource: expenses.utmSource })
       .from(expenses).where(and(...expFilters));
 
     // Map lead to its achievements
@@ -123,7 +127,7 @@ export async function GET(request: Request) {
     const campaignStats = new Map<string, { leads: number, cost: number, rev: number }>();
 
     dbLeads.forEach(l => {
-      if (isHidden(l.utmCampaign, null)) return;
+      if (isHidden(l.utmCampaign, null, l.utmSource)) return;
       const lMeta = leadMetaMap.get(l.id) || { isTarget: false, isSale: false, revenue: 0 };
       
       totalLeadsCount++;
@@ -139,7 +143,7 @@ export async function GET(request: Request) {
         if (lMeta.isSale) t.sales++;
       }
       
-      const name = resolveName(l.utmCampaign, null);
+      const name = resolveName(l.utmCampaign, null, l.utmSource);
       const s = campaignStats.get(name) || { leads: 0, cost: 0, rev: 0 };
       s.leads++;
       s.rev += lMeta.revenue;
@@ -147,14 +151,14 @@ export async function GET(request: Request) {
     });
 
     dbExpenses.forEach(e => {
-      if (isHidden(e.utmCampaign, e.directOrder)) return;
+      if (isHidden(e.utmCampaign, e.directOrder, e.utmSource)) return;
       const c = Number(e.cost) || 0;
       totalCostSum += c;
       const key = getPeriodKey(e.date);
       const t = trendMap.get(key);
       if (t) t.cost += c;
       
-      const name = resolveName(e.utmCampaign, e.directOrder);
+      const name = resolveName(e.utmCampaign, e.directOrder, e.utmSource);
       const s = campaignStats.get(name) || { leads: 0, cost: 0, rev: 0 };
       s.cost += c;
       campaignStats.set(name, s);
@@ -163,6 +167,11 @@ export async function GET(request: Request) {
     const sources = await db
       .select({ source: leads.utmSource, count: sql<number>`count(${leads.id})`.mapWith(Number) })
       .from(leads).where(and(...filters)).groupBy(leads.utmSource).orderBy(desc(sql`count`)).limit(10);
+
+    // Filter out "Direct / Unknown" from campaign-level widgets
+    const filteredCampaigns = Array.from(campaignStats.entries())
+      .filter(([name]) => name !== "Direct / Unknown")
+      .map(([name, s]) => ({ name, leads: s.leads, cost: s.cost, cpl: s.leads > 0 ? s.cost / s.leads : 0 }));
 
     return NextResponse.json({
       summary: {
@@ -176,8 +185,8 @@ export async function GET(request: Request) {
       },
       trends: Array.from(trendMap.values()).sort((a: any, b: any) => a.sortKey - b.sortKey),
       sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
-      topCampaigns: Array.from(campaignStats.entries()).map(([name, s]) => ({ name, leads: s.leads })).sort((a, b) => b.leads - a.leads).slice(0, 5),
-      efficientCampaigns: Array.from(campaignStats.entries()).filter(([_, s]) => s.leads > 0).map(([name, s]) => ({ name, leads: s.leads, cpl: s.cost / s.leads })).sort((a, b) => a.cpl - b.cpl).slice(0, 5)
+      topCampaigns: filteredCampaigns.sort((a, b) => b.leads - a.leads).slice(0, 5),
+      efficientCampaigns: filteredCampaigns.filter(c => c.leads > 0).sort((a, b) => a.cpl - b.cpl).slice(0, 5)
     });
   } catch (err) {
     console.error("Dashboard API Error:", err);
