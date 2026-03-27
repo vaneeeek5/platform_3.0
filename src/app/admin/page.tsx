@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import useSWR from "swr"
 import { 
   TrendingUp, 
   Users, 
@@ -35,29 +34,49 @@ import { DateRange } from "react-day-picker"
 import { subDays, format } from "date-fns"
 import { toast } from "sonner"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
 export default function DashboardPage() {
+  const [projectsData, setProjectsData] = useState<any[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>("0")
   const [granularity, setGranularity] = useState<"day" | "week" | "month">("day");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
     to: new Date()
   })
+  const [data, setData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const { data: projectsData } = useSWR("/api/projects", fetcher);
-  
-  const queryParams = new URLSearchParams({
-    projectId: selectedProjectId,
-    granularity,
-    ...(dateRange?.from && { dateFrom: dateRange.from.toISOString() }),
-    ...(dateRange?.to && { dateTo: dateRange.to.toISOString() }),
-  });
+  useEffect(() => {
+    fetch("/api/projects")
+      .then(res => res.json())
+      .then(setProjectsData)
+      .catch(console.error);
+  }, []);
 
-  const { data, error, isLoading } = useSWR(
-    `/api/reports/dashboard?${queryParams.toString()}`,
-    fetcher
-  );
+  const fetchDashboardData = async () => {
+    setIsLoading(true);
+    try {
+      const queryParams = new URLSearchParams({
+        projectId: selectedProjectId,
+        granularity,
+        ...(dateRange?.from && { dateFrom: dateRange.from.toISOString() }),
+        ...(dateRange?.to && { dateTo: dateRange.to.toISOString() }),
+      });
+      const res = await fetch(`/api/reports/dashboard?${queryParams.toString()}`);
+      if (res.ok) {
+        setData(await res.json());
+      } else {
+        toast.error("Не удалось загрузить данные дашборда");
+      }
+    } catch (e) {
+      toast.error("Ошибка сети");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [selectedProjectId, granularity, dateRange]);
 
   // SVG Chart Renderer
   const renderLineChart = () => {
@@ -75,7 +94,6 @@ export default function DashboardPage() {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
-    // Calculate scale
     const allVals = data.trends.flatMap((t: any) => [t.leads, t.targetLeads, t.sales]);
     const maxVal = Math.max(...allVals, 10);
     const roundedMax = Math.ceil(maxVal / 10) * 10 || 10;
@@ -91,7 +109,6 @@ export default function DashboardPage() {
     return (
       <div className="relative w-full h-[300px] mt-4">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible font-sans">
-          {/* Horizontal Grid Lines */}
           {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
             const val = Math.round(roundedMax * p);
             const y = getY(val);
@@ -103,9 +120,7 @@ export default function DashboardPage() {
             );
           })}
 
-          {/* X Axis Labels */}
           {data.trends.map((t: any, i: number) => {
-            // Show labels selectively to avoid overlap
             const step = Math.ceil(data.trends.length / 10);
             if (i % step !== 0 && i !== data.trends.length - 1) return null;
             return (
@@ -115,29 +130,23 @@ export default function DashboardPage() {
             );
           })}
 
-          {/* The Lines */}
           <path d={createPath("leads")} stroke="#3b82f6" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
           <path d={createPath("targetLeads")} stroke="#10b981" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
           <path d={createPath("sales")} stroke="#f59e0b" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
 
-          {/* Interaction Points */}
           {data.trends.map((t: any, i: number) => (
             <g key={i} className="group/point">
-              {/* Invisible Hit Area */}
               <rect x={getX(i) - 10} y={padding.top} width="20" height={chartHeight} fill="transparent" className="cursor-pointer" />
-              
-              {/* Visible Dots on Hover */}
               <circle cx={getX(i)} cy={getY(t.leads)} r="4" fill="#3b82f6" stroke="white" strokeWidth="2" className="opacity-0 group-hover/point:opacity-100 transition-opacity" />
               <circle cx={getX(i)} cy={getY(t.targetLeads)} r="4" fill="#10b981" stroke="white" strokeWidth="2" className="opacity-0 group-hover/point:opacity-100 transition-opacity" />
               <circle cx={getX(i)} cy={getY(t.sales)} r="4" fill="#f59e0b" stroke="white" strokeWidth="2" className="opacity-0 group-hover/point:opacity-100 transition-opacity" />
 
-              {/* Tooltip Content */}
               <foreignObject x={getX(i) + 12} y={padding.top} width="140" height="100" className="pointer-events-none hidden group-hover/point:block z-50 overflow-visible">
                 <div className="bg-slate-900/95 backdrop-blur-sm text-white p-2.5 rounded-lg shadow-2xl text-[10px] border border-white/10 ring-1 ring-black/5">
                   <div className="font-bold border-b border-white/20 mb-1.5 pb-1 text-slate-300">{t.period}</div>
                   <div className="space-y-1">
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-blue-400" /><span>Всего лидов:</span></div>
+                      <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-blue-400" /><span>Всего:</span></div>
                       <span className="font-bold text-blue-100">{t.leads}</span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -170,7 +179,6 @@ export default function DashboardPage() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          {/* Granularity Toggles */}
           <div className="flex items-center gap-1 bg-white rounded-lg border p-1 shadow-sm">
             <Button variant={granularity === "day" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("day")} className="h-7 text-[10px] px-3">Дни</Button>
             <Button variant={granularity === "week" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("week")} className="h-7 text-[10px] px-2.5">Недели</Button>
@@ -257,7 +265,7 @@ export default function DashboardPage() {
                 <CardDescription>Активность по времени</CardDescription>
               </div>
               <div className="flex items-center gap-4 text-[10px] font-medium text-slate-500">
-                <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-blue-500" /><span>Все лиды</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-blue-500" /><span>Лиды</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-emerald-500" /><span>Целевые</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-amber-500" /><span>Продажи</span></div>
               </div>
@@ -283,7 +291,7 @@ export default function DashboardPage() {
                       <span className="truncate max-w-[150px]">{s.name}</span>
                       <span className="text-slate-900 font-bold">{s.value}</span>
                     </div>
-                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden scale-x-100 origin-left transition-transform duration-500">
+                    <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                       <div className="h-full bg-primary/80 rounded-full" style={{ width: `${(s.value/max)*100}%` }} />
                     </div>
                   </div>
