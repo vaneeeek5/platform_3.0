@@ -167,10 +167,8 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
           ))}
         </datalist>
         <datalist id="existing-directs">
-          {existingDirects
-            .filter((camp) => !mappings.some(m => m.directValue === camp.direct))
-            .map((camp) => (
-              <option key={camp.direct} value={camp.direct} />
+          {existingDirects.map((camp) => (
+            <option key={camp.direct} value={camp.direct} />
           ))}
         </datalist>
 
