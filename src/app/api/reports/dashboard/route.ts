@@ -3,7 +3,8 @@ import { db } from "@/db";
 import { leads, expenses, goalAchievements, trackedGoals, campaignMappings } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
-import { eachDayOfInterval, format, startOfDay, addDays } from "date-fns";
+import { eachDayOfInterval, format, startOfDay, startOfWeek, startOfMonth, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from "date-fns";
+import { ru } from "date-fns/locale";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
   const projectId = projectIdStr && projectIdStr !== "0" ? parseInt(projectIdStr) : null;
   const dateFromStr = searchParams.get("dateFrom");
   const dateToStr = searchParams.get("dateTo");
+  const granularity = searchParams.get("granularity") || "day";
 
   // Normalize range
   const dateFrom = dateFromStr ? new Date(dateFromStr) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -79,13 +81,39 @@ export async function GET(request: Request) {
       leadMetaMap.set(a.leadId, current);
     });
 
-    // 3. Process Trends
+    // 3. Process Trends by Granularity
     const trendMap = new Map();
-    const days = eachDayOfInterval({ start: filterStart, end: filterEnd });
-    days.forEach(day => {
-      const key = format(day, 'yyyy-MM-dd');
-      trendMap.set(key, { period: format(day, 'dd.MM'), leads: 0, targetLeads: 0, sales: 0, cost: 0 });
+    let intervals: Date[] = [];
+    
+    if (granularity === "week") {
+      intervals = eachWeekOfInterval({ start: filterStart, end: filterEnd }, { weekStartsOn: 1 });
+    } else if (granularity === "month") {
+      intervals = eachMonthOfInterval({ start: filterStart, end: filterEnd });
+    } else {
+      intervals = eachDayOfInterval({ start: filterStart, end: filterEnd });
+    }
+
+    intervals.forEach((dt, idx) => {
+      let key = "";
+      let label = "";
+      if (granularity === "week") {
+        key = format(dt, 'yyyy-ww');
+        label = `Нед ${format(dt, 'w')}`;
+      } else if (granularity === "month") {
+        key = format(dt, 'yyyy-MM');
+        label = format(dt, 'MMM yyyy', { locale: ru });
+      } else {
+        key = format(dt, 'yyyy-MM-dd');
+        label = format(dt, 'dd.MM');
+      }
+      trendMap.set(key, { key, period: label, leads: 0, targetLeads: 0, sales: 0, cost: 0, sortKey: dt.getTime() });
     });
+
+    const getPeriodKey = (date: Date) => {
+      if (granularity === "week") return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-ww');
+      if (granularity === "month") return format(startOfMonth(date), 'yyyy-MM');
+      return format(date, 'yyyy-MM-dd');
+    };
 
     let totalLeadsCount = 0;
     let totalTargetCount = 0;
@@ -103,7 +131,7 @@ export async function GET(request: Request) {
       if (lMeta.isSale) totalSalesCount++;
       totalRevSum += lMeta.revenue;
 
-      const key = format(l.date, 'yyyy-MM-dd');
+      const key = getPeriodKey(l.date);
       const t = trendMap.get(key);
       if (t) {
         t.leads++;
@@ -122,7 +150,7 @@ export async function GET(request: Request) {
       if (isHidden(e.utmCampaign, e.directOrder)) return;
       const c = Number(e.cost) || 0;
       totalCostSum += c;
-      const key = format(e.date, 'yyyy-MM-dd');
+      const key = getPeriodKey(e.date);
       const t = trendMap.get(key);
       if (t) t.cost += c;
       
@@ -131,19 +159,6 @@ export async function GET(request: Request) {
       s.cost += c;
       campaignStats.set(name, s);
     });
-
-    // Logging for analysis
-    console.log(`[Dash] Range: ${format(filterStart, 'yyyy-MM-dd')} to ${format(filterEnd, 'yyyy-MM-dd')}`);
-    console.log(`[Dash] Total Leads: ${totalLeadsCount}, Total Trends with data: ${Array.from(trendMap.values()).filter(t => t.leads > 0 || t.cost > 0).length}`);
-
-    const efficientCampaigns = Array.from(campaignStats.entries())
-      .filter(([_, s]) => s.leads > 0)
-      .map(([name, s]) => ({ name, leads: s.leads, cpl: s.cost / s.leads }))
-      .sort((a, b) => a.cpl - b.cpl).slice(0, 5);
-
-    const topByLeads = Array.from(campaignStats.entries())
-      .map(([name, s]) => ({ name, leads: s.leads }))
-      .sort((a, b) => b.leads - a.leads).slice(0, 5);
 
     const sources = await db
       .select({ source: leads.utmSource, count: sql<number>`count(${leads.id})`.mapWith(Number) })
@@ -159,10 +174,10 @@ export async function GET(request: Request) {
         cpl: totalLeadsCount > 0 ? totalCostSum / totalLeadsCount : 0,
         romi: totalCostSum > 0 ? ((totalRevSum - totalCostSum) / totalCostSum) * 100 : 0
       },
-      trends: Array.from(trendMap.values()),
+      trends: Array.from(trendMap.values()).sort((a: any, b: any) => a.sortKey - b.sortKey),
       sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
-      topCampaigns: topByLeads,
-      efficientCampaigns
+      topCampaigns: Array.from(campaignStats.entries()).map(([name, s]) => ({ name, leads: s.leads })).sort((a, b) => b.leads - a.leads).slice(0, 5),
+      efficientCampaigns: Array.from(campaignStats.entries()).filter(([_, s]) => s.leads > 0).map(([name, s]) => ({ name, leads: s.leads, cpl: s.cost / s.leads })).sort((a, b) => a.cpl - b.cpl).slice(0, 5)
     });
   } catch (err) {
     console.error("Dashboard API Error:", err);
