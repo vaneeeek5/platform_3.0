@@ -34,15 +34,12 @@ export default async function middleware(req: NextRequest) {
   // Role-based redirects for the root "/" path
   if (path === "/" && session) {
     if (session.role === "SUPER_ADMIN" || session.role === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin/projects", req.nextUrl));
+      return NextResponse.redirect(new URL("/admin", req.nextUrl));
     }
   }
 
-  // Handle /admin root redirect
-  if (path === "/admin") {
-    return NextResponse.redirect(new URL("/admin/projects", req.nextUrl));
-  }
-
+  // Remove the old /admin -> /admin/projects redirect to allow Dashboard access
+  
   return NextResponse.next();
 }
 
