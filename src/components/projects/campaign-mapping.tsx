@@ -160,13 +160,17 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
       </CardHeader>
       <CardContent>
         <datalist id="existing-utms">
-          {existingUtms.map((camp) => (
-            <option key={camp.utm} value={camp.utm} />
+          {existingUtms
+            .filter((camp) => !mappings.some(m => m.utmValue === camp.utm))
+            .map((camp) => (
+              <option key={camp.utm} value={camp.utm} />
           ))}
         </datalist>
         <datalist id="existing-directs">
-          {existingDirects.map((camp) => (
-            <option key={camp.direct} value={camp.direct} />
+          {existingDirects
+            .filter((camp) => !mappings.some(m => m.directValue === camp.direct))
+            .map((camp) => (
+              <option key={camp.direct} value={camp.direct} />
           ))}
         </datalist>
 
