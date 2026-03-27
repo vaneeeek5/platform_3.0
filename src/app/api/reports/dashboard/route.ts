@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       .where(and(...filters));
 
     const dbExpenses = await db
-      .select({ date: expenses.date, cost: expenses.cost, utmCampaign: expenses.utmCampaign, directOrder: expenses.directOrder, utmSource: expenses.utmSource })
+      .select({ date: expenses.date, cost: expenses.cost, utmCampaign: expenses.utmCampaign, directOrder: expenses.directOrder })
       .from(expenses).where(and(...expFilters));
 
     // Map lead to its achievements
@@ -151,14 +151,14 @@ export async function GET(request: Request) {
     });
 
     dbExpenses.forEach(e => {
-      if (isHidden(e.utmCampaign, e.directOrder, e.utmSource)) return;
+      if (isHidden(e.utmCampaign, e.directOrder)) return;
       const c = Number(e.cost) || 0;
       totalCostSum += c;
       const key = getPeriodKey(e.date);
       const t = trendMap.get(key);
       if (t) t.cost += c;
       
-      const name = resolveName(e.utmCampaign, e.directOrder, e.utmSource);
+      const name = resolveName(e.utmCampaign, e.directOrder);
       const s = campaignStats.get(name) || { leads: 0, cost: 0, rev: 0 };
       s.cost += c;
       campaignStats.set(name, s);
