@@ -90,7 +90,7 @@ export async function GET(request: Request) {
     const days = eachDayOfInterval({ start: filterStart, end: filterEnd });
     const trendMap = new Map();
     days.forEach(day => {
-      const key = format(day, 'YYYY-MM-DD');
+      const key = format(day, 'yyyy-MM-dd');
       trendMap.set(key, { date: key, label: format(day, 'dd.MM'), leads: 0, cost: 0 });
     });
 
