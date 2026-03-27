@@ -172,32 +172,32 @@ export default function DashboardPage() {
             <CardDescription>Активность по дням: лиды, целевые, продажи</CardDescription>
           </CardHeader>
           <CardContent>
-             <div className="h-[200px] flex items-end gap-[2px] px-2 pt-6">
-                {data?.trends?.length > 0 ? (
+             <div className="h-[200px] flex items-end gap-[2px] px-2 pt-6 border-l border-b border-slate-100">
+                {data?.trends && data.trends.length > 0 ? (
                   data.trends.map((t: any, i: number) => {
-                    const maxVal = Math.max(...data.trends.map((tr: any) => tr.leads), 1);
-                    const hLeads = (t.leads / maxVal) * 100;
-                    const hTarget = (t.targetLeads / maxVal) * 100;
-                    const hSales = (t.sales / maxVal) * 100;
-
+                    const maxVal = Math.max(...data.trends.map((tr: any) => Number(tr.leads) || 0), 1);
+                    const hLeads = (Number(t.leads) / maxVal) * 100;
+                    const hTarget = (Number(t.targetLeads) / maxVal) * 100;
+                    const hSales = (Number(t.sales) / maxVal) * 100;
+                    
                     return (
-                      <div key={i} className="flex-1 flex flex-col items-center group relative min-w-[4px]">
-                        <div className="w-full flex items-end justify-center gap-[1px] h-full">
-                           <div
-                              className="w-[30%] bg-blue-400/40 group-hover:bg-blue-500 transition-colors rounded-t-[1px]"
-                              style={{ height: `${Math.max(hLeads, 2)}%` }}
+                      <div key={i} className="flex-1 flex flex-col items-center group relative min-w-[4px] h-full">
+                        <div className="w-full flex items-end justify-center gap-[1px] h-full group-hover:bg-slate-50 transition-colors">
+                           <div 
+                              className="w-[30%] bg-blue-400 group-hover:bg-blue-600 transition-colors rounded-t-[1px]"
+                              style={{ height: `${Math.max(hLeads, 4)}%` }}
                            />
-                           <div
-                              className="w-[30%] bg-emerald-400/60 group-hover:bg-emerald-600 transition-colors rounded-t-[1px]"
+                           <div 
+                              className="w-[30%] bg-emerald-400 group-hover:bg-emerald-600 transition-colors rounded-t-[1px]"
                               style={{ height: `${Math.max(hTarget, 2)}%` }}
                            />
-                           <div
+                           <div 
                               className="w-[30%] bg-amber-400 group-hover:bg-amber-600 transition-colors rounded-t-[1px]"
                               style={{ height: `${Math.max(hSales, 2)}%` }}
                            />
                         </div>
                         {/* Tooltip */}
-                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-900 text-white text-[10px] p-2 rounded z-20 shadow-xl whitespace-nowrap">
+                        <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-900 text-white text-[10px] p-2 rounded z-20 shadow-xl whitespace-nowrap min-w-[120px]">
                             <div className="font-bold border-b border-white/20 mb-1 pb-1">{t.period}</div>
                             <div className="flex justify-between gap-4"><span>Всего:</span> <span>{t.leads}</span></div>
                             <div className="flex justify-between gap-4 text-emerald-300"><span>Целевые:</span> <span>{t.targetLeads}</span></div>
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                   })
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-muted-foreground italic">
-                    Нет данных за период
+                    {data ? "Нет данных за выбранный период" : "Загрузка данных..."}
                   </div>
                 )}
              </div>
