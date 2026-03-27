@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     const leadTrends = await db
       .select({
         date: sql<string>`TO_CHAR(${leads.date}, 'YYYY-MM-DD')`.as("d"),
-        count: sql<number>`count(${leads.id})`.mapWith(Number),
+        lead_count: sql<number>`count(${leads.id})`.mapWith(Number),
       })
       .from(leads)
       .where(and(...filters))
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     const expenseTrends = await db
       .select({
         date: sql<string>`TO_CHAR(${expenses.date}, 'YYYY-MM-DD')`.as("d"),
-        cost: sql<number>`sum(${expenses.cost})`.mapWith(Number),
+        cost_sum: sql<number>`sum(${expenses.cost})`.mapWith(Number),
       })
       .from(expenses)
       .where(and(...expenseFilters))
@@ -68,33 +68,32 @@ export async function GET(request: Request) {
     const sources = await db
       .select({
         source: leads.utmSource,
-        count: sql<number>`count(${leads.id})`.mapWith(Number),
+        agg_count: sql<number>`count(${leads.id})`.mapWith(Number),
       })
       .from(leads)
       .where(and(...filters))
       .groupBy(leads.utmSource)
-      .orderBy(desc(sql`count`))
+      .orderBy(desc(sql`agg_count`))
       .limit(10);
 
     // 4. Top Campaigns (by Lead Count)
-    // We'll aggregate from leads and match with expenses if possible
     const topCampaignsData = await db
       .select({
         name: leads.utmCampaign,
-        leads: sql<number>`count(${leads.id})`.mapWith(Number),
+        lead_count: sql<number>`count(${leads.id})`.mapWith(Number),
       })
       .from(leads)
       .where(and(...filters))
       .groupBy(leads.utmCampaign)
-      .orderBy(desc(sql`leads`))
+      .orderBy(desc(sql`lead_count`))
       .limit(5);
 
-    // 5. Merge Trends for Chart (Frontend friendly)
+    // 5. Merge Trends for Chart
     const trendMap = new Map();
-    leadTrends.forEach(t => trendMap.set(t.date, { date: t.date, leads: t.count, cost: 0 }));
+    leadTrends.forEach(t => trendMap.set(t.date, { date: t.date, leads: t.lead_count, cost: 0 }));
     expenseTrends.forEach(t => {
       const existing = trendMap.get(t.date) || { date: t.date, leads: 0, cost: 0 };
-      existing.cost = t.cost;
+      existing.cost = t.cost_sum;
       trendMap.set(t.date, existing);
     });
 
@@ -107,8 +106,8 @@ export async function GET(request: Request) {
         romi: totalCost?.sum > 0 ? ((totalRev?.sum - totalCost.sum) / totalCost.sum) * 100 : 0
       },
       trends: Array.from(trendMap.values()).sort((a,b) => a.date.localeCompare(b.date)),
-      sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
-      topCampaigns: topCampaignsData.map(c => ({ name: c.name || "Unknown", leads: c.leads }))
+      sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.agg_count })),
+      topCampaigns: topCampaignsData.map(c => ({ name: c.name || "Unknown", leads: c.lead_count }))
     });
 
   } catch (error) {
