@@ -164,7 +164,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
 
         if (res.ok) {
            const result = await res.json();
-           toast.success(`Сверка выполнена: ${result.updated} обновлено, ${result.skipped} пропущено`);
+           setSyncReport(result);
            setFileData(null);
            setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "" });
            if (fileInputRef.current) fileInputRef.current.value = "";
@@ -180,6 +180,59 @@ export function SyncSettings({ projectId }: { projectId: number }) {
 
   return (
     <div className="space-y-6">
+      
+      <Dialog open={!!syncReport} onOpenChange={(open) => !open && setSyncReport(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Отчет о результатах сверки</DialogTitle>
+            <DialogDescription>
+              Обработано строк из вашего файла: {syncReport?.totalRows || 0}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 flex-1 min-h-0">
+             <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                   <p className="text-sm font-semibold text-green-800 mb-1">Успешно сопоставлено</p>
+                   <p className="text-2xl font-bold text-green-700">{syncReport?.updated || 0}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-amber-50 border border-amber-200">
+                   <p className="text-sm font-semibold text-amber-800 mb-1">Пропущено (Не найдено)</p>
+                   <p className="text-2xl font-bold text-amber-700">{syncReport?.skippedRows || syncReport?.skipped || 0}</p>
+                </div>
+             </div>
+             
+             {syncReport?.unmatchedRows && syncReport.unmatchedRows.length > 0 && (
+                <div className="flex flex-col min-h-0 border rounded-md shadow-sm">
+                   <div className="bg-muted px-4 py-2 font-medium text-sm text-foreground border-b">
+                      Список лидов, которые не удалось найти в Платформе:
+                   </div>
+                   <div className="overflow-auto max-h-[300px]">
+                      <Table>
+                         <TableHeader className="bg-background sticky top-0 z-10 shadow-sm">
+                            <TableRow>
+                               <TableHead>Client ID (_ym_uid)</TableHead>
+                               <TableHead>Дата в файле</TableHead>
+                            </TableRow>
+                         </TableHeader>
+                         <TableBody>
+                            {syncReport.unmatchedRows.map((r: any, i: number) => (
+                               <TableRow key={i}>
+                                  <TableCell className="font-mono text-xs">{r.clientId || '—'}</TableCell>
+                                  <TableCell className="text-xs">{r.date || '—'}</TableCell>
+                               </TableRow>
+                            ))}
+                         </TableBody>
+                      </Table>
+                   </div>
+                </div>
+             )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSyncReport(null)}>Закрыть окно</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <Card>
         <CardHeader>
           <CardTitle>Синхронизация данных Яндекса</CardTitle>

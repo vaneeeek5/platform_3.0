@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   if (!projectId || !rows) return NextResponse.json({ error: "Missing data" }, { status: 400 });
 
   try {
-    const statusResults = { updated: 0, skipped: 0, partialMatches: 0 };
+    const statusResults = { updated: 0, skipped: 0, partialMatches: 0, skippedRows: 0, unmatchedRows: [] as any[] };
 
     // Пре-фетч дефолтных положительных статусов проекта
     const [targetList, qualList, stageList] = await Promise.all([
@@ -151,11 +151,12 @@ export async function POST(request: Request) {
         }
       } else {
         console.log(`[Smart Sync] Skipped (No Match found). clientId=${row.clientId}, date=${row.date}`);
-        statusResults.skipped++; // Не нашли лида
+        statusResults.skippedRows++; // Не нашли лида
+        statusResults.unmatchedRows.push(row);
       }
     }
 
-    return NextResponse.json(statusResults);
+    return NextResponse.json({ ...statusResults, totalRows: rows.length });
   } catch (error) {
     console.error("Merge archive error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
