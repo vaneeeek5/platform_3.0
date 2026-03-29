@@ -107,19 +107,30 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
             const matchedGoals = projectGoals.filter(g => goalsHit.includes(parseInt(g.goalId)));
             if (matchedGoals.length === 0) continue;
 
+            const utmSource = row['ym:s:lastUTMSource'] || '';
+            const utmCampaign = row['ym:s:lastUTMCampaign'] || '';
+
+            // Filter by allowed UTM sources if configured
+            if (project.yandexUtmsAllowed && project.yandexUtmsAllowed.trim().length > 0) {
+               const allowed = project.yandexUtmsAllowed.split(',').map(s => s.trim().toLowerCase());
+               if (!allowed.includes(utmSource.toLowerCase())) {
+                   continue; // Skip this lead
+               }
+            }
+
             // Save Lead
             const [lead] = await db.insert(leads).values({
                 projectId,
                 metrikaVisitId: visitId,
                 metrikaClientId: row['ym:s:clientID'] || row['ym:s:client_id'] || null,
                 date: new Date(row['ym:s:dateTime'] || row['ym:s:datetime'] || row['ym:s:date']),
-                utmCampaign: row['ym:s:lastUTMCampaign'],
-                utmSource: row['ym:s:lastUTMSource'],
+                utmCampaign,
+                utmSource,
             }).onConflictDoUpdate({
                 target: [leads.projectId, leads.metrikaVisitId],
                 set: { 
-                    utmCampaign: row['ym:s:lastUTMCampaign'],
-                    utmSource: row['ym:s:lastUTMSource'],
+                    utmCampaign,
+                    utmSource,
                     date: new Date(row['ym:s:dateTime'] || row['ym:s:date'])
                 }
             }).returning();
