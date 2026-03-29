@@ -354,8 +354,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                           value={a.targetStatusId?.toString() || "none"} 
                           onValueChange={(val) => updateLeadStatus(a.id, 'targetStatusId', val)}
                         >
-                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px] border-neutral-200">
-                            <SelectValue placeholder="Статус" />
+                          <SelectTrigger className="h-7 text-[9px] px-2 w-[100px] max-w-[120px] border-neutral-200 overflow-hidden">
+                            <SelectValue placeholder="Статус" className="truncate" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none" className="text-[10px]">Не выбран</SelectItem>
@@ -381,8 +381,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                           value={a.qualificationStatusId?.toString() || "none"} 
                           onValueChange={(val) => updateLeadStatus(a.id, 'qualificationStatusId', val)}
                         >
-                          <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px] border-neutral-200">
-                            <SelectValue placeholder="Квал" />
+                          <SelectTrigger className="h-7 text-[9px] px-2 w-[100px] max-w-[120px] border-neutral-200 overflow-hidden">
+                            <SelectValue placeholder="Квал" className="truncate" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="none" className="text-[10px]">Не выбран</SelectItem>
@@ -405,8 +405,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                         value={item.lead.stageId?.toString() || "none"} 
                         onValueChange={(val) => updateLeadStage(item.lead.id, val)}
                     >
-                        <SelectTrigger className="h-7 text-[9px] px-2 min-w-[100px] border-neutral-200 bg-neutral-50/50">
-                        <SelectValue placeholder="Этап" />
+                        <SelectTrigger className="h-7 text-[9px] px-2 w-[110px] max-w-[150px] border-neutral-200 bg-neutral-50/50 overflow-hidden">
+                        <SelectValue placeholder="Этап" className="truncate w-full" />
                         </SelectTrigger>
                         <SelectContent>
                         <SelectItem value="none" className="text-[10px]">Не выбран</SelectItem>
