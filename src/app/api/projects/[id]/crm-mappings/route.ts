@@ -23,12 +23,13 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const projectId = parseInt(params.id);
+  const resolvedParams = await params;
+  const projectId = parseInt(resolvedParams.id);
   const { mappings } = await request.json();
 
   try {
