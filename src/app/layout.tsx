@@ -6,8 +6,8 @@ import { Toaster } from "@/components/ui/sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Marketing Platform v2.0",
-  description: "Advanced marketing analytics and management",
+  title: "БЫТЬ — платформа аналитики",
+  description: "Платформа аналитики рекламы",
 };
 
 export default function RootLayout({

@@ -59,8 +59,9 @@ export function AdminNav() {
     <div className="w-64 border-r bg-card h-screen flex flex-col">
       <div className="p-6 border-b">
         <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
-          Platform v2.0
+          БЫТЬ
         </h1>
+        <p className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider mt-1">платформа аналитики</p>
       </div>
       <nav className="flex-1 p-4 space-y-2">
         {navItems.map((item) => (

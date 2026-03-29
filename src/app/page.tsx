@@ -7,7 +7,7 @@ export default async function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
       <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/50 bg-clip-text text-transparent">
-        Platform v2.0
+        БЫТЬ
       </h1>
       <p className="text-muted-foreground mt-4 max-w-md">
         Добро пожаловать! Вы вошли как <span className="text-primary font-semibold">{session?.role}</span>.
