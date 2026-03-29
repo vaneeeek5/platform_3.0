@@ -51,6 +51,7 @@ export async function PATCH(
     if (body.syncSchedule !== undefined) updateData.syncSchedule = body.syncSchedule;
     if (body.syncEnabled !== undefined) updateData.syncEnabled = body.syncEnabled;
     if (body.syncPeriodDays !== undefined) updateData.syncPeriodDays = body.syncPeriodDays;
+    if (body.yandexUtmsAllowed !== undefined) updateData.yandexUtmsAllowed = body.yandexUtmsAllowed;
     if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
     const [updatedProject] = await db.update(projects)

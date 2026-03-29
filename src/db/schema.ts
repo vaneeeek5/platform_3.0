@@ -38,6 +38,7 @@ export const projects = pgTable("projects", {
   syncSchedule: text("sync_schedule"),
   syncEnabled: boolean("sync_enabled").default(false),
   syncPeriodDays: integer("sync_period_days").default(1),
+  yandexUtmsAllowed: text("yandex_utms_allowed"), // Comma-separated allowed sources
   lastSyncAt: timestamp("last_sync_at"),
   lastSyncStatus: syncStatusEnum("last_sync_status").default("IDLE"),
   lastSyncError: text("last_sync_error"),

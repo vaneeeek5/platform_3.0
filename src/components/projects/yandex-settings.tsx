@@ -28,6 +28,9 @@ export function YandexSettings({ projectId }: { projectId: number }) {
   const [token, setToken] = useState("");
   const [counterId, setCounterId] = useState("");
   const [directLogins, setDirectLogins] = useState("");
+  const [yandexUtmsAllowed, setYandexUtmsAllowed] = useState("");
+  const [availableUtmSources, setAvailableUtmSources] = useState<string[]>([]);
+  const [newUtmInput, setNewUtmInput] = useState("");
   const [availableGoals, setAvailableGoals] = useState<Goal[]>([]);
   const [trackedGoalsList, setTrackedGoalsList] = useState<TrackedGoal[]>([]);
   
@@ -60,6 +63,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
         setToken(project.yandexToken || "");
         setCounterId(project.yandexCounterId || "");
         setDirectLogins(project.yandexDirectLogins || "");
+        setYandexUtmsAllowed(project.yandexUtmsAllowed || "");
         if (project.yandexToken && project.yandexCounterId) {
            fetchGoals(project.yandexToken, project.yandexCounterId);
         }
@@ -71,7 +75,14 @@ export function YandexSettings({ projectId }: { projectId: number }) {
            displayName: g.displayName || g.goalName
         })));
       }
-      setLoading(false);
+      fetch(`/api/projects/${projectId}/utm-sources`)
+        .then(res => res.json())
+        .then(sources => {
+          if (Array.isArray(sources)) {
+            setAvailableUtmSources(sources);
+          }
+        })
+        .finally(() => setLoading(false));
     });
   }, [projectId, fetchGoals]);
 
@@ -130,6 +141,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
           yandexToken: token,
           yandexCounterId: counterId,
           yandexDirectLogins: directLogins,
+          yandexUtmsAllowed: yandexUtmsAllowed,
         }),
       });
 
@@ -196,6 +208,63 @@ export function YandexSettings({ projectId }: { projectId: number }) {
           <Button onClick={handleSaveToken} disabled={saving}>
             {saving ? "Сохранение..." : "Сохранить доступы"}
           </Button>
+        </CardFooter>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Фильтрация источников трафика</CardTitle>
+          <CardDescription>
+            Если вы отметите источники здесь, платформа будет импортировать лиды <b>только</b> из них. 
+            Если не отметить ничего — будут учитываться все лиды (включая прямые заходы).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {availableUtmSources.map(source => {
+              const isActive = yandexUtmsAllowed.split(',').map(s => s.trim()).includes(source);
+              return (
+                <div key={source} className="flex items-center space-x-2 bg-muted/50 p-2 rounded-md border">
+                  <input
+                    type="checkbox"
+                    id={`utm-${source}`}
+                    checked={isActive}
+                    onChange={(e) => {
+                      const enabled = new Set(yandexUtmsAllowed.split(',').map(s => s.trim()).filter(Boolean));
+                      if (e.target.checked) enabled.add(source);
+                      else enabled.delete(source);
+                      setYandexUtmsAllowed(Array.from(enabled).join(', '));
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <Label htmlFor={`utm-${source}`} className="cursor-pointer font-mono text-xs">{source}</Label>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-2 max-w-sm mt-4">
+            <Input 
+              placeholder="Добавить вручную (например: mytarget)" 
+              value={newUtmInput} 
+              onChange={e => setNewUtmInput(e.target.value)} 
+            />
+            <Button variant="outline" onClick={() => {
+              if (!newUtmInput.trim()) return;
+              const term = newUtmInput.trim();
+              if (!availableUtmSources.includes(term)) setAvailableUtmSources([...availableUtmSources, term]);
+              
+              const enabled = new Set(yandexUtmsAllowed.split(',').map(s => s.trim()).filter(Boolean));
+              enabled.add(term);
+              setYandexUtmsAllowed(Array.from(enabled).join(', '));
+              setNewUtmInput("");
+            }}>Добавить</Button>
+          </div>
+        </CardContent>
+        <CardFooter className="border-t px-6 py-4 bg-muted/20">
+           <Button onClick={handleSaveToken} disabled={saving}>
+              {saving ? "Сохранение..." : "Применить фильтр"}
+           </Button>
         </CardFooter>
       </Card>
 
