@@ -151,12 +151,14 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                     updateStatus('target', status.id, { isPositive: !!checked })
                   }}
                 />
-                <Label htmlFor={`pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer flex items-center gap-1">
-                  Учитывать в «Целевых лидах» на дашборде
+                <div className="flex items-center gap-1">
+                  <Label htmlFor={`pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer">
+                    Учитывать в «Целевых лидах» на дашборде
+                  </Label>
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3 w-3 text-neutral-400" />
+                      <TooltipTrigger asChild type="button">
+                        <Info className="h-3 w-3 text-neutral-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-[200px] text-[10px]">
@@ -166,7 +168,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                </Label>
+                </div>
               </div>
             </div>
           ))}
@@ -230,12 +232,14 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                     updateStatus('qualification', status.id, { isPositive: !!checked })
                   }}
                 />
-                <Label htmlFor={`qual-pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer flex items-center gap-1">
-                  Учитывать в «Квалах» на дашборде
+                <div className="flex items-center gap-1">
+                  <Label htmlFor={`qual-pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer">
+                    Учитывать в «Квалах» на дашборде
+                  </Label>
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3 w-3 text-neutral-400" />
+                      <TooltipTrigger asChild type="button">
+                        <Info className="h-3 w-3 text-neutral-400 cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-[200px] text-[10px]">
@@ -245,7 +249,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                </Label>
+                </div>
               </div>
             </div>
           ))}
