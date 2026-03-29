@@ -118,7 +118,8 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
                 target: [leads.projectId, leads.metrikaVisitId],
                 set: { 
                     utmCampaign: row['ym:s:lastUTMCampaign'],
-                    utmSource: row['ym:s:lastUTMSource']
+                    utmSource: row['ym:s:lastUTMSource'],
+                    date: new Date(row['ym:s:dateTime'] || row['ym:s:date'])
                 }
             }).returning();
 

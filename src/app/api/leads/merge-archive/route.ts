@@ -87,9 +87,9 @@ export async function POST(request: Request) {
       if (matchedLead) {
         let updated = false;
         
-        // 1. Установка этапа
-        if (row.stage && defaultStageId) {
-          await db.update(leads).set({ stageId: defaultStageId }).where(eq(leads.id, matchedLead.id));
+        // 1. Установка этапа (из Stage Id, который передал интерфейс маппинга)
+        if (row.stageId) {
+          await db.update(leads).set({ stageId: row.stageId }).where(eq(leads.id, matchedLead.id));
           updated = true;
         }
 

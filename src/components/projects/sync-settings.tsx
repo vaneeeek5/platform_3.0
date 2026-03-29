@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -20,6 +20,21 @@ export function SyncSettings({ projectId }: { projectId: number }) {
   const [fileData, setFileData] = useState<any[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [internalStatuses, setInternalStatuses] = useState<{ targets: any[], quals: any[], stages: any[] }>({ targets: [], quals: [], stages: [] });
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`/api/projects/${projectId}/statuses/target`).then(r => r.json()),
+      fetch(`/api/projects/${projectId}/statuses/qualification`).then(r => r.json()),
+      fetch(`/api/projects/${projectId}/statuses/stages`).then(r => r.json()),
+    ]).then(([targets, quals, stages]) => {
+      setInternalStatuses({ 
+        targets: Array.isArray(targets) ? targets : [], 
+        quals: Array.isArray(quals) ? quals : [], 
+        stages: Array.isArray(stages) ? stages : [] 
+      });
+    });
+  }, [projectId]);
 
   const handleManualSync = async () => {
     if (!dateRange?.from || !dateRange?.to) {
@@ -58,7 +73,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
       const workbook = XLSX.read(data, { type: "array" });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false });
       
       if (json.length > 0) {
         setHeaders(json[0] as string[]);
@@ -76,6 +91,24 @@ export function SyncSettings({ projectId }: { projectId: number }) {
      stage: "" 
   });
 
+  const [uniqueStages, setUniqueStages] = useState<string[]>([]);
+  const [stageValMapping, setStageValMapping] = useState<Record<string, number | "ignore">>({});
+
+  useEffect(() => {
+     if (colMapping.stage && fileData) {
+         const stageIdx = headers.indexOf(colMapping.stage);
+         if (stageIdx !== -1) {
+             const stages = Array.from(new Set(fileData.map(row => row[stageIdx]))).filter(Boolean) as string[];
+             setUniqueStages(stages);
+             const initMap: any = {};
+             stages.forEach(s => initMap[s] = 'ignore');
+             setStageValMapping(initMap);
+         }
+     } else {
+         setUniqueStages([]);
+     }
+  }, [colMapping.stage, fileData, headers]);
+
   const handleSmartImport = async () => {
      if (!colMapping.clientId && !colMapping.date) {
         toast.error("Для сверки необходимо выбрать хотя бы колонку Client ID или Дату");
@@ -83,13 +116,19 @@ export function SyncSettings({ projectId }: { projectId: number }) {
      }
 
      setUploading(true);
-     const rows = fileData?.map(r => ({
-       clientId: colMapping.clientId ? r[headers.indexOf(colMapping.clientId)] : null,
-       date: colMapping.date ? r[headers.indexOf(colMapping.date)] : null,
-       target: colMapping.target ? String(r[headers.indexOf(colMapping.target)] || "").toLowerCase().includes("да") : false,
-       qual: colMapping.qual ? String(r[headers.indexOf(colMapping.qual)] || "").toLowerCase().includes("да") : false,
-       stage: colMapping.stage ? String(r[headers.indexOf(colMapping.stage)] || "").toLowerCase().includes("да") : false,
-     })) || [];
+     // Преобразовываем данные для API
+     const rows = fileData?.map(r => {
+       const stageRaw = r[headers.indexOf(colMapping.stage)];
+       const mappedStageId = stageRaw && stageValMapping[stageRaw] !== 'ignore' ? stageValMapping[stageRaw] : null;
+
+       return {
+         clientId: colMapping.clientId ? r[headers.indexOf(colMapping.clientId)] : null,
+         date: colMapping.date ? r[headers.indexOf(colMapping.date)] : null,
+         target: colMapping.target ? String(r[headers.indexOf(colMapping.target)] || "").toLowerCase().includes("да") : false,
+         qual: colMapping.qual ? String(r[headers.indexOf(colMapping.qual)] || "").toLowerCase().includes("да") : false,
+         stageId: mappedStageId
+       };
+     }) || [];
 
      try {
         const res = await fetch(`/api/leads/merge-archive`, {
@@ -230,7 +269,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                            </select>
                         </div>
                         <div className="space-y-1.5">
-                           <label className="text-[10px] uppercase font-bold text-purple-700">Флаг "Продажа"</label>
+                           <label className="text-[10px] uppercase font-bold text-purple-700">Текст Этапа (Stage)</label>
                            <select 
                               className="w-full h-8 text-xs border rounded px-2"
                               value={colMapping.stage}
@@ -242,6 +281,36 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                         </div>
                      </div>
                  </div>
+
+                 {uniqueStages.length > 0 && (
+                     <div className="p-4 border rounded-lg bg-purple-50/50 space-y-4">
+                         <p className="text-xs font-bold uppercase tracking-wider text-purple-800">Маппинг Этапов CRM</p>
+                         <p className="text-xs text-purple-600/80 mb-2">Выберите, к какому этапу платформы относится каждое текстовое значение из вашей CRM.</p>
+                         
+                         <div className="space-y-3">
+                             {uniqueStages.map(stageStr => {
+                                const currentMap = stageValMapping[stageStr] || 'ignore';
+                                return (
+                                 <div key={stageStr} className="flex items-center gap-4 bg-white p-2 px-3 rounded-md border shadow-sm">
+                                     <div className="flex-1 font-medium text-sm text-neutral-800 break-all">{stageStr}</div>
+                                     <div className="flex-shrink-0 text-muted-foreground text-xs font-semibold mr-2">➔</div>
+                                     <select 
+                                         className="w-[240px] h-8 text-xs border rounded px-2 bg-neutral-50"
+                                         value={currentMap}
+                                         onChange={(e) => {
+                                             const v = e.target.value;
+                                             setStageValMapping(prev => ({ ...prev, [stageStr]: v === 'ignore' ? 'ignore' : parseInt(v) }));
+                                         }}
+                                     >
+                                         <option value="ignore">Пропустить (Не изменять)</option>
+                                         {internalStatuses.stages.map((s: any) => <option key={s.id} value={s.id}>{s.name || s.label}</option>)}
+                                     </select>
+                                 </div>
+                                );
+                             })}
+                         </div>
+                     </div>
+                 )}
 
                  <div className="pt-2 flex justify-end gap-3 text-xs">
                     <Button variant="outline" size="sm" onClick={() => { setFileData(null); setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "" }); }}>Отмена</Button>
