@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses } from "@/db/schema";
+import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses, qualificationStatuses } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { eachDayOfInterval, format, startOfDay, startOfWeek, startOfMonth, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from "date-fns";
@@ -35,14 +35,16 @@ export async function GET(request: Request) {
     }
 
     // 1. Fetch Mappings, Tracked Goals and Positive Statuses
-    const [projectMappings, activeGoals, allTargetStatuses] = await Promise.all([
+    const [projectMappings, activeGoals, allTargetStatuses, allQualStatuses] = await Promise.all([
       db.select().from(campaignMappings).where(projectId ? eq(campaignMappings.projectId, projectId) : undefined),
       db.select().from(trackedGoals).where(and(projectId ? eq(trackedGoals.projectId, projectId) : undefined, eq(trackedGoals.isActive, true))),
-      db.select().from(targetStatuses).where(projectId ? eq(targetStatuses.projectId, projectId) : undefined)
+      db.select().from(targetStatuses).where(projectId ? eq(targetStatuses.projectId, projectId) : undefined),
+      db.select().from(qualificationStatuses).where(projectId ? eq(qualificationStatuses.projectId, projectId) : undefined)
     ]);
     
     const targetGoalIds = new Set(activeGoals.map(g => g.goalId));
     const positiveStatusIds = new Set(allTargetStatuses.filter(s => s.isPositive).map(s => s.id));
+    const positiveQualIds = new Set(allQualStatuses.filter(s => s.isPositive).map(s => s.id));
 
     const resolveName = (utmCampaign: string | null, directOrder: string | null, utmSource: string | null = null) => {
       const mapping = projectMappings.find(m => {
@@ -73,7 +75,8 @@ export async function GET(request: Request) {
         leadId: goalAchievements.leadId, 
         goalId: goalAchievements.goalId, 
         saleAmount: goalAchievements.saleAmount, 
-        targetStatusId: goalAchievements.targetStatusId 
+        targetStatusId: goalAchievements.targetStatusId,
+        qualificationStatusId: goalAchievements.qualificationStatusId
       })
       .from(goalAchievements)
       .innerJoin(leads, eq(goalAchievements.leadId, leads.id))
@@ -84,13 +87,18 @@ export async function GET(request: Request) {
       .from(expenses).where(and(...expFilters));
 
     // Map lead to its achievements
-    const leadMetaMap = new Map<number, { isTarget: boolean, isSale: boolean, revenue: number }>();
+    const leadMetaMap = new Map<number, { isTarget: boolean, isQual: boolean, isSale: boolean, revenue: number }>();
     dbAchievements.forEach(a => {
-      const current = leadMetaMap.get(a.leadId) || { isTarget: false, isSale: false, revenue: 0 };
+      const current = leadMetaMap.get(a.leadId) || { isTarget: false, isQual: false, isSale: false, revenue: 0 };
       
       // Update: Count as Target ONLY if goal is tracked AND status is marked as Positive
-      if (targetGoalIds.has(a.goalId) && a.targetStatusId !== null && positiveStatusIds.has(a.targetStatusId)) {
-        current.isTarget = true;
+      if (targetGoalIds.has(a.goalId)) {
+        if (a.targetStatusId !== null && positiveStatusIds.has(a.targetStatusId)) {
+          current.isTarget = true;
+        }
+        if (a.qualificationStatusId !== null && positiveQualIds.has(a.qualificationStatusId)) {
+          current.isQual = true;
+        }
       }
       
       const amt = Number(a.saleAmount) || 0;
@@ -123,7 +131,7 @@ export async function GET(request: Request) {
         key = format(dt, 'yyyy-MM-dd');
         label = format(dt, 'dd.MM');
       }
-      trendMap.set(key, { key, period: label, leads: 0, targetLeads: 0, sales: 0, cost: 0, sortKey: dt.getTime() });
+      trendMap.set(key, { key, period: label, leads: 0, targetLeads: 0, qualLeads: 0, sales: 0, cost: 0, sortKey: dt.getTime() });
     });
 
     const getPeriodKey = (date: Date) => {
@@ -134,6 +142,7 @@ export async function GET(request: Request) {
 
     let totalLeadsCount = 0;
     let totalTargetCount = 0;
+    let totalQualCount = 0;
     let totalSalesCount = 0;
     let totalRevSum = 0;
     let totalCostSum = 0;
@@ -141,10 +150,11 @@ export async function GET(request: Request) {
 
     dbLeads.forEach(l => {
       if (isHidden(l.utmCampaign, null, l.utmSource)) return;
-      const lMeta = leadMetaMap.get(l.id) || { isTarget: false, isSale: false, revenue: 0 };
+      const lMeta = leadMetaMap.get(l.id) || { isTarget: false, isQual: false, isSale: false, revenue: 0 };
       
       totalLeadsCount++;
       if (lMeta.isTarget) totalTargetCount++;
+      if (lMeta.isQual) totalQualCount++;
       if (lMeta.isSale) totalSalesCount++;
       totalRevSum += lMeta.revenue;
 
@@ -153,6 +163,7 @@ export async function GET(request: Request) {
       if (t) {
         t.leads++;
         if (lMeta.isTarget) t.targetLeads++;
+        if (lMeta.isQual) t.qualLeads++;
         if (lMeta.isSale) t.sales++;
       }
       
@@ -190,6 +201,9 @@ export async function GET(request: Request) {
       summary: {
         leads: totalLeadsCount,
         targetLeads: totalTargetCount,
+        targetConv: totalLeadsCount > 0 ? (totalTargetCount / totalLeadsCount) * 100 : 0,
+        qualLeads: totalQualCount,
+        qualConv: totalLeadsCount > 0 ? (totalQualCount / totalLeadsCount) * 100 : 0,
         sales: totalSalesCount,
         cost: totalCostSum,
         revenue: totalRevSum,

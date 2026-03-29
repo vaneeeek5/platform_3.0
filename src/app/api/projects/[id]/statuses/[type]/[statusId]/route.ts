@@ -22,7 +22,7 @@ export async function PATCH(
   if (body.label !== undefined) updates.label = body.label;
   if (body.color !== undefined) updates.color = body.color;
   if (body.sortOrder !== undefined) updates.sortOrder = body.sortOrder;
-  if (isTarget && body.isPositive !== undefined) updates.isPositive = body.isPositive;
+  if (body.isPositive !== undefined) updates.isPositive = body.isPositive;
 
   const [updated] = await db.update(table)
     .set(updates)

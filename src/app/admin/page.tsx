@@ -12,7 +12,8 @@ import {
   Calendar as CalendarIcon,
   Briefcase,
   ShoppingBag,
-  RussianRuble
+  RussianRuble,
+  CheckCircle2
 } from "lucide-react"
 import { 
   Card, 
@@ -90,11 +91,12 @@ export default function DashboardPage() {
     
     const padding = { top: 20, right: 40, bottom: 40, left: 50 };
     const width = 800;
-    const height = 280;
+    const height = 400; // Increased height
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
     
-    const allVals = data.trends.flatMap((t: any) => [t.leads, t.targetLeads, t.sales]);
+    // Include qualLeads in max calculation
+    const allVals = data.trends.flatMap((t: any) => [t.leads, t.targetLeads, t.qualLeads, t.sales]);
     const maxVal = Math.max(...allVals, 10);
     const roundedMax = Math.ceil(maxVal / 10) * 10 || 10;
     
@@ -107,7 +109,7 @@ export default function DashboardPage() {
     };
 
     return (
-      <div className="relative w-full h-[300px] mt-4">
+      <div className="relative w-full h-[450px] mt-4">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible font-sans">
           {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
             const val = Math.round(roundedMax * p);
@@ -131,6 +133,7 @@ export default function DashboardPage() {
           })}
 
           <path d={createPath("leads")} stroke="#3b82f6" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
+          <path d={createPath("qualLeads")} stroke="#a855f7" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
           <path d={createPath("targetLeads")} stroke="#10b981" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
           <path d={createPath("sales")} stroke="#f59e0b" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-500" />
 
@@ -138,6 +141,7 @@ export default function DashboardPage() {
             <g key={i} className="group/point">
               <rect x={getX(i) - 10} y={padding.top} width="20" height={chartHeight} fill="transparent" className="cursor-pointer" />
               <circle cx={getX(i)} cy={getY(t.leads)} r="4" fill="#3b82f6" stroke="white" strokeWidth="2" className="opacity-0 group-hover/point:opacity-100 transition-opacity" />
+              <circle cx={getX(i)} cy={getY(t.qualLeads)} r="4" fill="#a855f7" stroke="white" strokeWidth="2" className="opacity-0 group-hover/point:opacity-100 transition-opacity" />
               <circle cx={getX(i)} cy={getY(t.targetLeads)} r="4" fill="#10b981" stroke="white" strokeWidth="2" className="opacity-0 group-hover/point:opacity-100 transition-opacity" />
               <circle cx={getX(i)} cy={getY(t.sales)} r="4" fill="#f59e0b" stroke="white" strokeWidth="2" className="opacity-0 group-hover/point:opacity-100 transition-opacity" />
 
@@ -145,15 +149,19 @@ export default function DashboardPage() {
                 <div className="bg-slate-900/95 backdrop-blur-sm text-white p-2.5 rounded-lg shadow-2xl text-[10px] border border-white/10 ring-1 ring-black/5">
                   <div className="font-bold border-b border-white/20 mb-1.5 pb-1 text-slate-300">{t.period}</div>
                   <div className="space-y-1">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-blue-400" /><span>Всего:</span></div>
                       <span className="font-bold text-blue-100">{t.leads}</span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-purple-400" /><span>Квалы:</span></div>
+                      <span className="font-bold text-purple-100">{t.qualLeads}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-emerald-400" /><span>Целевые:</span></div>
                       <span className="font-bold text-emerald-100">{t.targetLeads}</span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-1.5"><div className="w-1.5 h-1.5 rounded-full bg-amber-400" /><span>Продажи:</span></div>
                       <span className="font-bold text-amber-100">{t.sales}</span>
                     </div>
@@ -203,7 +211,7 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
          <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Всего лидов</CardTitle>
@@ -216,22 +224,39 @@ export default function DashboardPage() {
          </Card>
          <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Квалы</CardTitle>
+             <CheckCircle2 className="h-4 w-4 text-purple-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold text-purple-600">{data?.summary?.qualLeads || 0}</div>
+             <p className="text-[10px] text-muted-foreground mt-1 uppercase px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-600 inline-block font-bold">
+               {Math.round(data?.summary?.qualConv || 0)}% ИЗ ЛИДОВ
+             </p>
+           </CardContent>
+         </Card>
+         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Целевые</CardTitle>
              <Target className="h-4 w-4 text-emerald-500" />
            </CardHeader>
            <CardContent>
              <div className="text-2xl font-bold text-emerald-600">{data?.summary?.targetLeads || 0}</div>
-             <p className="text-[10px] text-muted-foreground mt-1 uppercase px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 inline-block font-bold">Goal</p>
+             <p className="text-[10px] text-muted-foreground mt-1 uppercase px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 inline-block font-bold">
+               {Math.round(data?.summary?.targetConv || 0)}% ИЗ ЛИДОВ
+             </p>
            </CardContent>
          </Card>
-         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
+         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow lg:col-span-2">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Продажи</CardTitle>
+             <CardTitle className="text-xs font-semibold uppercase tracking-wider text-slate-500">Продажи и Выручка</CardTitle>
              <ShoppingBag className="h-4 w-4 text-amber-500" />
            </CardHeader>
            <CardContent>
-             <div className="text-2xl font-bold text-amber-600">{data?.summary?.sales || 0}</div>
-             <p className="text-[10px] text-muted-foreground mt-1 uppercase">с чеком &gt; 0</p>
+             <div className="flex items-baseline gap-3">
+               <div className="text-2xl font-bold text-amber-600">{data?.summary?.sales || 0} шт</div>
+               <div className="text-lg font-medium text-amber-500">/ {Math.round(data?.summary?.revenue || 0).toLocaleString()} ₽</div>
+             </div>
+             <p className="text-[10px] text-muted-foreground mt-1 uppercase">успешные закрытия</p>
            </CardContent>
          </Card>
          <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
@@ -266,6 +291,7 @@ export default function DashboardPage() {
               </div>
               <div className="flex items-center gap-4 text-[10px] font-medium text-slate-500">
                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-blue-500" /><span>Лиды</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-purple-500" /><span>Квалы</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-emerald-500" /><span>Целевые</span></div>
                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-0.5 bg-amber-500" /><span>Продажи</span></div>
               </div>

@@ -190,35 +190,63 @@ export function StatusSettings({ projectId }: { projectId: number }) {
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
           {qualStatuses.map((status) => (
-            <div key={status.id} className="flex items-center gap-2 group p-2 border border-transparent hover:border-neutral-100 rounded-md">
-              <GripVertical className="h-4 w-4 text-muted-foreground/30" />
-              <Input 
-                className="h-8 text-sm bg-transparent border-transparent hover:border-neutral-200 focus:bg-white focus:border-neutral-200 transition-all" 
-                defaultValue={status.label}
-                onBlur={(e) => {
-                   if (e.target.value !== status.label) {
-                      updateStatus('qualification', status.id, { label: e.target.value })
-                   }
-                }}
-              />
-              <Input 
-                type="color" 
-                className="w-10 h-8 p-1 rounded cursor-pointer border-none bg-transparent" 
-                defaultValue={status.color}
-                onBlur={(e) => {
-                   if (e.target.value !== status.color) {
-                      updateStatus('qualification', status.id, { color: e.target.value })
-                   }
-                }}
-              />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => deleteStatus('qualification', status.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div key={status.id} className="space-y-3 p-3 border rounded-lg bg-neutral-50/30 group">
+              <div className="flex items-center gap-2">
+                <GripVertical className="h-4 w-4 text-muted-foreground/30" />
+                <Input 
+                  className="h-8 text-sm font-medium bg-white" 
+                  defaultValue={status.label}
+                  onBlur={(e) => {
+                     if (e.target.value !== status.label) {
+                        updateStatus('qualification', status.id, { label: e.target.value })
+                     }
+                  }}
+                />
+                <Input 
+                  type="color" 
+                  className="w-10 h-8 p-1 rounded cursor-pointer border-neutral-200 bg-white" 
+                  defaultValue={status.color}
+                  onBlur={(e) => {
+                     if (e.target.value !== status.color) {
+                        updateStatus('qualification', status.id, { color: e.target.value })
+                     }
+                  }}
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => deleteStatus('qualification', status.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2 pl-6">
+                <Checkbox 
+                  id={`qual-pos-${status.id}`}
+                  checked={status.isPositive}
+                  onCheckedChange={(checked) => {
+                    updateStatus('qualification', status.id, { isPositive: !!checked })
+                  }}
+                />
+                <Label htmlFor={`qual-pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer flex items-center gap-1">
+                  Учитывать в «Квалах» на дашборде
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3 w-3 text-neutral-400" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-[200px] text-[10px]">
+                          Если галочка стоит, лиды с этим статусом будут считаться квалифицированными. 
+                          Например: «Квалифицирован» — да, «Недозвон» — нет.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </Label>
+              </div>
             </div>
           ))}
           {qualStatuses.length === 0 && (

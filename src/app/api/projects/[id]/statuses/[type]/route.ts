@@ -38,7 +38,7 @@ export async function POST(
     color,
   };
   
-  if (isTarget && isPositive !== undefined) {
+  if (isPositive !== undefined) {
     values.isPositive = isPositive;
   }
 

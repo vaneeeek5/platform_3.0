@@ -100,6 +100,7 @@ export const qualificationStatuses = pgTable("qualification_statuses", {
     .notNull(),
   label: text("label").notNull(),
   color: text("color").notNull(),
+  isPositive: boolean("is_positive").default(true),
   sortOrder: integer("sort_order").default(0),
 });
 
