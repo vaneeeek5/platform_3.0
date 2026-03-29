@@ -115,7 +115,7 @@ export async function POST(request: Request) {
                     isPositive: isStage ? undefined : true,
                 }).returning();
                 const created = result[0];
-                console.log(`[Smart Sync v3] Auto-created new status: ${rawValue.trim()} (ID: ${created.id}) in ${table._.name.identifier}`);
+                console.log(`[Smart Sync v3] Auto-created new status: ${rawValue.trim()} (ID: ${created.id}) in ${isStage ? 'leadStages' : 'other_statuses'}`);
                 return created.id;
             }
             return null;
