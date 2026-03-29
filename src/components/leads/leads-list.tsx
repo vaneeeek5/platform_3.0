@@ -327,9 +327,11 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold">{item.lead.utmSource || 'direct'}</span>
-                    <span className="text-[10px] text-muted-foreground truncate max-w-[150px] uppercase">
-                      {item.lead.utmCampaign || '—'}
-                    </span>
+                    {item.lead.utmCampaign && (
+                      <span className="text-[10px] text-muted-foreground truncate max-w-[150px] uppercase">
+                        {item.lead.utmCampaign}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -421,7 +423,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                 </TableCell>
 
                 <TableCell className="text-right text-xs font-bold text-neutral-800">
-                  {item.achievements?.reduce((acc: number, a: any) => acc + parseFloat(a.saleAmount || "0"), 0).toLocaleString()} ₽
+                  {(() => {
+                    const total = item.achievements?.reduce((acc: number, a: any) => acc + (parseFloat(a.saleAmount) || 0), 0) || 0;
+                    return total > 0 ? `${total.toLocaleString()} ₽` : "—";
+                  })()}
                 </TableCell>
                 <TableCell>
                   <Button 
