@@ -97,21 +97,47 @@ export async function POST(request: Request) {
       if (matchedLead) {
         let updated = false;
         
-        // 1. Установка этапа (из Stage Id, который передал интерфейс маппинга)
-        if (row.stageId) {
-          await db.update(leads).set({ stageId: row.stageId }).where(eq(leads.id, matchedLead.id));
+        // Вспомогательная функция для ленивого поиска/создания статусов на лету
+        const resolveStatus = async (table: any, rawValue: string, mappedValue: string | number, isStage = false) => {
+            if (!rawValue || mappedValue === 'ignore') return null;
+            if (typeof mappedValue === 'number') return mappedValue;
+            if (mappedValue === 'auto') {
+                // Поиск по названию (регистронезависимо)
+                const existing = await db.select().from(table).where(eq(table.projectId, projectId));
+                const found = existing.find((e: any) => e.label?.toLowerCase() === rawValue.toLowerCase());
+                if (found) return found.id;
+
+                // Если не найдено - создаем
+                const [created] = await db.insert(table).values({
+                    projectId,
+                    label: rawValue.trim(),
+                    color: '#' + Math.floor(Math.random()*16777215).toString(16), // случайный цвет
+                    isPositive: isStage ? undefined : true,
+                }).returning();
+                console.log(`[Smart Sync v3] Auto-created new status: ${rawValue.trim()} (ID: ${created.id}) in ${table._.name.identifier}`);
+                return created.id;
+            }
+            return null;
+        };
+        
+        const finalStageId = await resolveStatus(leadStages, row.stageRaw, row.stageMap, true);
+        const finalTargetId = await resolveStatus(targetStatuses, row.targetRaw, row.targetMap, false);
+        const finalQualId = await resolveStatus(qualificationStatuses, row.qualRaw, row.qualMap, false);
+        
+        // 1. Установка этапа
+        if (finalStageId) {
+          await db.update(leads).set({ stageId: finalStageId }).where(eq(leads.id, matchedLead.id));
           updated = true;
         }
 
         // 2. Установка целей
-        if ((row.target && defaultTargetId) || (row.qual && defaultQualId)) {
+        if (finalTargetId || finalQualId) {
           const achievements = await db.select().from(goalAchievements).where(eq(goalAchievements.leadId, matchedLead.id));
           for (const ach of achievements) {
-             await db.update(goalAchievements).set({
-               targetStatusId: row.target && defaultTargetId ? defaultTargetId : ach.targetStatusId,
-               qualificationStatusId: row.qual && defaultQualId ? defaultQualId : ach.qualificationStatusId,
-               updatedAt: new Date()
-             }).where(eq(goalAchievements.id, ach.id));
+             const updates: any = { updatedAt: new Date() };
+             if (finalTargetId) updates.targetStatusId = finalTargetId;
+             if (finalQualId) updates.qualificationStatusId = finalQualId;
+             await db.update(goalAchievements).set(updates).where(eq(goalAchievements.id, ach.id));
           }
           updated = true;
         }
@@ -119,7 +145,7 @@ export async function POST(request: Request) {
         if (updated) {
            statusResults.updated++;
         } else {
-           console.log(`[Smart Sync] Skipped (found but no goals/stage to update): Target=${row.target}, Qual=${row.qual}, StageId=${row.stageId}`);
+           console.log(`[Smart Sync v3] Skipped (no changes needed): TargetMap=${row.targetMap}, QualMap=${row.qualMap}, StageMap=${row.stageMap}`);
            statusResults.skipped++; // Нашли, но ничего обновлять не нужно
         }
       } else {

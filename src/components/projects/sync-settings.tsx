@@ -91,23 +91,36 @@ export function SyncSettings({ projectId }: { projectId: number }) {
      stage: "" 
   });
 
+  const [uniqueTargets, setUniqueTargets] = useState<string[]>([]);
+  const [targetValMapping, setTargetValMapping] = useState<Record<string, number | "auto" | "ignore">>({});
+
+  const [uniqueQuals, setUniqueQuals] = useState<string[]>([]);
+  const [qualValMapping, setQualValMapping] = useState<Record<string, number | "auto" | "ignore">>({});
+
   const [uniqueStages, setUniqueStages] = useState<string[]>([]);
-  const [stageValMapping, setStageValMapping] = useState<Record<string, number | "ignore">>({});
+  const [stageValMapping, setStageValMapping] = useState<Record<string, number | "auto" | "ignore">>({});
+
+  const extractUnique = (columnName: string, setter: any, mapSetter: any) => {
+      if (columnName && fileData) {
+         const idx = headers.indexOf(columnName);
+         if (idx !== -1) {
+             const items = Array.from(new Set(fileData.map(row => row[idx]))).filter(Boolean).map(String) as string[];
+             setter(items);
+             const initMap: any = {};
+             // По умолчанию все создается автоматически
+             items.forEach(s => initMap[s] = 'auto');
+             mapSetter(initMap);
+         }
+      } else {
+         setter([]);
+      }
+  };
 
   useEffect(() => {
-     if (colMapping.stage && fileData) {
-         const stageIdx = headers.indexOf(colMapping.stage);
-         if (stageIdx !== -1) {
-             const stages = Array.from(new Set(fileData.map(row => row[stageIdx]))).filter(Boolean) as string[];
-             setUniqueStages(stages);
-             const initMap: any = {};
-             stages.forEach(s => initMap[s] = 'ignore');
-             setStageValMapping(initMap);
-         }
-     } else {
-         setUniqueStages([]);
-     }
-  }, [colMapping.stage, fileData, headers]);
+     extractUnique(colMapping.target, setUniqueTargets, setTargetValMapping);
+     extractUnique(colMapping.qual, setUniqueQuals, setQualValMapping);
+     extractUnique(colMapping.stage, setUniqueStages, setStageValMapping);
+  }, [colMapping.target, colMapping.qual, colMapping.stage, fileData, headers]);
 
   const handleSmartImport = async () => {
      if (!colMapping.clientId && !colMapping.date) {
@@ -118,15 +131,24 @@ export function SyncSettings({ projectId }: { projectId: number }) {
      setUploading(true);
      // Преобразовываем данные для API
      const rows = fileData?.map(r => {
-       const stageRaw = r[headers.indexOf(colMapping.stage)];
-       const mappedStageId = stageRaw && stageValMapping[stageRaw] !== 'ignore' ? stageValMapping[stageRaw] : null;
+       const rawTarget = colMapping.target ? String(r[headers.indexOf(colMapping.target)] || "") : "";
+       const mappedTarget = rawTarget ? targetValMapping[rawTarget] : 'ignore';
+
+       const rawQual = colMapping.qual ? String(r[headers.indexOf(colMapping.qual)] || "") : "";
+       const mappedQual = rawQual ? qualValMapping[rawQual] : 'ignore';
+
+       const rawStage = colMapping.stage ? String(r[headers.indexOf(colMapping.stage)] || "") : "";
+       const mappedStage = rawStage ? stageValMapping[rawStage] : 'ignore';
 
        return {
          clientId: colMapping.clientId ? r[headers.indexOf(colMapping.clientId)] : null,
          date: colMapping.date ? r[headers.indexOf(colMapping.date)] : null,
-         target: colMapping.target ? String(r[headers.indexOf(colMapping.target)] || "").toLowerCase().includes("да") : false,
-         qual: colMapping.qual ? String(r[headers.indexOf(colMapping.qual)] || "").toLowerCase().includes("да") : false,
-         stageId: mappedStageId
+         targetRaw: rawTarget,
+         targetMap: mappedTarget,
+         qualRaw: rawQual,
+         qualMap: mappedQual,
+         stageRaw: rawStage,
+         stageMap: mappedStage,
        };
      }) || [];
 
@@ -247,7 +269,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                            </select>
                         </div>
                         <div className="space-y-1.5">
-                           <label className="text-[10px] uppercase font-bold text-green-700">Флаг "Целевой"</label>
+                           <label className="text-[10px] uppercase font-bold text-green-700">Текст Целевой</label>
                            <select 
                               className="w-full h-8 text-xs border rounded px-2"
                               value={colMapping.target}
@@ -258,7 +280,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                            </select>
                         </div>
                         <div className="space-y-1.5">
-                           <label className="text-[10px] uppercase font-bold text-amber-700">Флаг "Квал"</label>
+                           <label className="text-[10px] uppercase font-bold text-amber-700">Текст Квал</label>
                            <select 
                               className="w-full h-8 text-xs border rounded px-2"
                               value={colMapping.qual}
@@ -282,26 +304,83 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                      </div>
                  </div>
 
+                 {uniqueTargets.length > 0 && (
+                     <div className="p-4 border rounded-lg bg-green-50/50 space-y-4">
+                         <p className="text-xs font-bold uppercase tracking-wider text-green-800">Маппинг Целевых Статусов</p>
+                         <div className="space-y-3">
+                             {uniqueTargets.map(valStr => {
+                                const currentMap = targetValMapping[valStr] || 'auto';
+                                return (
+                                 <div key={valStr} className="flex items-center gap-4 bg-white p-2 px-3 rounded-md border shadow-sm">
+                                     <div className="flex-1 font-medium text-sm text-neutral-800 break-all">{valStr}</div>
+                                     <div className="flex-shrink-0 text-muted-foreground text-xs font-semibold mr-2">➔</div>
+                                     <select 
+                                         className="w-[280px] h-8 text-xs border rounded px-2 bg-neutral-50"
+                                         value={currentMap}
+                                         onChange={(e) => {
+                                             const v = e.target.value;
+                                             setTargetValMapping(prev => ({ ...prev, [valStr]: v === 'ignore' || v === 'auto' ? v : parseInt(v) }));
+                                         }}
+                                     >
+                                         <option value="auto">Создать статус автоматически</option>
+                                         <option value="ignore">Пропустить (Не изменять)</option>
+                                         {internalStatuses.targets.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                                     </select>
+                                 </div>
+                                );
+                             })}
+                         </div>
+                     </div>
+                 )}
+
+                 {uniqueQuals.length > 0 && (
+                     <div className="p-4 border rounded-lg bg-amber-50/50 space-y-4">
+                         <p className="text-xs font-bold uppercase tracking-wider text-amber-800">Маппинг Квалификаций</p>
+                         <div className="space-y-3">
+                             {uniqueQuals.map(valStr => {
+                                const currentMap = qualValMapping[valStr] || 'auto';
+                                return (
+                                 <div key={valStr} className="flex items-center gap-4 bg-white p-2 px-3 rounded-md border shadow-sm">
+                                     <div className="flex-1 font-medium text-sm text-neutral-800 break-all">{valStr}</div>
+                                     <div className="flex-shrink-0 text-muted-foreground text-xs font-semibold mr-2">➔</div>
+                                     <select 
+                                         className="w-[280px] h-8 text-xs border rounded px-2 bg-neutral-50"
+                                         value={currentMap}
+                                         onChange={(e) => {
+                                             const v = e.target.value;
+                                             setQualValMapping(prev => ({ ...prev, [valStr]: v === 'ignore' || v === 'auto' ? v : parseInt(v) }));
+                                         }}
+                                     >
+                                         <option value="auto">Создать статус автоматически</option>
+                                         <option value="ignore">Пропустить (Не изменять)</option>
+                                         {internalStatuses.quals.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                                     </select>
+                                 </div>
+                                );
+                             })}
+                         </div>
+                     </div>
+                 )}
+
                  {uniqueStages.length > 0 && (
                      <div className="p-4 border rounded-lg bg-purple-50/50 space-y-4">
-                         <p className="text-xs font-bold uppercase tracking-wider text-purple-800">Маппинг Этапов CRM</p>
-                         <p className="text-xs text-purple-600/80 mb-2">Выберите, к какому этапу платформы относится каждое текстовое значение из вашей CRM.</p>
-                         
+                         <p className="text-xs font-bold uppercase tracking-wider text-purple-800">Маппинг Этапов Сделки</p>
                          <div className="space-y-3">
                              {uniqueStages.map(stageStr => {
-                                const currentMap = stageValMapping[stageStr] || 'ignore';
+                                const currentMap = stageValMapping[stageStr] || 'auto';
                                 return (
                                  <div key={stageStr} className="flex items-center gap-4 bg-white p-2 px-3 rounded-md border shadow-sm">
                                      <div className="flex-1 font-medium text-sm text-neutral-800 break-all">{stageStr}</div>
                                      <div className="flex-shrink-0 text-muted-foreground text-xs font-semibold mr-2">➔</div>
                                      <select 
-                                         className="w-[240px] h-8 text-xs border rounded px-2 bg-neutral-50"
+                                         className="w-[280px] h-8 text-xs border rounded px-2 bg-neutral-50"
                                          value={currentMap}
                                          onChange={(e) => {
                                              const v = e.target.value;
-                                             setStageValMapping(prev => ({ ...prev, [stageStr]: v === 'ignore' ? 'ignore' : parseInt(v) }));
+                                             setStageValMapping(prev => ({ ...prev, [stageStr]: v === 'ignore' || v === 'auto' ? v : parseInt(v) }));
                                          }}
                                      >
+                                         <option value="auto">Создать этап автоматически</option>
                                          <option value="ignore">Пропустить (Не изменять)</option>
                                          {internalStatuses.stages.map((s: any) => <option key={s.id} value={s.id}>{s.name || s.label}</option>)}
                                      </select>
@@ -325,8 +404,8 @@ export function SyncSettings({ projectId }: { projectId: number }) {
         <CardFooter className="bg-muted/10 flex gap-2">
            <AlertCircle className="h-4 w-4 text-emerald-600" />
            <p className="text-[10px] leading-relaxed text-muted-foreground">
-              Алгоритм v2: Поиск выполняется по 100% совпадению Client ID.
-              Если в выбранной колонке для флага находится слово «ДА» — системе будет передан сигнал об изменении статуса.
+              Алгоритм v3: Поиск выполняется по 100% совпадению Client ID.
+              Статусы могут создаваться автоматически на основе текста напрямую из CRM файлов.
            </p>
         </CardFooter>
       </Card>

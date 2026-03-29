@@ -25,6 +25,7 @@ interface Status {
 export function StatusSettings({ projectId }: { projectId: number }) {
   const [targetStatuses, setTargetStatuses] = useState<Status[]>([])
   const [qualStatuses, setQualStatuses] = useState<Status[]>([])
+  const [stageStatuses, setStageStatuses] = useState<Status[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -33,17 +34,21 @@ export function StatusSettings({ projectId }: { projectId: number }) {
 
   const fetchStatuses = async () => {
     try {
-      const [tRes, qRes] = await Promise.all([
+      const [tRes, qRes, sRes] = await Promise.all([
         fetch(`/api/projects/${projectId}/statuses/target`),
-        fetch(`/api/projects/${projectId}/statuses/qualification`)
+        fetch(`/api/projects/${projectId}/statuses/qualification`),
+        fetch(`/api/projects/${projectId}/statuses/stages`)
       ])
       let tData = [];
       let qData = [];
+      let sData = [];
       try { tData = await tRes.json(); } catch(e) {}
       try { qData = await qRes.json(); } catch(e) {}
+      try { sData = await sRes.json(); } catch(e) {}
       
       setTargetStatuses(Array.isArray(tData) ? tData : []);
       setQualStatuses(Array.isArray(qData) ? qData : []);
+      setStageStatuses(Array.isArray(sData) ? sData : []);
     } catch (e) {
       toast.error("Не удалось загрузить статусы")
     } finally {
@@ -51,12 +56,12 @@ export function StatusSettings({ projectId }: { projectId: number }) {
     }
   }
 
-  const addStatus = async (type: 'target' | 'qualification') => {
+  const addStatus = async (type: 'target' | 'qualification' | 'stages') => {
     try {
       const res = await fetch(`/api/projects/${projectId}/statuses/${type}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: "Новый статус", color: "#3b82f6", isPositive: true }),
+        body: JSON.stringify({ label: "Новый статус", color: "#3b82f6", isPositive: type !== 'stages' ? true : undefined }),
       })
       if (res.ok) {
         toast.success("Статус добавлен")
@@ -67,7 +72,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
     }
   }
 
-  const deleteStatus = async (type: 'target' | 'qualification', id: number) => {
+  const deleteStatus = async (type: 'target' | 'qualification' | 'stages', id: number) => {
     if (!confirm("Вы уверены? Это может затронуть существующие лиды.")) return
     try {
       const res = await fetch(`/api/projects/${projectId}/statuses/${type}/${id}`, {
@@ -82,7 +87,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
     }
   }
 
-  const updateStatus = async (type: 'target' | 'qualification', id: number, updates: Partial<Status>) => {
+  const updateStatus = async (type: 'target' | 'qualification' | 'stages', id: number, updates: Partial<Status>) => {
     try {
       const res = await fetch(`/api/projects/${projectId}/statuses/${type}/${id}`, {
         method: "PATCH",
@@ -103,7 +108,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
   if (loading) return <div className="p-8 text-center">Загрузка статусов проекта...</div>
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-3">
       <Card className="border-neutral-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b bg-neutral-50/50">
           <div>
@@ -233,6 +238,59 @@ export function StatusSettings({ projectId }: { projectId: number }) {
             </div>
           ))}
           {(Array.isArray(qualStatuses) ? qualStatuses : []).length === 0 && (
+             <p className="text-sm text-muted-foreground italic text-center py-6 border-2 border-dashed rounded-lg">
+                Статусы не добавлены
+             </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-neutral-200">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b bg-neutral-50/50">
+          <div>
+            <CardTitle className="text-lg">Этапы сделки (Stages)</CardTitle>
+            <CardDescription className="text-xs">Воронка продаж напрямую из CRM</CardDescription>
+          </div>
+          <Button size="sm" onClick={() => addStatus('stages')} className="h-8">
+            <Plus className="h-4 w-4 mr-1" /> Добавить
+          </Button>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-4">
+          {(Array.isArray(stageStatuses) ? stageStatuses : []).map((status) => (
+            <div key={status.id} className="space-y-3 p-3 border rounded-lg bg-neutral-50/30 group">
+               <div className="flex items-center gap-2">
+                 <GripVertical className="h-4 w-4 text-muted-foreground/30" />
+                 <Input 
+                   className="h-8 text-sm font-medium bg-white" 
+                   defaultValue={status.label}
+                   onBlur={(e) => {
+                      if (e.target.value !== status.label) {
+                         updateStatus('stages', status.id, { label: e.target.value })
+                      }
+                   }}
+                 />
+                 <Input 
+                   type="color" 
+                   className="w-10 h-8 p-1 rounded cursor-pointer border-neutral-200 bg-white" 
+                   defaultValue={status.color}
+                   onBlur={(e) => {
+                      if (e.target.value !== status.color) {
+                         updateStatus('stages', status.id, { color: e.target.value })
+                      }
+                   }}
+                 />
+                 <Button 
+                   variant="ghost" 
+                   size="icon" 
+                   className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                   onClick={() => deleteStatus('stages', status.id)}
+                 >
+                   <Trash2 className="h-4 w-4" />
+                 </Button>
+               </div>
+            </div>
+          ))}
+          {(Array.isArray(stageStatuses) ? stageStatuses : []).length === 0 && (
              <p className="text-sm text-muted-foreground italic text-center py-6 border-2 border-dashed rounded-lg">
                 Статусы не добавлены
              </p>

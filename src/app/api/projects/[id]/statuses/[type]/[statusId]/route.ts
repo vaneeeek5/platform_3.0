@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { targetStatuses, qualificationStatuses } from "@/db/schema";
+import { targetStatuses, qualificationStatuses, leadStages } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { eq, and } from "drizzle-orm";
 
@@ -42,7 +42,7 @@ export async function DELETE(
   const { id, type, statusId } = await params;
   const projectId = parseInt(id);
   const sId = parseInt(statusId);
-  const table = type === "target" ? targetStatuses : qualificationStatuses;
+  const table = type === "target" ? targetStatuses : type === "qualification" ? qualificationStatuses : leadStages;
 
   await db.delete(table).where(and(eq(table.id, sId), eq(table.projectId, projectId)));
   
