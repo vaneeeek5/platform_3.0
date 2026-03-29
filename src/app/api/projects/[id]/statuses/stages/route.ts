@@ -6,12 +6,13 @@ import { getSession } from "@/lib/auth";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const projectId = parseInt(params.id);
+  const resolvedParams = await params;
+  const projectId = parseInt(resolvedParams.id);
   const data = await db
     .select()
     .from(leadStages)
@@ -23,12 +24,13 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const projectId = parseInt(params.id);
+  const resolvedParams = await params;
+  const projectId = parseInt(resolvedParams.id);
   const { stages } = await request.json();
 
   try {
