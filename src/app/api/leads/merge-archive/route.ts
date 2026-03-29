@@ -108,12 +108,13 @@ export async function POST(request: Request) {
                 if (found) return found.id;
 
                 // Если не найдено - создаем
-                const [created] = await db.insert(table).values({
+                const result: any = await db.insert(table).values({
                     projectId,
                     label: rawValue.trim(),
                     color: '#' + Math.floor(Math.random()*16777215).toString(16), // случайный цвет
                     isPositive: isStage ? undefined : true,
                 }).returning();
+                const created = result[0];
                 console.log(`[Smart Sync v3] Auto-created new status: ${rawValue.trim()} (ID: ${created.id}) in ${table._.name.identifier}`);
                 return created.id;
             }
