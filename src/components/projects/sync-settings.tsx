@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { RefreshCw, Clock, FileSpreadsheet, CheckCircle2, AlertCircle, GitMerge } from "lucide-react";
 import * as XLSX from "xlsx";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DateRange } from "react-day-picker";
 import { subDays, format } from "date-fns";
 
