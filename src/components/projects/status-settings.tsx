@@ -37,8 +37,13 @@ export function StatusSettings({ projectId }: { projectId: number }) {
         fetch(`/api/projects/${projectId}/statuses/target`),
         fetch(`/api/projects/${projectId}/statuses/qualification`)
       ])
-      setTargetStatuses(await tRes.json())
-      setQualStatuses(await qRes.json())
+      let tData = [];
+      let qData = [];
+      try { tData = await tRes.json(); } catch(e) {}
+      try { qData = await qRes.json(); } catch(e) {}
+      
+      setTargetStatuses(Array.isArray(tData) ? tData : []);
+      setQualStatuses(Array.isArray(qData) ? qData : []);
     } catch (e) {
       toast.error("Не удалось загрузить статусы")
     } finally {
@@ -110,7 +115,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
           </Button>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
-          {targetStatuses.map((status) => (
+          {(Array.isArray(targetStatuses) ? targetStatuses : []).map((status) => (
             <div key={status.id} className="space-y-3 p-3 border rounded-lg bg-neutral-50/30 group">
               <div className="flex items-center gap-2">
                 <GripVertical className="h-4 w-4 text-muted-foreground/30" />
@@ -172,7 +177,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
               </div>
             </div>
           ))}
-          {targetStatuses.length === 0 && (
+          {(Array.isArray(targetStatuses) ? targetStatuses : []).length === 0 && (
              <p className="text-sm text-muted-foreground italic text-center py-6 border-2 border-dashed rounded-lg">
                 Статусы не добавлены
              </p>
@@ -191,7 +196,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
           </Button>
         </CardHeader>
         <CardContent className="pt-6 space-y-4">
-          {qualStatuses.map((status) => (
+          {(Array.isArray(qualStatuses) ? qualStatuses : []).map((status) => (
             <div key={status.id} className="space-y-3 p-3 border rounded-lg bg-neutral-50/30 group">
               <div className="flex items-center gap-2">
                 <GripVertical className="h-4 w-4 text-muted-foreground/30" />
@@ -253,7 +258,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
               </div>
             </div>
           ))}
-          {qualStatuses.length === 0 && (
+          {(Array.isArray(qualStatuses) ? qualStatuses : []).length === 0 && (
              <p className="text-sm text-muted-foreground italic text-center py-6 border-2 border-dashed rounded-lg">
                 Статусы не добавлены
              </p>
