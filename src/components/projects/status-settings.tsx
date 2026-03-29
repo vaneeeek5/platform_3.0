@@ -238,8 +238,8 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                   </Label>
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild type="button">
-                        <Info className="h-3 w-3 text-neutral-400 cursor-help" />
+                      <TooltipTrigger className="cursor-help flex items-center justify-center p-0 bg-transparent border-0" tabIndex={0}>
+                        <Info className="h-3 w-3 text-neutral-400" />
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-[200px] text-[10px]">
