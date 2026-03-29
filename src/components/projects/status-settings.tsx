@@ -160,19 +160,6 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                   <Label htmlFor={`pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer">
                     Учитывать в «Целевых лидах» на дашборде
                   </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="cursor-help flex items-center justify-center p-0 bg-transparent border-0" tabIndex={0}>
-                        <Info className="h-3 w-3 text-neutral-400" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-[200px] text-[10px]">
-                          Если галочка стоит, лиды с этим статусом будут считаться успешными (целевыми). 
-                          Например: «Продажа» — да, «Отказ» или «Дубль» — нет.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
               </div>
             </div>
@@ -241,19 +228,6 @@ export function StatusSettings({ projectId }: { projectId: number }) {
                   <Label htmlFor={`qual-pos-${status.id}`} className="text-[11px] font-medium text-neutral-600 cursor-pointer">
                     Учитывать в «Квалах» на дашборде
                   </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger className="cursor-help flex items-center justify-center p-0 bg-transparent border-0" tabIndex={0}>
-                        <Info className="h-3 w-3 text-neutral-400" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-[200px] text-[10px]">
-                          Если галочка стоит, лиды с этим статусом будут считаться квалифицированными. 
-                          Например: «Квалифицирован» — да, «Недозвон» — нет.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
                 </div>
               </div>
             </div>
