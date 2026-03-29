@@ -1,44 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select"
-import { CrmArchiveImport } from "@/components/settings/crm-archive-import";
-import { CrmStageMappingsManager } from "@/components/settings/crm-stage-mappings-manager";
-
-// We'll modify the existing components slightly or wrap them to use the global projectId
-// For now, I'll just refactor the page to make it clear.
 
 export default function GlobalSettingsPage() {
-  const [projects, setProjects] = useState<any[]>([])
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("")
-
-  useEffect(() => {
-    fetch("/api/projects").then(res => res.json()).then(setProjects)
-  }, [])
-
   return (
     <div className="space-y-6 p-6">
       <div className="flex justify-between items-center">
         <div>
             <h2 className="text-3xl font-bold tracking-tight text-neutral-900 font-display">Настройки платформы</h2>
-            <p className="text-muted-foreground">Управление интеграциями, маппингом статусов и импортом данных из CRM.</p>
+            <p className="text-muted-foreground">Глобальные платформенные настройки.</p>
         </div>
       </div>
 
       <div className="grid gap-6">
-        {/* Блок импорта архива */}
-        <CrmArchiveImport />
-
-        {/* Блок маппинга статусов и этапов */}
-        <CrmStageMappingsManager />
-
         <div className="grid gap-6 md:grid-cols-2">
             <Card className="border-neutral-200">
                 <CardHeader>

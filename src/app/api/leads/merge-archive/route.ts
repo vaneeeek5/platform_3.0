@@ -9,16 +9,10 @@ export async function POST(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { projectId, rows } = await request.json();
+  const { projectId, rows, statusMapping } = await request.json();
   if (!projectId || !rows) return NextResponse.json({ error: "Missing data" }, { status: 400 });
 
   try {
-    // 1. Fetch Mappings
-    const mappings = await db
-      .select()
-      .from(crmStageMappings)
-      .where(eq(crmStageMappings.projectId, projectId));
-
     const statusResults = { updated: 0, skipped: 0, partialMatches: 0 };
 
     for (const row of rows) {
@@ -26,8 +20,9 @@ export async function POST(request: Request) {
       const rowCampaign = row.campaign || null;
       const crmStatus = row.status;
 
-      const mapping = mappings.find(m => m.crmStageName.toLowerCase() === crmStatus?.toLowerCase());
-      if (!mapping) {
+      // Получаем маппинг из словаря, присланного клиентом
+      const mapping = crmStatus && statusMapping && statusMapping[crmStatus];
+      if (!mapping || mapping.type === "ignore") {
         statusResults.skipped++;
         continue;
       }
@@ -74,20 +69,21 @@ export async function POST(request: Request) {
       }
 
       if (matchedLead) {
-        // Update statuses
-        // 1. Update lead stage
-        if (mapping.leadStageId) {
-          await db.update(leads).set({ stageId: mapping.leadStageId }).where(eq(leads.id, matchedLead.id));
+        // Устанавливаем статусы на основе объекта mapping { type: "target"|"qual"|"stage", id: number }
+        
+        if (mapping.type === "stage") {
+          await db.update(leads).set({ stageId: mapping.id }).where(eq(leads.id, matchedLead.id));
         }
 
-        // 2. Update goal achievement (pick first one for simplicity, or all if needed)
-        const achievements = await db.select().from(goalAchievements).where(eq(goalAchievements.leadId, matchedLead.id));
-        for (const ach of achievements) {
-           await db.update(goalAchievements).set({
-             targetStatusId: mapping.targetStatusId || undefined,
-             qualificationStatusId: mapping.qualificationStatusId || undefined,
-             updatedAt: new Date()
-           }).where(eq(goalAchievements.id, ach.id));
+        if (mapping.type === "target" || mapping.type === "qual") {
+          const achievements = await db.select().from(goalAchievements).where(eq(goalAchievements.leadId, matchedLead.id));
+          for (const ach of achievements) {
+             await db.update(goalAchievements).set({
+               targetStatusId: mapping.type === "target" ? mapping.id : ach.targetStatusId,
+               qualificationStatusId: mapping.type === "qual" ? mapping.id : ach.qualificationStatusId,
+               updatedAt: new Date()
+             }).where(eq(goalAchievements.id, ach.id));
+          }
         }
 
         statusResults.updated++;
