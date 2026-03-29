@@ -37,7 +37,8 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
     const existing = requests.find((r: any) => 
         r.date1 === dateFrom && 
         r.date2 === dateTo && 
-        ['created', 'processed'].includes(r.status)
+        ['created', 'processed'].includes(r.status) &&
+        (!r.fields || r.fields.includes('ym:s:dateTime')) // Игнорируем старые кэши без времени
     );
 
     if (existing) {
@@ -110,8 +111,8 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
             const [lead] = await db.insert(leads).values({
                 projectId,
                 metrikaVisitId: visitId,
-                metrikaClientId: row['ym:s:clientID'],
-                date: new Date(row['ym:s:dateTime'] || row['ym:s:date']),
+                metrikaClientId: row['ym:s:clientID'] || row['ym:s:client_id'] || null,
+                date: new Date(row['ym:s:dateTime'] || row['ym:s:datetime'] || row['ym:s:date']),
                 utmCampaign: row['ym:s:lastUTMCampaign'],
                 utmSource: row['ym:s:lastUTMSource'],
             }).onConflictDoUpdate({
