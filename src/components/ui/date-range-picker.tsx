@@ -81,8 +81,10 @@ export function DatePickerWithRange({
 }) {
   const [tempDate, setTempDate] = React.useState<DateRange | undefined>(date)
   const [open, setOpen] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
+    setMounted(true)
     setTempDate(date)
   }, [date])
 
@@ -111,17 +113,21 @@ export function DatePickerWithRange({
             )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to && !isSameDay(date.from, date.to) ? (
-                <>
-                  {format(date.from, "dd MMM y", { locale: ru })} -{" "}
-                  {format(date.to, "dd MMM y", { locale: ru })}
-                </>
+            {mounted ? (
+              date?.from ? (
+                date.to && !isSameDay(date.from, date.to) ? (
+                  <>
+                    {format(date.from, "dd MMM y", { locale: ru })} -{" "}
+                    {format(date.to, "dd MMM y", { locale: ru })}
+                  </>
+                ) : (
+                  format(date.from, "dd MMMM yyyy", { locale: ru })
+                )
               ) : (
-                format(date.from, "dd MMMM yyyy", { locale: ru })
+                <span>Выберите период</span>
               )
             ) : (
-              <span>Выберите период</span>
+              <span>Загрузка дат...</span>
             )}
           </Button>
         </PopoverTrigger>
