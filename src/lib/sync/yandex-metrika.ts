@@ -45,7 +45,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
         console.log(`[Logs API] Found existing request: ${requestId} (Status: ${existing.status})`);
     } else {
         // Create new request (plural logrequests)
-        const createUrl = `https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequests?date1=${dateFrom}&date2=${dateTo}&fields=ym:s:visitID,ym:s:date,ym:s:clientID,ym:s:lastUTMCampaign,ym:s:lastUTMSource,ym:s:goalsID&source=visits`;
+        const createUrl = `https://api-metrika.yandex.net/management/v1/counter/${project.yandexCounterId}/logrequests?date1=${dateFrom}&date2=${dateTo}&fields=ym:s:visitID,ym:s:dateTime,ym:s:clientID,ym:s:lastUTMCampaign,ym:s:lastUTMSource,ym:s:goalsID&source=visits`;
         const createRes = await fetch(createUrl, { 
             method: 'POST',
             headers: { 'Authorization': `Bearer ${project.yandexToken}` } 
@@ -111,7 +111,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
                 projectId,
                 metrikaVisitId: visitId,
                 metrikaClientId: row['ym:s:clientID'],
-                date: new Date(row['ym:s:date']),
+                date: new Date(row['ym:s:dateTime'] || row['ym:s:date']),
                 utmCampaign: row['ym:s:lastUTMCampaign'],
                 utmSource: row['ym:s:lastUTMSource'],
             }).onConflictDoUpdate({
