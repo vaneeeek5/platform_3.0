@@ -26,6 +26,10 @@ export async function POST(request: Request) {
     const defaultQualId = qualList.find(q => q.isPositive)?.id || qualList[0]?.id;
     const defaultStageId = stageList.find(s => s.label.toLowerCase().includes("закрыто") || s.label.toLowerCase().includes("продажа") || s.label.toLowerCase().includes("реализовано"))?.id || stageList[stageList.length - 1]?.id;
 
+    console.log(`[Smart Sync] Starting merge. Payload rows: ${rows.length}`);
+    console.log(`[Smart Sync] First row preview:`, rows[0]);
+    console.log(`[Smart Sync] Default IDs -> Target: ${defaultTargetId}, Qual: ${defaultQualId}, Stage: ${defaultStageId}`);
+
     for (const row of rows) {
       let matchedLead = null;
 
@@ -34,6 +38,9 @@ export async function POST(request: Request) {
          matchedLead = await db.query.leads.findFirst({
             where: and(eq(leads.projectId, projectId), eq(leads.metrikaClientId, String(row.clientId).trim()))
          });
+         if (matchedLead) {
+             console.log(`[Smart Sync] Match Priority 0 (Client ID) -> Lead ${matchedLead.id}`);
+         }
       }
 
       // Priority 1-3: Fallback Date Match 
@@ -78,7 +85,10 @@ export async function POST(request: Request) {
 
               if (dayLeads.length === 1) {
                 matchedLead = dayLeads[0];
+                console.log(`[Smart Sync] Match P3 (Day 1 lead) -> Lead ${matchedLead.id}`);
               }
+            } else {
+               console.log(`[Smart Sync] Match P1/P2 (Date exact/range) -> Lead ${matchedLead.id}`);
             }
         }
       }
@@ -109,9 +119,11 @@ export async function POST(request: Request) {
         if (updated) {
            statusResults.updated++;
         } else {
+           console.log(`[Smart Sync] Skipped (found but no goals/stage to update): Target=${row.target}, Qual=${row.qual}, StageId=${row.stageId}`);
            statusResults.skipped++; // Нашли, но ничего обновлять не нужно
         }
       } else {
+        console.log(`[Smart Sync] Skipped (No Match found). clientId=${row.clientId}, date=${row.date}`);
         statusResults.skipped++; // Не нашли лида
       }
     }
