@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { RefreshCw, Clock, Upload, FileSpreadsheet, CheckCircle2, AlertCircle, Calendar as CalendarIcon, GitMerge } from "lucide-react";
+import { RefreshCw, Clock, FileSpreadsheet, CheckCircle2, AlertCircle, GitMerge } from "lucide-react";
 import * as XLSX from "xlsx";
 import { DatePickerWithRange } from "@/components/ui/date-range-picker";
 import { DateRange } from "react-day-picker";
@@ -20,21 +20,6 @@ export function SyncSettings({ projectId }: { projectId: number }) {
   const [fileData, setFileData] = useState<any[] | null>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [internalStatuses, setInternalStatuses] = useState<{ targets: any[], quals: any[], stages: any[] }>({ targets: [], quals: [], stages: [] });
-
-  useEffect(() => {
-    Promise.all([
-      fetch(`/api/projects/${projectId}/statuses/target`).then(r => r.json()),
-      fetch(`/api/projects/${projectId}/statuses/qualification`).then(r => r.json()),
-      fetch(`/api/projects/${projectId}/statuses/stages`).then(r => r.json()),
-    ]).then(([targets, quals, stages]) => {
-      setInternalStatuses({ 
-        targets: Array.isArray(targets) ? targets : [], 
-        quals: Array.isArray(quals) ? quals : [], 
-        stages: Array.isArray(stages) ? stages : [] 
-      });
-    });
-  }, [projectId]);
 
   const handleManualSync = async () => {
     if (!dateRange?.from || !dateRange?.to) {
@@ -83,32 +68,27 @@ export function SyncSettings({ projectId }: { projectId: number }) {
     reader.readAsArrayBuffer(file);
   };
 
-  const [colMapping, setColMapping] = useState({ date: "", status: "", campaign: "" });
-  const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
-  const [statusValMapping, setStatusValMapping] = useState<Record<string, { type: "target" | "qual" | "stage" | "ignore", id?: number }>>({});
-
-  useEffect(() => {
-     if (colMapping.status && fileData) {
-         const statuses = Array.from(new Set(fileData.map(row => row[colMapping.status]))).filter(Boolean) as string[];
-         setUniqueStatuses(statuses);
-         const initMap: any = {};
-         statuses.forEach(s => initMap[s] = { type: 'ignore' });
-         setStatusValMapping(initMap);
-     }
-  }, [colMapping.status, fileData]);
+  const [colMapping, setColMapping] = useState({ 
+     clientId: "", 
+     date: "", 
+     target: "", 
+     qual: "", 
+     stage: "" 
+  });
 
   const handleSmartImport = async () => {
-     if (!colMapping.date || !colMapping.status) {
-        toast.error("Выберите колонки для Даты и Статуса");
+     if (!colMapping.clientId && !colMapping.date) {
+        toast.error("Для сверки необходимо выбрать хотя бы колонку Client ID или Дату");
         return;
      }
 
      setUploading(true);
-     // Преобразовываем данные так, чтобы API получал стандартизированные ключи: date, campaign, status
      const rows = fileData?.map(r => ({
-       date: r[colMapping.date],
-       campaign: colMapping.campaign ? r[colMapping.campaign] : null,
-       status: r[colMapping.status]
+       clientId: colMapping.clientId ? r[headers.indexOf(colMapping.clientId)] : null,
+       date: colMapping.date ? r[headers.indexOf(colMapping.date)] : null,
+       target: colMapping.target ? String(r[headers.indexOf(colMapping.target)] || "").toLowerCase().includes("да") : false,
+       qual: colMapping.qual ? String(r[headers.indexOf(colMapping.qual)] || "").toLowerCase().includes("да") : false,
+       stage: colMapping.stage ? String(r[headers.indexOf(colMapping.stage)] || "").toLowerCase().includes("да") : false,
      })) || [];
 
      try {
@@ -117,8 +97,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
            headers: { "Content-Type": "application/json" },
            body: JSON.stringify({ 
               projectId,
-              rows,
-              statusMapping: statusValMapping
+              rows
            })
         });
 
@@ -126,7 +105,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
            const result = await res.json();
            toast.success(`Сверка выполнена: ${result.updated} обновлено, ${result.skipped} пропущено`);
            setFileData(null);
-           setColMapping({ date: "", status: "", campaign: "" });
+           setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "" });
            if (fileInputRef.current) fileInputRef.current.value = "";
         } else {
            toast.error("Ошибка при сверке архива");
@@ -177,7 +156,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
         <CardHeader>
           <CardTitle>Умная сверка архива CRM</CardTitle>
           <CardDescription>
-            Загрузите Excel или CSV выгрузку из CRM. Алгоритм жестко сопоставит лидов с данными Яндекс Метрики по времени, без создания дублей.
+            Загрузите Excel/CSV с колонкой _ym_uid. Лиды будут мгновенно сопоставлены, а статусы обновлены на основе ячеек "ДА"/"НЕТ".
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -197,103 +176,88 @@ export function SyncSettings({ projectId }: { projectId: number }) {
            {fileData && headers.length > 0 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-top-2">
                  <div className="p-4 border rounded-lg bg-background space-y-4">
-                     <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">1. Маппинг колонок (Чтение)</p>
-                     <div className="grid gap-4 sm:grid-cols-3">
+                     <div className="flex items-center justify-between">
+                         <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Маппинг колонок</p>
+                         <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-green-500" />
+                            Найдено {fileData.length} строк
+                         </p>
+                     </div>
+                     
+                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 bg-neutral-50 p-4 rounded-md border">
                         <div className="space-y-1.5">
-                           <label className="text-[10px] uppercase font-bold text-muted-foreground">Дата и время *</label>
+                           <label className="text-[10px] uppercase font-bold text-blue-700">Client ID (_ym_uid)*</label>
+                           <select 
+                              className="w-full h-8 text-xs border rounded px-2"
+                              value={colMapping.clientId}
+                              onChange={(e) => setColMapping({...colMapping, clientId: e.target.value})}
+                           >
+                              <option value="">(Не выбрано)</option>
+                              {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
+                           </select>
+                        </div>
+                        <div className="space-y-1.5">
+                           <label className="text-[10px] uppercase font-bold text-neutral-700">Дата (запасной)*</label>
                            <select 
                               className="w-full h-8 text-xs border rounded px-2"
                               value={colMapping.date}
                               onChange={(e) => setColMapping({...colMapping, date: e.target.value})}
                            >
-                              <option value="">Выберите колонку</option>
-                              {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                              <option value="">(Не выбрано)</option>
+                              {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
                            </select>
                         </div>
                         <div className="space-y-1.5">
-                           <label className="text-[10px] uppercase font-bold text-muted-foreground">Статус CRM *</label>
+                           <label className="text-[10px] uppercase font-bold text-green-700">Флаг "Целевой"</label>
                            <select 
                               className="w-full h-8 text-xs border rounded px-2"
-                              value={colMapping.status}
-                              onChange={(e) => setColMapping({...colMapping, status: e.target.value})}
+                              value={colMapping.target}
+                              onChange={(e) => setColMapping({...colMapping, target: e.target.value})}
                            >
-                              <option value="">Выберите колонку</option>
-                              {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                              <option value="">(Не выбрано)</option>
+                              {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
                            </select>
                         </div>
                         <div className="space-y-1.5">
-                           <label className="text-[10px] uppercase font-bold text-muted-foreground">UTM Кампания (опц.)</label>
+                           <label className="text-[10px] uppercase font-bold text-amber-700">Флаг "Квал"</label>
                            <select 
                               className="w-full h-8 text-xs border rounded px-2"
-                              value={colMapping.campaign}
-                              onChange={(e) => setColMapping({...colMapping, campaign: e.target.value})}
+                              value={colMapping.qual}
+                              onChange={(e) => setColMapping({...colMapping, qual: e.target.value})}
                            >
-                              <option value="">Выберите колонку</option>
-                              {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                              <option value="">(Не выбрано)</option>
+                              {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
+                           </select>
+                        </div>
+                        <div className="space-y-1.5">
+                           <label className="text-[10px] uppercase font-bold text-purple-700">Флаг "Продажа"</label>
+                           <select 
+                              className="w-full h-8 text-xs border rounded px-2"
+                              value={colMapping.stage}
+                              onChange={(e) => setColMapping({...colMapping, stage: e.target.value})}
+                           >
+                              <option value="">(Не выбрано)</option>
+                              {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
                            </select>
                         </div>
                      </div>
                  </div>
 
-                 {uniqueStatuses.length > 0 && (
-                     <div className="p-4 border rounded-lg bg-blue-50/50 space-y-4">
-                         <p className="text-xs font-bold uppercase tracking-wider text-blue-800">2. Настройка статусов</p>
-                         <p className="text-xs text-blue-600/80 mb-2">Найдено {uniqueStatuses.length} уникальных статусов в вашем файле. Назначьте им роль в платформе.</p>
-                         
-                         <div className="space-y-3">
-                             {uniqueStatuses.map(statusStr => {
-                                const currentMap = statusValMapping[statusStr] || { type: 'ignore' };
-                                const selectVal = currentMap.type === 'ignore' ? 'ignore' : `${currentMap.type}_${currentMap.id}`;
-                                return (
-                                 <div key={statusStr} className="flex items-center gap-4 bg-white p-2 px-3 rounded-md border shadow-sm">
-                                     <div className="flex-1 font-medium text-sm text-neutral-800 break-all">{statusStr}</div>
-                                     <div className="flex-shrink-0 text-muted-foreground text-xs font-semibold mr-2">➔</div>
-                                     <select 
-                                         className="w-[240px] h-8 text-xs border rounded px-2 bg-neutral-50"
-                                         value={selectVal}
-                                         onChange={(e) => {
-                                             const v = e.target.value;
-                                             if (v === 'ignore') {
-                                                setStatusValMapping(prev => ({ ...prev, [statusStr]: { type: 'ignore' } }));
-                                             } else {
-                                                const [t, idStr] = v.split('_');
-                                                setStatusValMapping(prev => ({ ...prev, [statusStr]: { type: t as any, id: parseInt(idStr) } }));
-                                             }
-                                         }}
-                                     >
-                                         <option value="ignore">Пропустить (Не учитывать)</option>
-                                         <optgroup label="Целевые действия">
-                                             {internalStatuses.targets.map(t => <option key={`target_${t.id}`} value={`target_${t.id}`}>[Целевой] {t.label}</option>)}
-                                         </optgroup>
-                                         <optgroup label="Квалификация">
-                                             {internalStatuses.quals.map(q => <option key={`qual_${q.id}`} value={`qual_${q.id}`}>[Квал] {q.label}</option>)}
-                                         </optgroup>
-                                         <optgroup label="Этапы лида">
-                                             {internalStatuses.stages.map(s => <option key={`stage_${s.id}`} value={`stage_${s.id}`}>[Этап] {s.name}</option>)}
-                                         </optgroup>
-                                     </select>
-                                 </div>
-                                );
-                             })}
-                         </div>
-                     </div>
-                 )}
-
                  <div className="pt-2 flex justify-end gap-3 text-xs">
-                    <Button variant="outline" size="sm" onClick={() => { setFileData(null); setColMapping({ date: "", status: "", campaign: "" }); }}>Отмена</Button>
-                    <Button size="sm" onClick={handleSmartImport} disabled={uploading || !colMapping.date || !colMapping.status} className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Button variant="outline" size="sm" onClick={() => { setFileData(null); setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "" }); }}>Отмена</Button>
+                    <Button size="sm" onClick={handleSmartImport} disabled={uploading || (!colMapping.clientId && !colMapping.date)} className="bg-blue-600 hover:bg-blue-700 text-white">
                        <GitMerge className="w-4 h-4 mr-2" />
-                       {uploading ? "Сверка..." : "Выполнить Умную Сверку"}
+                       {uploading ? "Сверка..." : "Запустить Сверку"}
                     </Button>
                  </div>
               </div>
            )}
         </CardContent>
         <CardFooter className="bg-muted/10 flex gap-2">
-           <AlertCircle className="h-4 w-4 text-amber-500" />
+           <AlertCircle className="h-4 w-4 text-emerald-600" />
            <p className="text-[10px] leading-relaxed text-muted-foreground">
-              Smart Sync использует 3-х уровневую систему сверки (до секунды, в окне 10 минут, и один лид за день).
-              Отсутствующие лиды будут проигнорированы.
+              Алгоритм v2: Поиск выполняется по 100% совпадению Client ID.
+              Если в выбранной колонке для флага находится слово «ДА» — системе будет передан сигнал об изменении статуса.
            </p>
         </CardFooter>
       </Card>
