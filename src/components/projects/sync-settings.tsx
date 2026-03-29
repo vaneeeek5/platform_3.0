@@ -20,6 +20,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
     to: new Date()
   });
   const [fileData, setFileData] = useState<any[] | null>(null);
+  const [syncReport, setSyncReport] = useState<any>(null);
   const [headers, setHeaders] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [internalStatuses, setInternalStatuses] = useState<{ targets: any[], quals: any[], stages: any[] }>({ targets: [], quals: [], stages: [] });
