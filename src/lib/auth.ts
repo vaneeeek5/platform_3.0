@@ -25,7 +25,7 @@ export async function login(payload: any) {
   const session = await encrypt(payload);
 
   const cookieStore = await cookies();
-  cookieStore.set("auth_token", session, { expires, httpOnly: true, secure: process.env.NODE_ENV === "production" });
+  cookieStore.set("auth_token", session, { expires, httpOnly: true, secure: false });
 }
 
 export async function logout() {
