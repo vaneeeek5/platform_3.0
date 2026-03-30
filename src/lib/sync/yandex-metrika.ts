@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { leads, goalAchievements, trackedGoals, projects, campaignMappings, expenses, syncLogs } from "@/db/schema";
 import { eq, and, gte, lte } from "drizzle-orm";
 import "dotenv/config";
+import { parseFlexibleDate } from "../date-utils";
 
 // --- LOGS API SYNC (LEADS) ---
 export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, dateToStr?: string) {
@@ -119,11 +120,13 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
             }
 
             // Save Lead
+            const leadDate = parseFlexibleDate(row['ym:s:dateTime'] || row['ym:s:datetime'] || row['ym:s:date']);
+
             const [lead] = await db.insert(leads).values({
                 projectId,
                 metrikaVisitId: visitId,
                 metrikaClientId: row['ym:s:clientID'] || row['ym:s:client_id'] || null,
-                date: new Date(row['ym:s:dateTime'] || row['ym:s:datetime'] || row['ym:s:date']),
+                date: leadDate,
                 utmCampaign,
                 utmSource,
             }).onConflictDoUpdate({
@@ -131,7 +134,7 @@ export async function syncMetrikaLeads(projectId: number, dateFromStr?: string, 
                 set: { 
                     utmCampaign,
                     utmSource,
-                    date: new Date(row['ym:s:dateTime'] || row['ym:s:date'])
+                    date: leadDate
                 }
             }).returning();
 
