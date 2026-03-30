@@ -91,7 +91,9 @@ export function SyncSettings({ projectId }: { projectId: number }) {
      date: "", 
      target: "", 
      qual: "", 
-     stage: "" 
+     stage: "",
+     utmSource: "",
+     utmCampaign: ""
   });
 
   const [uniqueTargets, setUniqueTargets] = useState<string[]>([]);
@@ -146,12 +148,15 @@ export function SyncSettings({ projectId }: { projectId: number }) {
        return {
          clientId: colMapping.clientId ? r[headers.indexOf(colMapping.clientId)] : null,
          date: colMapping.date ? r[headers.indexOf(colMapping.date)] : null,
+          utmSource: colMapping.utmSource ? r[headers.indexOf(colMapping.utmSource)] : null,
+          utmCampaign: colMapping.utmCampaign ? r[headers.indexOf(colMapping.utmCampaign)] : null,
          targetRaw: rawTarget,
          targetMap: mappedTarget,
          qualRaw: rawQual,
          qualMap: mappedQual,
          stageRaw: rawStage,
          stageMap: mappedStage,
+          fullRow: r,
        };
      }) || [];
 
@@ -169,7 +174,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
            const result = await res.json();
            setSyncReport(result);
            setFileData(null);
-           setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "" });
+           setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "", utmSource: "", utmCampaign: "" });
            if (fileInputRef.current) fileInputRef.current.value = "";
         } else {
            toast.error("Ошибка при сверке архива");
@@ -183,17 +188,51 @@ export function SyncSettings({ projectId }: { projectId: number }) {
 
   const downloadUnmatchedCSV = () => {
     if (!syncReport?.unmatchedRows) return;
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "Client ID (_ym_uid),Дата\n"
-      + syncReport.unmatchedRows.map((r: any) => `${r.clientId || ''},${r.date || ''}`).join("\n");
+    
+    // Берем заголовки из оригинального файла (если они есть) + добавляем префикс если надо
+    const csvHeaders = headers.join(",");
+    const csvRows = syncReport.unmatchedRows.map((r: any) => {
+        // r.fullRow содержит оригинальный массив данных
+        return (r.fullRow || []).map((val: any) => `"${String(val).replace(/"/g, '""')}"`).join(",");
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvHeaders + "\n" + csvRows.join("\n");
       
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `unmatched_leads_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`);
+    link.setAttribute("download", `unmatched_leads_full_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleForceAdd = async () => {
+    if (!syncReport?.unmatchedRows || syncReport.unmatchedRows.length === 0) return;
+    
+    setUploading(true);
+    try {
+        const res = await fetch(`/api/leads/force-add`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+                projectId,
+                rows: syncReport.unmatchedRows
+            })
+        });
+
+        if (res.ok) {
+            const result = await res.json();
+            toast.success(`Успешно добавлено ${result.count} новых лидов`);
+            setSyncReport(null); // Закрываем отчет после успеха
+        } else {
+            toast.error("Ошибка при принудительном добавлении");
+        }
+    } catch (e) {
+        toast.error("Ошибка сети");
+    } finally {
+        setUploading(false);
+    }
   };
 
   return (
@@ -248,8 +287,13 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                 </div>
              )}
           </div>
-          <DialogFooter>
-            <Button onClick={() => setSyncReport(null)}>Закрыть окно</Button>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setSyncReport(null)}>Закрыть</Button>
+            {syncReport?.unmatchedRows?.length > 0 && (
+                <Button onClick={handleForceAdd} disabled={uploading}>
+                   {uploading ? "Добавление..." : "Добавить всех в Платформу"}
+                </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -319,7 +363,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                          </p>
                      </div>
                      
-                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 bg-neutral-50 p-4 rounded-md border">
+                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 bg-neutral-50 p-4 rounded-md border">
                         <div className="space-y-1.5">
                            <label className="text-[10px] uppercase font-bold text-blue-700">Client ID (_ym_uid)*</label>
                            <select 
@@ -375,6 +419,28 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                               {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
                            </select>
                         </div>
+                         <div className="space-y-1.5">
+                            <label className="text-[10px] uppercase font-bold text-neutral-500">UTM Source</label>
+                            <select 
+                               className="w-full h-8 text-xs border rounded px-2"
+                               value={colMapping.utmSource}
+                               onChange={(e) => setColMapping({...colMapping, utmSource: e.target.value})}
+                            >
+                               <option value="">(Не выбрано)</option>
+                               {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
+                            </select>
+                         </div>
+                         <div className="space-y-1.5">
+                            <label className="text-[10px] uppercase font-bold text-neutral-500">UTM Campaign</label>
+                            <select 
+                               className="w-full h-8 text-xs border rounded px-2"
+                               value={colMapping.utmCampaign}
+                               onChange={(e) => setColMapping({...colMapping, utmCampaign: e.target.value})}
+                            >
+                               <option value="">(Не выбрано)</option>
+                               {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
+                            </select>
+                         </div>
                      </div>
                  </div>
 
@@ -466,7 +532,7 @@ export function SyncSettings({ projectId }: { projectId: number }) {
                  )}
 
                  <div className="pt-2 flex justify-end gap-3 text-xs">
-                    <Button variant="outline" size="sm" onClick={() => { setFileData(null); setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "" }); }}>Отмена</Button>
+                    <Button variant="outline" size="sm" onClick={() => { setFileData(null); setColMapping({ clientId: "", date: "", target: "", qual: "", stage: "", utmSource: "", utmCampaign: "" }); }}>Отмена</Button>
                     <Button size="sm" onClick={handleSmartImport} disabled={uploading || (!colMapping.clientId && !colMapping.date)} className="bg-blue-600 hover:bg-blue-700 text-white">
                        <GitMerge className="w-4 h-4 mr-2" />
                        {uploading ? "Сверка..." : "Запустить Сверку"}
