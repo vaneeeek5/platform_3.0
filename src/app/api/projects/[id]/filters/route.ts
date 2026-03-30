@@ -6,12 +6,13 @@ import { getSession } from "@/lib/auth";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const projectId = parseInt(params.id);
+  const projectId = parseInt(id);
   if (isNaN(projectId)) return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
 
   try {
