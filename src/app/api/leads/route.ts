@@ -26,14 +26,14 @@ export async function GET(request: Request) {
     if (projectId && projectId !== '0') baseWhere.push(eq(leads.projectId, parseInt(projectId)));
     
     if (dateFromRaw) {
-        const dFrom = new Date(dateFromRaw);
-        dFrom.setHours(0, 0, 0, 0);
+        const [y, m, d] = dateFromRaw.split('-').map(Number);
+        const dFrom = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
         baseWhere.push(gte(leads.date, dFrom));
     }
     
     if (dateToRaw) {
-        const dTo = new Date(dateToRaw);
-        dTo.setHours(23, 59, 59, 999);
+        const [y, m, d] = dateToRaw.split('-').map(Number);
+        const dTo = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
         baseWhere.push(lte(leads.date, dTo));
     }
     

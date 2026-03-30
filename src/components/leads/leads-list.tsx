@@ -22,7 +22,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Checkbox } from "@/components/ui/checkbox"
 import { DatePickerWithRange } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
-import { subDays, startOfDay, endOfDay } from "date-fns"
+import { subDays } from "date-fns"
 import { 
   Select, 
   SelectContent, 
@@ -56,15 +56,27 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [filterTargetStatusIds, setFilterTargetStatusIds] = useState<string[]>([])
   const [filterQualStatusIds, setFilterQualStatusIds] = useState<string[]>([])
   const [filterStageIds, setFilterStageIds] = useState<string[]>([])
+  const [filterOptions, setFilterOptions] = useState<{ sources: string[], goals: string[] }>({ sources: [], goals: [] })
+
 
   useEffect(() => {
     setMounted(true)
     if (projectId) {
        fetchLeads()
        fetchStatuses()
+       fetchFilterOptions()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, dateRange, filterSources, filterGoals, filterTargetStatusIds, filterQualStatusIds, filterStageIds])
+
+  const fetchFilterOptions = async () => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/filters`)
+      if (res.ok) setFilterOptions(await res.json())
+    } catch (e) {
+      console.error("Failed to fetch filter options")
+    }
+  }
 
   const fetchStatuses = async () => {
     const [tRes, qRes, sRes] = await Promise.all([
@@ -82,8 +94,11 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     const params = new URLSearchParams()
     if (projectId) params.append("projectId", projectId.toString())
     if (query) params.append("query", query)
-    if (dateRange?.from) params.append("dateFrom", dateRange.from.toISOString())
-    if (dateRange?.to) params.append("dateTo", dateRange.to.toISOString())
+    
+    // Исправление сдвига даты на день: используем YYYY-MM-DD вместо ISOString
+    if (dateRange?.from) params.append("dateFrom", format(dateRange.from, 'yyyy-MM-dd'))
+    if (dateRange?.to) params.append("dateTo", format(dateRange.to, 'yyyy-MM-dd'))
+    
     if (filterSources.length > 0) params.append("sources", filterSources.join(","))
     if (filterGoals.length > 0) params.append("goals", filterGoals.join(","))
     if (filterTargetStatusIds.length > 0) params.append("targetStatusIds", filterTargetStatusIds.join(","))
@@ -99,6 +114,16 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
       setLoading(false)
     }
   }
+
+  const handleResetAll = () => {
+    setFilterSources([]);
+    setFilterGoals([]);
+    setFilterTargetStatusIds([]);
+    setFilterQualStatusIds([]);
+    setFilterStageIds([]);
+    setQuery("");
+    toast.success("Все фильтры сброшены");
+  };
 
     const handleExport = () => {
     if (leads.length === 0) return;
@@ -203,7 +228,17 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
             </div>
             <DatePickerWithRange date={dateRange} setDate={setDateRange} />
          </div>
-         <div className="flex gap-2 flex-wrap justify-end">
+         <div className="flex gap-2 flex-wrap items-center justify-end">
+            {(filterSources.length > 0 || filterGoals.length > 0 || filterTargetStatusIds.length > 0 || filterQualStatusIds.length > 0 || filterStageIds.length > 0 || query) && (
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 onClick={handleResetAll}
+                 className="text-red-500 hover:text-red-600 hover:bg-red-50 h-8 text-[10px]"
+               >
+                 Сбросить всё
+               </Button>
+            )}
             <Button variant="outline" size="sm" onClick={handleDedup} disabled={loading} title="Проверить и удалить дубликаты" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
                Удалить дубли
             </Button>
@@ -211,7 +246,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                <Download className="h-4 w-4 mr-2" />
                Excel
             </Button>
-            <Button size="sm" onClick={fetchLeads} disabled={loading}>
+            <Button size="sm" onClick={fetchLeads} disabled={loading} className="bg-slate-900">
                Обновить
             </Button>
          </div>
@@ -230,7 +265,6 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
               <TableHead className="w-[140px] text-xs">
                 <div className="flex items-center gap-1">
                   Дата
-                  Дата
                 </div>
               </TableHead>
               {showProjectColumn && <TableHead className="text-xs">Проект</TableHead>}
@@ -239,7 +273,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     Источник
                     <FilterPopover 
                        title="ФИЛЬТР ПО ИСТОЧНИКУ"
-                       options={Array.from(new Set(leads.map(l => l.lead.utmSource || 'direct')))} 
+                       options={filterOptions.sources} 
                        selected={filterSources} 
                        onChange={(val) => setFilterSources(val)} 
                     />
@@ -250,7 +284,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     Цели
                     <FilterPopover 
                        title="ФИЛЬТР ПО ЦЕЛЯМ"
-                       options={Array.from(new Set(leads.flatMap(l => l.achievements?.map((a: any) => a.goalName) || [])))} 
+                       options={filterOptions.goals} 
                        selected={filterGoals} 
                        onChange={(val) => setFilterGoals(val)} 
                     />
@@ -446,13 +480,14 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
 
 function FilterPopover({ title, options, selected, onChange, useObjects = false }: { title: string, options: any[], selected: string[], onChange: (val: string[]) => void, useObjects?: boolean }) {
    const [pending, setPending] = useState<string[]>(selected)
+   const [open, setOpen] = useState(false)
 
    useEffect(() => {
      setPending(selected)
    }, [selected])
 
    return (
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
          <PopoverTrigger asChild>
             <Button variant="ghost" size="icon" className="h-4 w-4 p-0 hover:bg-neutral-100">
                <Filter className={`h-3 w-3 ${selected.length > 0 ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -488,14 +523,17 @@ function FilterPopover({ title, options, selected, onChange, useObjects = false 
                     variant="outline" 
                     size="sm" 
                     className="flex-1 h-8 text-[11px] font-medium border-neutral-200"
-                    onClick={() => { setPending([]); onChange([]); }}
+                    onClick={() => { setPending([]); onChange([]); setOpen(false); }}
                   >
                      Сбросить
                   </Button>
                   <Button 
                     size="sm" 
                     className="flex-1 h-8 text-[11px] font-bold shadow-md shadow-primary/20"
-                    onClick={() => onChange(pending)}
+                    onClick={() => {
+                       onChange(pending);
+                       setOpen(false);
+                    }}
                   >
                      ОК / ПРИМЕНИТЬ
                   </Button>
