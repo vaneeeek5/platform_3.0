@@ -21,21 +21,45 @@ export async function GET(request: Request) {
   const qualStatusIds = searchParams.get("qualStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
   const stageIds = searchParams.get("stageIds")?.split(",").filter(Boolean).map(id => parseInt(id));
 
-  try {
-    let baseWhere: any[] = [];
-    if (projectId && projectId !== '0') baseWhere.push(eq(leads.projectId, parseInt(projectId)));
-    
-    if (dateFromRaw) {
-        const [y, m, d] = dateFromRaw.split('-').map(Number);
-        const dFrom = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
-        baseWhere.push(gte(leads.date, dFrom));
-    }
-    
-    if (dateToRaw) {
-        const [y, m, d] = dateToRaw.split('-').map(Number);
-        const dTo = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
-        baseWhere.push(lte(leads.date, dTo));
-    }
+    try {
+        let baseWhere: any[] = [];
+        if (projectId && projectId !== '0') baseWhere.push(eq(leads.projectId, parseInt(projectId)));
+        
+        console.log(`[API Leads] Filters: dateFrom=${dateFromRaw}, dateTo=${dateToRaw}, projectId=${projectId}`);
+
+        const parseDate = (raw: string | null, isEnd: boolean) => {
+            if (!raw) return null;
+            try {
+                // Если это формат YYYY-MM-DD
+                if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+                    const [y, m, d] = raw.split('-').map(Number);
+                    if (isEnd) return new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+                    return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+                }
+                // Для любых других форматов (ISO и т.д.)
+                const d = new Date(raw);
+                if (isNaN(d.getTime())) return null;
+                return d;
+            } catch (e) {
+                return null;
+            }
+        };
+
+        if (dateFromRaw) {
+            const dFrom = parseDate(dateFromRaw, false);
+            if (dFrom) {
+                console.log(`[API Leads] dFrom: ${dFrom.toISOString()}`);
+                baseWhere.push(gte(leads.date, dFrom));
+            }
+        }
+        
+        if (dateToRaw) {
+            const dTo = parseDate(dateToRaw, true);
+            if (dTo) {
+                console.log(`[API Leads] dTo: ${dTo.toISOString()}`);
+                baseWhere.push(lte(leads.date, dTo));
+            }
+        }
     
     if (sources && sources.length > 0) {
         baseWhere.push(inArray(leads.utmSource, sources));
