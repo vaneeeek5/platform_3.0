@@ -3,6 +3,8 @@ import { db } from "@/db";
 import { leads, goalAchievements, trackedGoals, leadStages, targetStatuses, qualificationStatuses } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { parseFlexibleDate } from "@/lib/date-utils";
+import { format } from "date-fns";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -33,9 +35,12 @@ export async function POST(request: Request) {
     for (const row of rows) {
       if (!row.clientId && !row.date) continue;
 
-      const rowDate = row.date ? new Date(row.date) : new Date();
-      const dateStr = !isNaN(rowDate.getTime()) ? rowDate.toISOString().split('T')[0] : 'unknown';
+      const rowDate = parseFlexibleDate(row.date);
+      const dateStr = format(rowDate, 'yyyy-MM-dd-HH-mm-ss');
       
+      // Добавляем источник по умолчанию для лучшей фильтрации
+      const utmSource = row.utmSource || 'CRM Import';
+
       // Deterministic but unique visit ID for manual leads
       const uniqueVisitId = `crm_${row.clientId || 'anon'}_${dateStr}_${Math.random().toString(36).substring(7)}`;
 
@@ -44,13 +49,13 @@ export async function POST(request: Request) {
           projectId,
           metrikaVisitId: uniqueVisitId,
           metrikaClientId: row.clientId ? String(row.clientId) : null,
-          date: !isNaN(rowDate.getTime()) ? rowDate : new Date(),
-          utmSource: row.utmSource || null,
+          date: rowDate,
+          utmSource: utmSource,
           utmCampaign: row.utmCampaign || null,
       }).onConflictDoUpdate({
           target: [leads.projectId, leads.metrikaVisitId],
           set: {
-              utmSource: row.utmSource || null,
+              utmSource: utmSource,
               utmCampaign: row.utmCampaign || null,
           }
       }).returning();

@@ -4,6 +4,7 @@ import { leads, goalAchievements, crmStageMappings, leadStages, targetStatuses, 
 import { eq, and, sql, gte, lte, between } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { startOfDay, endOfDay, addMinutes, subMinutes } from "date-fns";
+import { parseFlexibleDate } from "@/lib/date-utils";
 
 export async function POST(request: Request) {
   const session = await getSession();
@@ -45,15 +46,7 @@ export async function POST(request: Request) {
 
       // Priority 1-3: Fallback Date Match 
       if (!matchedLead && row.date) {
-        let rowDate = new Date(row.date);
-
-        // Если дата в формате DD.MM.YYYY, JS Date может спарсить криво, попробуем исправить:
-        if (isNaN(rowDate.getTime()) && typeof row.date === 'string' && row.date.includes('.')) {
-             const parts = row.date.split(' ')[0].split('.');
-             if (parts.length === 3) {
-                 rowDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T12:00:00Z`);
-             }
-        }
+        let rowDate = parseFlexibleDate(row.date);
 
         if (!isNaN(rowDate.getTime())) {
             // Tier 1: Exact Match (Minute precision)
