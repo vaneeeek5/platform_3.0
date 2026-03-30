@@ -107,9 +107,16 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     
     try {
       const res = await fetch(`/api/leads?${params.toString()}`)
-      if (res.ok) setLeads(await res.json())
+      if (res.ok) {
+         setLeads(await res.json())
+      } else {
+         const errData = await res.json()
+         console.error("API Error:", errData)
+         toast.error(errData.error || "Ошибка при загрузке лидов")
+      }
     } catch (e) {
-      toast.error("Ошибка при загрузке лидов")
+      console.error("Fetch fatal error:", e)
+      toast.error("Ошибка сети или сервера")
     } finally {
       setLoading(false)
     }
@@ -262,11 +269,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-[140px] text-xs">
-                <div className="flex items-center gap-1">
-                  Дата
-                </div>
-              </TableHead>
+              <TableHead className="w-[140px] text-xs">Дата</TableHead>
               {showProjectColumn && <TableHead className="text-xs">Проект</TableHead>}
               <TableHead className="text-xs">
                  <div className="flex items-center gap-1">
