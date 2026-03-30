@@ -181,6 +181,21 @@ export function SyncSettings({ projectId }: { projectId: number }) {
      }
   };
 
+  const downloadUnmatchedCSV = () => {
+    if (!syncReport?.unmatchedRows) return;
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + "Client ID (_ym_uid),Дата\n"
+      + syncReport.unmatchedRows.map((r: any) => `${r.clientId || ''},${r.date || ''}`).join("\n");
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `unmatched_leads_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       
@@ -206,8 +221,11 @@ export function SyncSettings({ projectId }: { projectId: number }) {
              
              {syncReport?.unmatchedRows && syncReport.unmatchedRows.length > 0 && (
                 <div className="flex flex-col min-h-0 border rounded-md shadow-sm">
-                   <div className="bg-muted px-4 py-2 font-medium text-sm text-foreground border-b">
-                      Список лидов, которые не удалось найти в Платформе:
+                   <div className="bg-muted px-4 py-2 flex items-center justify-between font-medium text-sm text-foreground border-b">
+                      <span>Список лидов, которые не удалось найти в Платформе:</span>
+                      <Button variant="outline" size="sm" onClick={downloadUnmatchedCSV} className="h-7 text-xs">
+                        Скачать (.csv)
+                      </Button>
                    </div>
                    <div className="overflow-auto max-h-[300px]">
                       <Table>
