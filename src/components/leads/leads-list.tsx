@@ -63,7 +63,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
        fetchLeads()
        fetchStatuses()
     }
-  }, [projectId])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, dateRange, filterSources, filterGoals, filterTargetStatusIds, filterQualStatusIds, filterStageIds])
 
   const fetchStatuses = async () => {
     const [tRes, qRes, sRes] = await Promise.all([
@@ -229,22 +230,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
               <TableHead className="w-[140px] text-xs">
                 <div className="flex items-center gap-1">
                   Дата
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-4 w-4 p-0">
-                        <Filter className="h-3 w-3 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <div className="p-4 bg-white shadow-xl rounded-md border border-neutral-200">
-                        <div className="mb-4 text-xs font-semibold px-1">ФИЛЬТР ПО ДАТЕ</div>
-                        <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-                        <div className="mt-4 flex justify-end">
-                            <Button size="sm" onClick={fetchLeads} className="h-8 text-[11px] px-4 font-bold">ОК / ПРИМЕНИТЬ</Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  Дата
                 </div>
               </TableHead>
               {showProjectColumn && <TableHead className="text-xs">Проект</TableHead>}
@@ -255,7 +241,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        title="ФИЛЬТР ПО ИСТОЧНИКУ"
                        options={Array.from(new Set(leads.map(l => l.lead.utmSource || 'direct')))} 
                        selected={filterSources} 
-                       onChange={(val) => { setFilterSources(val); fetchLeads(); }} 
+                       onChange={(val) => setFilterSources(val)} 
                     />
                  </div>
               </TableHead>
@@ -266,7 +252,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        title="ФИЛЬТР ПО ЦЕЛЯМ"
                        options={Array.from(new Set(leads.flatMap(l => l.achievements?.map((a: any) => a.goalName) || [])))} 
                        selected={filterGoals} 
-                       onChange={(val) => { setFilterGoals(val); fetchLeads(); }} 
+                       onChange={(val) => setFilterGoals(val)} 
                     />
                  </div>
               </TableHead>
@@ -278,7 +264,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        title="ФИЛЬТР ПО СТАТУСУ"
                        options={targetStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
                        selected={filterTargetStatusIds} 
-                       onChange={(val) => { setFilterTargetStatusIds(val); fetchLeads(); }} 
+                       onChange={(val) => setFilterTargetStatusIds(val)} 
                        useObjects
                     />
                  </div>
@@ -290,7 +276,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        title="ФИЛЬТР ПО КВАЛ"
                        options={qualStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
                        selected={filterQualStatusIds} 
-                       onChange={(val) => { setFilterQualStatusIds(val); fetchLeads(); }} 
+                       onChange={(val) => setFilterQualStatusIds(val)} 
                        useObjects
                     />
                  </div>
@@ -302,7 +288,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        title="ФИЛЬТР ПО ЭТАПУ"
                        options={leadStages.map(s => ({ label: s.label, value: s.id.toString() }))} 
                        selected={filterStageIds} 
-                       onChange={(val) => { setFilterStageIds(val); fetchLeads(); }} 
+                       onChange={(val) => setFilterStageIds(val)} 
                        useObjects
                     />
                  </div>

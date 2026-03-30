@@ -10,8 +10,10 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get("projectId");
-  const dateFrom = searchParams.get("dateFrom");
-  const dateTo = searchParams.get("dateTo");
+  
+  const dateFromRaw = searchParams.get("dateFrom");
+  const dateToRaw = searchParams.get("dateTo") || dateFromRaw;
+  
   const query = searchParams.get("query");
   const sources = searchParams.get("sources")?.split(",").filter(Boolean);
   const goals = searchParams.get("goals")?.split(",").filter(Boolean);
@@ -22,9 +24,15 @@ export async function GET(request: Request) {
   try {
     let baseWhere: any[] = [];
     if (projectId && projectId !== '0') baseWhere.push(eq(leads.projectId, parseInt(projectId)));
-    if (dateFrom) baseWhere.push(gte(leads.date, new Date(dateFrom)));
-    if (dateTo) {
-        const dTo = new Date(dateTo);
+    
+    if (dateFromRaw) {
+        const dFrom = new Date(dateFromRaw);
+        dFrom.setHours(0, 0, 0, 0);
+        baseWhere.push(gte(leads.date, dFrom));
+    }
+    
+    if (dateToRaw) {
+        const dTo = new Date(dateToRaw);
         dTo.setHours(23, 59, 59, 999);
         baseWhere.push(lte(leads.date, dTo));
     }
@@ -131,15 +139,7 @@ export async function DELETE(request: Request) {
   }
 
   try {
-    // For safety, only allow SUPER_ADMIN for now, or we should verify project link
-    if (session.role !== "SUPER_ADMIN") {
-      // TODO: Check project_links for project-specific ADMIN role
-      // For now, let's just allow it if the user is authenticated (assuming access control is handled upstream)
-      // But let's be safe and check if we have a more robust way.
-    }
-
     await db.delete(leads).where(eq(leads.projectId, parseInt(projectId)));
-
     return NextResponse.json({ success: true, message: "Leads cleared successfully" });
   } catch (error) {
     console.error("Leads delete error:", error);
