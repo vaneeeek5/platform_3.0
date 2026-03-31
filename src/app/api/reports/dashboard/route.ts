@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
 import { db } from "@/db";
 import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses, qualificationStatuses } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";

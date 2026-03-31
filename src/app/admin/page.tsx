@@ -62,7 +62,9 @@ export default function DashboardPage() {
         ...(dateRange?.from && { dateFrom: dateRange.from.toISOString() }),
         ...(dateRange?.to && { dateTo: dateRange.to.toISOString() }),
       });
-      const res = await fetch(`/api/reports/dashboard?${queryParams.toString()}`);
+      const res = await fetch(`/api/reports/dashboard?${queryParams.toString()}`, {
+        cache: "no-store"
+      });
       if (res.ok) {
         setData(await res.json());
       } else {
@@ -186,16 +188,10 @@ export default function DashboardPage() {
           <p className="text-muted-foreground mt-1">Аналитика эффективности маркетинга</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 bg-white rounded-lg border p-1 shadow-sm">
-            <Button variant={granularity === "day" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("day")} className="h-7 text-[10px] px-3">Дни</Button>
-            <Button variant={granularity === "week" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("week")} className="h-7 text-[10px] px-2.5">Недели</Button>
-            <Button variant={granularity === "month" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("month")} className="h-7 text-[10px] px-2.5">Месяцы</Button>
-          </div>
-          
-          <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-          
-          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+          <div className="flex items-center gap-3">
+            <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+            
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
             <SelectTrigger className="w-[180px] bg-white shadow-sm border-slate-200">
               <Filter className="w-4 h-4 mr-2 opacity-50" />
               <SelectValue placeholder="Все проекты" />
@@ -325,11 +321,18 @@ export default function DashboardPage() {
                 <CardTitle className="text-xl">Динамика лидов</CardTitle>
                 <CardDescription className="text-sm">Активность по времени</CardDescription>
               </div>
-              <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
-                <div className="flex items-center gap-2"><div className="w-3 h-1 bg-blue-500 rounded-full" /><span>Лиды</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-1 bg-emerald-500 rounded-full" /><span>Целевые</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-1 bg-purple-500 rounded-full" /><span>Квалы</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-1 bg-amber-500 rounded-full" /><span>Продажи</span></div>
+              <div className="flex flex-wrap items-center gap-6">
+                <div className="flex items-center gap-1 bg-slate-100/50 rounded-lg border p-1 border-slate-200/60 shadow-sm mr-4">
+                  <Button variant={granularity === "day" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("day")} className="h-7 text-[10px] px-3">Дни</Button>
+                  <Button variant={granularity === "week" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("week")} className="h-7 text-[10px] px-3">Недели</Button>
+                  <Button variant={granularity === "month" ? "secondary" : "ghost"} size="sm" onClick={() => setGranularity("month")} className="h-7 text-[10px] px-3">Месяцы</Button>
+                </div>
+                <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
+                  <div className="flex items-center gap-2"><div className="w-3 h-1 bg-blue-500 rounded-full" /><span>Лиды</span></div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-1 bg-emerald-500 rounded-full" /><span>Целевые</span></div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-1 bg-purple-500 rounded-full" /><span>Квалы</span></div>
+                  <div className="flex items-center gap-2"><div className="w-3 h-1 bg-amber-500 rounded-full" /><span>Продажи</span></div>
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -342,7 +345,7 @@ export default function DashboardPage() {
       <div className="space-y-10">
         <section>
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-bold text-slate-800">Топ кампаний по количеству</h2>
+            <h2 className="text-xl font-bold text-slate-800">Топ кампаний по количеству (за период)</h2>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
@@ -354,7 +357,7 @@ export default function DashboardPage() {
 
         <section>
            <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-xl font-bold text-slate-800">Топ кампаний по стоимости (эффективность)</h2>
+            <h2 className="text-xl font-bold text-slate-800">Топ кампаний по стоимости (за период)</h2>
             <div className="h-px flex-1 bg-slate-200" />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
