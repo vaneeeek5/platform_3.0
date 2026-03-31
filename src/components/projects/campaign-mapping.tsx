@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { format, subDays } from "date-fns"
-import { Plus, Trash2, Eye, EyeOff } from "lucide-react"
+import { Plus, Trash2, Eye, EyeOff, GitMerge } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -86,6 +86,32 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
   const addMapping = () => {
     setMappings([...mappings, { id: Date.now() * -1, utmValue: "", directValue: "", displayName: "" }])
   }
+  
+  const addAllExistingUtms = () => {
+    const newMappings = [...mappings];
+    let addedCount = 0;
+    
+    existingUtms.forEach(camp => {
+      // Проверяем, нет ли уже такой метки в списке (среди UTM или как основное значение)
+      const alreadyMapped = newMappings.find(m => m.utmValue === camp.utm);
+      if (!alreadyMapped) {
+        newMappings.push({
+          id: (Date.now() + addedCount) * -1,
+          utmValue: camp.utm,
+          directValue: "",
+          displayName: camp.name || camp.utm
+        });
+        addedCount++;
+      }
+    });
+    
+    if (addedCount > 0) {
+      setMappings(newMappings);
+      toast.success(`Добавлено ${addedCount} новых строк из Метрики`);
+    } else {
+      toast.info("Все доступные метки уже добавлены");
+    }
+  };
 
   const updateMapping = (id: number, field: keyof Mapping, value: string | boolean) => {
     setMappings(mappings.map(m => {
@@ -156,9 +182,14 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
             Свяжите метки из Метрики и названия из Директа в одну кампанию на платформе.
           </CardDescription>
         </div>
-        <Button size="sm" onClick={addMapping}>
-          <Plus className="h-4 w-4 mr-1" /> Добавить строку
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={addAllExistingUtms} disabled={existingUtms.length === 0}>
+            <GitMerge className="h-4 w-4 mr-1 text-blue-600" /> Внести все метки
+          </Button>
+          <Button size="sm" onClick={addMapping}>
+            <Plus className="h-4 w-4 mr-1" /> Добавить строку
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <datalist id="existing-utms">
