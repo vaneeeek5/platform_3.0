@@ -82,6 +82,7 @@ export function DatePickerWithRange({
   const [tempDate, setTempDate] = React.useState<DateRange | undefined>(date)
   const [open, setOpen] = React.useState(false)
   const [mounted, setMounted] = React.useState(false)
+  const [selectedPreset, setSelectedPreset] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     setMounted(true)
@@ -148,11 +149,12 @@ export function DatePickerWithRange({
                   onClick={() => {
                      const val = preset.getValue();
                      setTempDate(val);
+                     setSelectedPreset(preset.label);
                      handleApply(val);
                   }}
                 >
                   {preset.label}
-                  {activePreset?.label === preset.label && <Check className="ml-auto h-3 w-3" />}
+                  {selectedPreset === preset.label && <Check className="ml-auto h-3 w-3" />}
                 </Button>
               ))
             })()}
@@ -174,7 +176,10 @@ export function DatePickerWithRange({
               mode="range"
               defaultMonth={tempDate?.from}
               selected={tempDate}
-              onSelect={setTempDate}
+              onSelect={(val) => {
+                setTempDate(val);
+                setSelectedPreset(null);
+              }}
               numberOfMonths={2}
               locale={ru}
               className="p-3"
