@@ -50,8 +50,8 @@ export async function GET(request: Request) {
 
     const resolveName = (utmCampaign: string | null, directOrder: string | null, utmSource: string | null = null) => {
       const mapping = projectMappings.find(m => {
-        if (m.utmValue && utmCampaign && m.utmValue === utmCampaign) return true;
-        if (m.directValue && directOrder && m.directValue === directOrder) return true;
+        if (m.utmValue && utmCampaign && m.utmValue.toLowerCase() === utmCampaign.toLowerCase()) return true;
+        if (m.directValue && directOrder && m.directValue.toLowerCase() === directOrder.toLowerCase()) return true;
         return false;
       });
       if (mapping?.displayName) return mapping.displayName;
