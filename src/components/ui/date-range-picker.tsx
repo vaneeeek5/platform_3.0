@@ -134,25 +134,28 @@ export function DatePickerWithRange({
         <PopoverContent className="w-auto p-0 flex flex-row" align="start">
           <div className="flex flex-col border-r border-border p-2 bg-muted/10 min-w-[160px]">
             <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 mb-1 uppercase tracking-wider">Быстрый выбор</div>
-            {presets.map((preset) => (
-              <Button
-                key={preset.label}
-                variant="ghost"
-                size="sm"
-                className={cn(
-                    "justify-start text-xs font-normal h-8 px-2",
-                    isPresetActive(preset) && "bg-primary/10 text-primary font-medium"
-                )}
-                onClick={() => {
-                   const val = preset.getValue();
-                   setTempDate(val);
-                   handleApply(val);
-                }}
-              >
-                {preset.label}
-                {isPresetActive(preset) && <Check className="ml-auto h-3 w-3" />}
-              </Button>
-            ))}
+            {(() => {
+              const activePreset = presets.find(p => isPresetActive(p));
+              return presets.map((preset) => (
+                <Button
+                  key={preset.label}
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                      "justify-start text-xs font-normal h-8 px-2",
+                      isPresetActive(preset) && "bg-primary/10 text-primary font-medium"
+                  )}
+                  onClick={() => {
+                     const val = preset.getValue();
+                     setTempDate(val);
+                     handleApply(val);
+                  }}
+                >
+                  {preset.label}
+                  {activePreset?.label === preset.label && <Check className="ml-auto h-3 w-3" />}
+                </Button>
+              ))
+            })()}
           </div>
           <div className="flex flex-col">
             <div className="p-3 border-b border-border flex justify-between items-center bg-muted/20">
