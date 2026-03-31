@@ -12,18 +12,13 @@ export default async function middleware(req: NextRequest) {
   
   if (cookie) {
     try {
-      console.log("[Middleware] Cookie found, decrypting...");
       session = await decrypt(cookie);
-      console.log("[Middleware] Session decrypted for user:", session?.email);
     } catch (e: any) {
-      console.error("[Middleware] Decryption failed:", e.message);
       // Invalid token, redirect to login
       if (!isPublicRoute) {
         return NextResponse.redirect(new URL("/login", req.nextUrl));
       }
     }
-  } else {
-    console.log("[Middleware] No auth_token cookie found at path:", path);
   }
 
   // Redirect unauthenticated users

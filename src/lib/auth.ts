@@ -25,7 +25,6 @@ export async function login(payload: any) {
   const session = await encrypt(payload);
 
   const cookieStore = await cookies();
-  console.log("[Auth Lib] Setting auth_token cookie for:", payload.email);
   cookieStore.set("auth_token", session, { expires, httpOnly: true, secure: false, sameSite: "lax", path: "/" });
 }
 
