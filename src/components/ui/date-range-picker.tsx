@@ -43,7 +43,7 @@ const presets = [
     label: "Текущий месяц",
     getValue: () => ({ 
       from: startOfMonth(new Date()), 
-      to: subDays(new Date(), 1) 
+      to: new Date() 
     })
   },
   {
@@ -58,14 +58,14 @@ const presets = [
     label: "Квартал",
     getValue: () => ({ 
       from: startOfQuarter(new Date()), 
-      to: subDays(new Date(), 1) 
+      to: new Date() 
     })
   },
   {
     label: "Год",
     getValue: () => ({ 
       from: startOfYear(new Date()), 
-      to: subDays(new Date(), 1) 
+      to: new Date() 
     })
   }
 ];
