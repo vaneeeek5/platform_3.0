@@ -144,7 +144,7 @@ export function DatePickerWithRange({
                   size="sm"
                   className={cn(
                       "justify-start text-xs font-normal h-8 px-2",
-                      isPresetActive(preset) && "bg-primary/10 text-primary font-medium"
+                      selectedPreset === preset.label && "bg-primary/10 text-primary font-medium"
                   )}
                   onClick={() => {
                      const val = preset.getValue();
