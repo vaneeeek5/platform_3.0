@@ -39,6 +39,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Users, Shield, Plus, Key, Settings, LayoutDashboard, ClipboardList, Banknote, History, Trash2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function GlobalSettingsPage() {
   const [me, setMe] = React.useState<any>(null);
