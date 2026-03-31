@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface Goal {
   id: string;
@@ -43,9 +44,11 @@ export function YandexSettings({ projectId }: { projectId: number }) {
     setFetchingGoals(true);
     try {
       const res = await fetch(`/api/projects/${projectId}/metrika/goals?token=${activeToken}&counterId=${activeCounter}`);
-      const data = await res.json();
-      if (!data.error) {
-        setAvailableGoals(data);
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.error) {
+            setAvailableGoals(data);
+        }
       }
     } catch (e) {
        console.error(e);
@@ -67,7 +70,6 @@ export function YandexSettings({ projectId }: { projectId: number }) {
         setDirectLogins(project.yandexDirectLogins || "");
         setYandexUtmsAllowed(project.yandexUtmsAllowed || "");
         
-        // Автоматически подгружаем цели только один раз при загрузке страницы
         if (project.yandexToken && project.yandexCounterId) {
           fetchGoals(project.yandexToken, project.yandexCounterId);
         }
@@ -87,7 +89,7 @@ export function YandexSettings({ projectId }: { projectId: number }) {
     })
     .catch(err => console.error("Error loading project data:", err))
     .finally(() => setLoading(false));
-  }, [projectId]); // Удалена зависимость от fetchGoals, которая вызывала сброс полей
+  }, [projectId]);
 
   const handleSaveGoals = async () => {
     setSaving(true);
@@ -161,98 +163,111 @@ export function YandexSettings({ projectId }: { projectId: number }) {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">Загрузка настроек Метрики...</div>;
+  if (loading) return (
+    <div className="py-12 flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground font-medium animate-pulse">Загрузка настроек Метрики...</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Яндекс.Метрика API</CardTitle>
-          <CardDescription>
-            Введите данные доступа к Яндекс.Метрике для загрузки целей.
+    <div className="space-y-10 animate-in fade-in duration-700">
+      <Card className="border-none shadow-2xl glass-card overflow-hidden rounded-[2rem]">
+        <CardHeader className="bg-muted/30 border-b border-white/5 pb-8 p-10">
+          <CardTitle className="text-2xl font-black tracking-tight">Яндекс.Метрика API</CardTitle>
+          <CardDescription className="text-sm font-medium mt-2">
+            Введите данные доступа к Яндекс.Метрике для автоматической загрузки целей и данных из Logs API.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="token">OAuth Токен</Label>
+        <CardContent className="space-y-8 p-10">
+          <div className="grid gap-8 sm:grid-cols-2">
+            <div className="space-y-3">
+              <Label htmlFor="token" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">OAuth Токен</Label>
               <Input
                 id="token"
                 type="password"
                 placeholder="y0_..."
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
+                className="h-12 glass-card border-white/5 rounded-2xl px-5 focus-visible:ring-primary/20"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="counter">ID Счетчика</Label>
+            <div className="space-y-3">
+              <Label htmlFor="counter" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">ID Счетчика</Label>
               <Input
                 id="counter"
                 placeholder="12345678"
                 value={counterId}
                 onChange={(e) => setCounterId(e.target.value)}
+                className="h-12 glass-card border-white/5 rounded-2xl px-5 focus-visible:ring-primary/20"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="logins">Логины Директа (через запятую)</Label>
+            <div className="space-y-3 sm:col-span-2">
+              <Label htmlFor="logins" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Логины Директа (через запятую)</Label>
               <Input
                 id="logins"
                 placeholder="login1, login2"
                 value={directLogins}
                 onChange={(e) => setDirectLogins(e.target.value)}
+                className="h-12 glass-card border-white/5 rounded-2xl px-5 focus-visible:ring-primary/20"
               />
             </div>
           </div>
-          <Button onClick={() => fetchGoals()} variant="outline" disabled={fetchingGoals}>
+          <Button onClick={() => fetchGoals()} variant="outline" disabled={fetchingGoals} className="h-12 px-8 rounded-2xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest hover:bg-primary/5">
             {fetchingGoals ? "Загрузка целей..." : "Обновить список целей"}
           </Button>
         </CardContent>
-        <CardFooter className="border-t px-6 py-4">
-          <Button onClick={handleSaveToken} disabled={saving}>
+        <CardFooter className="bg-muted/20 border-t border-white/5 p-8 px-10">
+          <Button onClick={handleSaveToken} disabled={saving} className="h-14 px-12 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20">
             {saving ? "Сохранение..." : "Сохранить доступы"}
           </Button>
         </CardFooter>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Фильтрация источников трафика</CardTitle>
-          <CardDescription>
+      <Card className="border-none shadow-2xl glass-card overflow-hidden rounded-[2rem]">
+        <CardHeader className="bg-muted/30 border-b border-white/5 p-10">
+          <CardTitle className="text-2xl font-black tracking-tight">Фильтрация источников трафика</CardTitle>
+          <CardDescription className="text-sm font-medium mt-2">
             Если вы отметите источники здесь, платформа будет импортировать лиды <b>только</b> из них. 
-            Если не отметить ничего — будут учитываться все лиды (включая прямые заходы).
+            Если не отметить ничего — будут учитываться все лиды.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            {availableUtmSources.map(source => {
+        <CardContent className="space-y-8 p-10">
+          <div className="flex flex-wrap gap-3">
+            {availableUtmSources.length === 0 ? (
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Источники еще не обнаружены</p>
+            ) : availableUtmSources.map(source => {
               const isActive = yandexUtmsAllowed.split(',').map(s => s.trim()).includes(source);
               return (
-                <div key={source} className="flex items-center space-x-2 bg-muted/50 p-2 rounded-md border">
+                <div key={source} className={cn(
+                    "flex items-center space-x-3 p-3 px-4 rounded-2xl border transition-all cursor-pointer group",
+                    isActive ? "bg-primary/5 border-primary/20 shadow-lg shadow-primary/5" : "bg-muted/10 border-white/5 opacity-60 hover:opacity-100"
+                )} onClick={() => {
+                   const enabled = new Set(yandexUtmsAllowed.split(',').map(s => s.trim()).filter(Boolean));
+                   if (!isActive) enabled.add(source);
+                   else enabled.delete(source);
+                   setYandexUtmsAllowed(Array.from(enabled).join(', '));
+                }}>
                   <input
                     type="checkbox"
-                    id={`utm-${source}`}
                     checked={isActive}
-                    onChange={(e) => {
-                      const enabled = new Set(yandexUtmsAllowed.split(',').map(s => s.trim()).filter(Boolean));
-                      if (e.target.checked) enabled.add(source);
-                      else enabled.delete(source);
-                      setYandexUtmsAllowed(Array.from(enabled).join(', '));
-                    }}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                    readOnly
+                    className="h-5 w-5 rounded-lg border-primary/20 text-primary focus:ring-primary/20 cursor-pointer"
                   />
-                  <Label htmlFor={`utm-${source}`} className="cursor-pointer font-mono text-xs">{source}</Label>
+                  <Label className="cursor-pointer font-black text-[11px] uppercase tracking-tight truncate max-w-[150px]">{source}</Label>
                 </div>
               );
             })}
           </div>
 
-          <div className="flex gap-2 max-w-sm mt-4">
+          <div className="flex flex-col sm:flex-row gap-4 max-w-xl">
             <Input 
               placeholder="Добавить вручную (например: mytarget)" 
               value={newUtmInput} 
               onChange={e => setNewUtmInput(e.target.value)} 
+              className="h-12 glass-card border-white/5 rounded-2xl px-5"
             />
-            <Button variant="outline" onClick={() => {
+            <Button variant="outline" className="h-12 px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest border-primary/20 text-primary" onClick={() => {
               if (!newUtmInput.trim()) return;
               const term = newUtmInput.trim();
               if (!availableUtmSources.includes(term)) setAvailableUtmSources([...availableUtmSources, term]);
@@ -264,63 +279,68 @@ export function YandexSettings({ projectId }: { projectId: number }) {
             }}>Добавить</Button>
           </div>
         </CardContent>
-        <CardFooter className="border-t px-6 py-4 bg-muted/20">
-           <Button onClick={handleSaveToken} disabled={saving}>
+        <CardFooter className="bg-muted/20 border-t border-white/5 p-8 px-10">
+           <Button onClick={handleSaveToken} disabled={saving} className="h-14 px-12 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20 border-primary/20 text-primary hover:bg-primary hover:text-white" variant="outline">
               {saving ? "Сохранение..." : "Применить фильтр"}
            </Button>
         </CardFooter>
       </Card>
 
       {(availableGoals.length > 0 || trackedGoalsList.length > 0) && (
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>Отслеживаемые цели (Лиды)</CardTitle>
-            <CardDescription>
-              Выберите цели из Метрики и укажите, как они должны называться в платформе.
+        <Card className="border-none shadow-2xl glass-card overflow-hidden rounded-[2rem]">
+          <CardHeader className="bg-muted/30 border-b border-white/5 p-10">
+            <CardTitle className="text-2xl font-black tracking-tight">Отслеживаемые цели (Лиды)</CardTitle>
+            <CardDescription className="text-sm font-medium mt-2">
+              Выберите цели из Метрики и укажите их отображаемые названия для отчётов.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             {fetchingGoals ? (
-               <div className="py-8 text-center text-muted-foreground italic">Загрузка списка из Яндекса...</div>
+               <div className="py-20 flex flex-col items-center gap-4 text-muted-foreground animate-pulse">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">Загрузка из Метрики...</p>
+               </div>
             ) : availableGoals.length === 0 ? (
-               <div className="py-8 text-center text-muted-foreground italic">Цели не загружены.</div>
+               <div className="py-20 text-center text-muted-foreground italic font-medium uppercase text-[10px] tracking-widest opacity-40">Цели не загружены. Обновите доступы.</div>
             ) : (
                 <Table>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-[50px] pl-6"></TableHead>
-                    <TableHead>Название в Метрике</TableHead>
-                    <TableHead>Название в платформе</TableHead>
-                    <TableHead className="w-[100px]">ID</TableHead>
-                    <TableHead className="w-[100px]">Тип</TableHead>
+                <TableHeader className="bg-muted/20 h-14">
+                  <TableRow className="border-white/5 hover:bg-transparent">
+                    <TableHead className="w-[80px] pl-10"></TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Цель в Метрике</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Название в CRM</TableHead>
+                    <TableHead className="w-[120px] text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Counter ID</TableHead>
+                    <TableHead className="w-[120px] text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Тип</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {availableGoals.map((goal) => {
                     const tracked = trackedGoalsList.find(g => g.goalId.toString() === goal.id.toString());
                     return (
-                      <TableRow key={goal.id} className={tracked ? "bg-primary/5" : ""}>
-                        <TableCell className="pl-6">
-                          <input 
-                            type="checkbox" 
-                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-                            checked={!!tracked}
-                            onChange={(e) => toggleGoal(goal, e.target.checked)}
-                          />
+                      <TableRow key={goal.id} className={cn(
+                          "border-white/5 transition-all h-20 group",
+                          tracked ? "bg-primary/5" : "hover:bg-primary/5"
+                      )}>
+                        <TableCell className="pl-10">
+                           <input 
+                              type="checkbox" 
+                              className="h-6 w-6 rounded-xl border-primary/20 text-primary focus:ring-primary/20 cursor-pointer shadow-sm"
+                              checked={!!tracked}
+                              onChange={(e) => toggleGoal(goal, e.target.checked)}
+                           />
                         </TableCell>
-                        <TableCell className="text-sm font-medium">{goal.name}</TableCell>
+                        <TableCell className="text-[12px] font-black tracking-tight text-foreground/80">{goal.name}</TableCell>
                         <TableCell>
                            <Input 
                               disabled={!tracked}
                               value={tracked?.displayName || ""}
                               onChange={(e) => updateGoalDisplayName(goal.id.toString(), e.target.value)}
-                              className="h-8 text-xs max-w-[200px]"
-                              placeholder="Название для отчетов"
+                              className="h-10 text-xs max-w-[240px] glass-card border-white/5 rounded-xl px-4"
+                              placeholder="Название для платформы"
                            />
                         </TableCell>
-                        <TableCell className="font-mono text-[10px] text-muted-foreground">{goal.id}</TableCell>
+                        <TableCell className="font-mono text-[10px] text-muted-foreground font-medium opacity-50">{goal.id}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className="text-[10px]">{goal.type}</Badge>
+                          <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-muted/10 border-white/5 px-3 py-1 rounded-full">{goal.type}</Badge>
                         </TableCell>
                       </TableRow>
                     );
@@ -329,9 +349,9 @@ export function YandexSettings({ projectId }: { projectId: number }) {
               </Table>
             )}
           </CardContent>
-          <CardFooter className="border-t px-6 py-4 bg-muted/20">
-             <Button onClick={handleSaveGoals} disabled={saving || availableGoals.length === 0}>
-                {saving ? "Сохранение..." : "Сохранить выбор целей"}
+          <CardFooter className="bg-muted/20 border-t border-white/5 p-8 px-10">
+             <Button onClick={handleSaveGoals} disabled={saving || availableGoals.length === 0} className="h-14 px-12 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20">
+                {saving ? "Сохранение..." : "Сохранить цели"}
              </Button>
           </CardFooter>
         </Card>

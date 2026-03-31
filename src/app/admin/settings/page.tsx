@@ -110,186 +110,250 @@ export default function GlobalSettingsPage() {
     }
   };
 
-  if (isLoading) return <div className="p-10 text-center text-muted-foreground animate-pulse">Загрузка настроек...</div>;
-  if (me?.role !== "SUPER_ADMIN") return <div className="p-10 text-center text-destructive">Доступ ограничен. Только для Супер-администраторов.</div>;
+  if (isLoading) return (
+    <div className="p-10 flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground font-medium animate-pulse">Загрузка настроек...</p>
+    </div>
+  );
+  
+  if (me?.role !== "SUPER_ADMIN") return (
+    <div className="p-10 flex flex-col items-center justify-center min-h-[400px] text-center space-y-4">
+        <Shield className="h-16 w-16 text-destructive opacity-20" />
+        <h2 className="text-2xl font-black tracking-tight text-destructive">Доступ ограничен</h2>
+        <p className="text-muted-foreground font-medium">Только для Супер-администраторов.</p>
+    </div>
+  );
 
   return (
-    <div className="space-y-6 p-6 bg-slate-50/30 min-h-screen">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-10 max-w-7xl mx-auto animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 font-display flex items-center gap-2">
-            <Settings className="h-8 w-8 text-primary" />
-            Настройки платформы
-          </h2>
-          <p className="text-muted-foreground">Управление пользователями, проектами и глобальными правами.</p>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground flex items-center gap-4">
+             Настройки
+          </h1>
+          <p className="text-muted-foreground font-medium mt-1">Управление пользователями, проектами и глобальной безопасностью.</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex gap-4 w-full md:w-auto">
            <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
             <DialogTrigger asChild>
-                <Button className="gap-2 shadow-sm">
-                    <Plus className="h-4 w-4" />
+                <Button className="h-12 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex-1 md:flex-none">
+                    <Plus className="h-4 w-4 mr-2" />
                     Добавить пользователя
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="glass-card border-white/20 shadow-2xl rounded-[2rem]">
                 <DialogHeader>
-                    <DialogTitle>Новый пользователь</DialogTitle>
-                    <DialogDescription>Создайте учетную запись для доступа к платформе.</DialogDescription>
+                    <DialogTitle className="text-2xl font-black tracking-tight">Новый пользователь</DialogTitle>
+                    <DialogDescription className="font-medium">Создайте учетную запись для доступа к платформе.</DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4 py-4">
+                <div className="space-y-6 py-6">
                     <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="user@example.com" />
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email</Label>
+                        <Input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="user@example.com" className="h-11 glass-card border-white/10 rounded-xl" />
                     </div>
                     <div className="space-y-2">
-                        <Label>Пароль</Label>
-                        <div className="relative">
-                            <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground opacity-50" />
-                            <Input className="pl-9" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Пароль</Label>
+                        <div className="relative group">
+                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-30 group-focus-within:opacity-100 transition-opacity" />
+                            <Input className="pl-11 h-11 glass-card border-white/10 rounded-xl" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label>Глобальная роль</Label>
+                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Глобальная роль</Label>
                         <Select value={newRole} onValueChange={setNewRole}>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-11 glass-card border-white/10 rounded-xl font-bold">
                                 <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="USER">Обычный пользователь</SelectItem>
-                                <SelectItem value="SUPER_ADMIN">Супер-админ</SelectItem>
+                            <SelectContent className="glass-card border-white/10">
+                                <SelectItem value="USER" className="font-bold">Обычный пользователь</SelectItem>
+                                <SelectItem value="SUPER_ADMIN" className="font-bold">Супер-админ</SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-[10px] text-muted-foreground">Супер-админы имеют доступ ко ВСЕМ проектам.</p>
+                        <p className="text-[10px] text-muted-foreground font-medium pl-1 italic">Супер-админы имеют доступ ко ВСЕМ проектам.</p>
                     </div>
                 </div>
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsAddUserOpen(false)}>Отмена</Button>
-                    <Button onClick={handleAddUser}>Создать</Button>
+                <DialogFooter className="gap-3">
+                    <Button variant="outline" className="rounded-xl h-11 px-6 font-bold" onClick={() => setIsAddUserOpen(false)}>Отмена</Button>
+                    <Button onClick={handleAddUser} className="rounded-xl h-11 px-8 font-black uppercase text-[10px] tracking-widest">Создать</Button>
                 </DialogFooter>
             </DialogContent>
            </Dialog>
         </div>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Users Table */}
-        <Card className="border-none shadow-sm">
-          <CardHeader className="bg-white rounded-t-xl border-b border-slate-100">
-            <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-500" />
-                <CardTitle className="text-lg">Пользователи</CardTitle>
-            </div>
-            <CardDescription>Управление ролями и персональным доступом к проектам.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-slate-50/50">
-                <TableRow>
-                  <TableHead className="pl-6">Email</TableHead>
-                  <TableHead>Глобальная роль</TableHead>
-                  <TableHead>Доступ к проектам</TableHead>
-                  <TableHead className="text-right pr-6">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {usersList.map((user) => (
-                  <TableRow key={user.id} className="hover:bg-slate-50/50">
-                    <TableCell className="pl-6 font-medium font-sans">{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === 'SUPER_ADMIN' ? 'default' : 'secondary'} className="uppercase text-[10px] tracking-wider">
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.role === 'SUPER_ADMIN' ? (
-                        <span className="text-xs text-muted-foreground italic">Все проекты (полный доступ)</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {user.links.length === 0 ? (
-                            <span className="text-xs text-amber-500 bg-amber-50 px-2 py-0.5 rounded border border-amber-100">Нет привязок</span>
-                          ) : user.links.map((link: any) => {
-                            const p = projects.find(proj => proj.id === link.projectId);
-                            return (
-                                <Badge key={link.id} variant="outline" className="bg-white text-[10px] font-medium border-slate-200">
-                                    {p?.name || 'Unknown'}
-                                </Badge>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right pr-6">
-                      {user.role !== 'SUPER_ADMIN' && (
-                          <Button variant="outline" size="sm" onClick={() => { setSelectedUser(user); setIsPermissionsOpen(true); }}>
-                            Настроить доступ
-                          </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <div className="xl:col-span-2 space-y-6">
+            <Card className="border-none shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">
+              <CardHeader className="bg-muted/30 border-b border-white/5 pb-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-xl">
+                        <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <CardTitle className="text-xl font-black uppercase tracking-widest">Пользователи</CardTitle>
+                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
+                            {usersList.length} учётных записей в системе
+                        </CardDescription>
+                    </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/10 h-14">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="pl-8 text-[10px] font-black uppercase tracking-widest">Email</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest">Роль</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest">Доступ</TableHead>
+                      <TableHead className="text-right pr-8 text-[10px] font-black uppercase tracking-widest">Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usersList.map((user) => (
+                      <TableRow key={user.id} className="border-white/5 hover:bg-primary/5 transition-all h-16 group">
+                        <TableCell className="pl-8 font-black text-foreground/80">{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.role === 'SUPER_ADMIN' ? 'default' : 'secondary'} className={cn(
+                              "uppercase text-[9px] font-black tracking-widest px-3 py-1 rounded-full",
+                              user.role === 'SUPER_ADMIN' ? "bg-primary text-white" : "bg-muted/10 text-muted-foreground"
+                          )}>
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {user.role === 'SUPER_ADMIN' ? (
+                            <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest">Полный доступ</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1.5">
+                              {user.links.length === 0 ? (
+                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500/60 italic">Нет привязок</span>
+                              ) : user.links.map((link: any) => {
+                                const p = projects.find(proj => proj.id === link.projectId);
+                                return (
+                                    <Badge key={link.id} variant="outline" className="bg-white/5 text-[9px] font-black uppercase tracking-wider border-white/10 text-muted-foreground">
+                                        {p?.name || 'Unknown'}
+                                    </Badge>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right pr-8">
+                          {user.role !== 'SUPER_ADMIN' && (
+                              <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/10 text-primary hover:bg-primary/10" onClick={() => { setSelectedUser(user); setIsPermissionsOpen(true); }}>
+                                Настроить
+                              </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+        </div>
 
-        {/* System Status */}
-        <div className="grid gap-6 md:grid-cols-2">
-            <Card className="border-none shadow-sm">
-                 <CardHeader className="bg-white rounded-t-xl border-b border-slate-100 pb-3">
-                    <CardTitle className="text-base">Статус системы</CardTitle>
+        {/* System Sidebar Info */}
+        <div className="space-y-8">
+            <Card className="border-none shadow-2xl overflow-hidden ring-1 ring-white/10">
+                 <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
+                    <CardTitle className="text-xs font-black uppercase tracking-widest">Статус системы</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4">
-                    <div className="space-y-4 text-sm">
-                    <div className="flex justify-between border-b border-slate-50 pb-2">
-                        <span className="text-slate-500">Воркер синхронизации:</span>
-                        <span className="text-yellow-600 font-medium bg-yellow-50 px-2 py-0.5 rounded border border-yellow-200 text-[10px]">Ожидание</span>
+                <CardContent className="pt-6 space-y-6">
+                    <div className="flex items-center justify-between group">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Воркер синхронизации</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] font-black bg-amber-500/10 text-amber-500 border-amber-500/20 uppercase tracking-widest">Ожидание</Badge>
                     </div>
-                    <div className="flex justify-between border-b border-slate-50 pb-2">
-                        <span className="text-slate-500">Очередь BullMQ:</span>
-                        <span className="text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded border border-green-200 text-[10px]">Работает (Redis)</span>
+                    <div className="flex items-center justify-between group">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-[#71D878]" />
+                            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Очередь BullMQ</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] font-black bg-[#71D878]/10 text-[#71D878] border-[#71D878]/20 uppercase tracking-widest">Активен (Redis)</Badge>
                     </div>
+                    <div className="flex items-center justify-between group">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-[#71D878]" />
+                            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">База данных</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] font-black bg-primary/10 text-primary border-primary/20 uppercase tracking-widest">Подключено</Badge>
                     </div>
                 </CardContent>
             </Card>
+
+            <div className="glass-card p-6 border-white/10 bg-primary/5 text-primary rounded-[2rem] space-y-4">
+                <div className="p-3 bg-primary/10 rounded-2xl w-fit">
+                    <Shield className="h-6 w-6" />
+                </div>
+                <h3 className="text-lg font-black uppercase tracking-tight">Безопасность</h3>
+                <p className="text-[11px] font-medium leading-relaxed opacity-70">
+                    Управление доступом осуществляется на уровне RBAC (Role Based Access Control). 
+                    Для предоставления доступа к новым модулям используйте окно настройки прав.
+                </p>
+            </div>
         </div>
       </div>
 
       {/* Permissions Dialog */}
       <Dialog open={isPermissionsOpen} onOpenChange={setIsPermissionsOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Настройка доступа: {selectedUser?.email}</DialogTitle>
-            <DialogDescription>Укажите, к каким проектам и разделам имеет доступ пользователь.</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-3xl glass-card border-white/20 shadow-2xl rounded-[2.5rem] overflow-hidden p-0">
+          <div className="p-8 border-b border-white/5 bg-muted/30">
+            <DialogHeader>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <DialogTitle className="text-3xl font-black tracking-tight">Управление доступом</DialogTitle>
+                        <DialogDescription className="text-sm font-bold uppercase tracking-widest text-primary mt-1">{selectedUser?.email}</DialogDescription>
+                    </div>
+                    <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20 text-white">
+                        <Key className="h-6 w-6" />
+                    </div>
+                </div>
+            </DialogHeader>
+          </div>
           
-          <div className="space-y-6 py-4">
+          <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
              {projects.map(project => {
                 const link = selectedUser?.links?.find((l: any) => l.projectId === project.id);
                 const hasAccess = !!link;
                 
                 return (
-                    <div key={project.id} className={`p-4 rounded-xl border transition-all ${hasAccess ? 'border-primary/20 bg-primary/5' : 'border-slate-100 bg-slate-50/50'}`}>
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                                <Shield className={`h-5 w-5 ${hasAccess ? 'text-primary' : 'text-slate-300'}`} />
+                    <div key={project.id} className={cn(
+                        "p-6 rounded-[1.5rem] border transition-all duration-500",
+                        hasAccess ? "glass-card border-primary/30 bg-primary/5 shadow-lg shadow-primary/5" : "border-white/5 bg-white/5 grayscale opacity-60"
+                    )}>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className={cn(
+                                    "p-3 rounded-2xl transition-all",
+                                    hasAccess ? "bg-primary text-white scale-110 shadow-lg shadow-primary/30" : "bg-muted text-muted-foreground"
+                                )}>
+                                    <Shield className="h-6 w-6" />
+                                </div>
                                 <div>
-                                    <h4 className="font-bold text-slate-800">{project.name}</h4>
-                                    <p className="text-[10px] text-muted-foreground uppercase">{project.slug}</p>
+                                    <h4 className="text-xl font-black tracking-tight">{project.name}</h4>
+                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{project.slug}</p>
                                 </div>
                             </div>
                             <Button 
                                 variant={hasAccess ? "ghost" : "default"} 
                                 size="sm" 
-                                className={hasAccess ? "text-destructive hover:bg-destructive/10" : ""}
+                                className={cn(
+                                    "h-10 rounded-xl px-6 font-black uppercase text-[10px] tracking-widest",
+                                    hasAccess ? "text-destructive hover:bg-destructive/10" : "shadow-lg shadow-primary/20"
+                                )}
                                 onClick={() => handleUpdatePermission(selectedUser.id, project.id, {}, hasAccess)}
                             >
                                 {hasAccess ? <Trash2 className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                                {hasAccess ? "Отозвать доступ" : "Предоставить доступ"}
+                                {hasAccess ? "Отозвать" : "Добавить"}
                             </Button>
                         </div>
 
                         {hasAccess && (
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pl-8">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 xl:pl-4">
                                 <PermissionToggle 
                                     label="Дашборд" 
                                     icon={LayoutDashboard} 
@@ -309,7 +373,7 @@ export default function GlobalSettingsPage() {
                                     onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, project.id, { ...link, canViewExpenses: val })} 
                                 />
                                 <PermissionToggle 
-                                    label="Логи проекта" 
+                                    label="Логи" 
                                     icon={History} 
                                     checked={link.canViewLogs} 
                                     onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, project.id, { ...link, canViewLogs: val })} 
@@ -327,9 +391,9 @@ export default function GlobalSettingsPage() {
              })}
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPermissionsOpen(false)}>Закрыть</Button>
-          </DialogFooter>
+          <div className="p-8 border-t border-white/5 bg-muted/20 flex justify-end">
+            <Button size="lg" className="rounded-xl h-14 px-10 font-black uppercase text-[10px] tracking-widest" onClick={() => setIsPermissionsOpen(false)}>Готово</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
@@ -338,10 +402,24 @@ export default function GlobalSettingsPage() {
 
 function PermissionToggle({ label, icon: Icon, checked, onCheckedChange }: any) {
     return (
-        <div className="flex items-center gap-3 bg-white p-2.5 rounded-lg border border-slate-100 shadow-sm transition-all hover:border-primary/30">
-            <Checkbox id={label} checked={checked} onCheckedChange={onCheckedChange} />
-            <Icon className={`h-4 w-4 ${checked ? 'text-primary' : 'text-slate-300'}`} />
-            <Label htmlFor={label} className="text-xs cursor-pointer select-none">{label}</Label>
+        <div className={cn(
+            "flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border cursor-pointer select-none group",
+            checked ? "bg-white border-primary/20 shadow-xl shadow-primary/5 ring-1 ring-primary/5" : "bg-white/5 border-transparent opacity-60 hover:opacity-100 hover:bg-white/10"
+        )} onClick={() => onCheckedChange(!checked)}>
+            <div className={cn(
+                "p-2.5 rounded-xl transition-all",
+                checked ? "bg-primary/10 text-primary scale-110" : "bg-muted/20 text-muted-foreground group-hover:bg-muted/40"
+            )}>
+                <Icon className="h-4 w-4" />
+            </div>
+            <div className="flex-1 flex flex-col">
+                <span className={cn(
+                    "text-[10px] font-black uppercase tracking-wider transition-colors",
+                    checked ? "text-primary" : "text-muted-foreground"
+                )}>{label}</span>
+                <span className="text-[10px] text-muted-foreground/60 font-medium">{checked ? "Включено" : "Выключено"}</span>
+            </div>
+            <Checkbox id={label} checked={checked} onCheckedChange={onCheckedChange} className="w-5 h-5 rounded-lg border-primary/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
         </div>
     );
 }

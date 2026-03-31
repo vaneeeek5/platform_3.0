@@ -4,6 +4,7 @@ import * as React from "react"
 import { format } from "date-fns"
 import { ru } from "date-fns/locale"
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { 
     Table, 
     TableBody, 
@@ -39,26 +40,6 @@ interface ReportData {
 type SortKey = keyof ReportData;
 type SortDir = "asc" | "desc";
 
-function SortableHead({ label, col, sortCol, sortDir, onSort }: {
-    label: string;
-    col: SortKey;
-    sortCol: SortKey | null;
-    sortDir: SortDir;
-    onSort: (col: SortKey) => void;
-}) {
-    const active = sortCol === col;
-    return (
-        <TableHead className="text-right cursor-pointer select-none" onClick={() => onSort(col)}>
-            <div className="flex items-center justify-end gap-1">
-                {label}
-                {active
-                    ? sortDir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    : <ArrowUpDown className="h-3 w-3 text-muted-foreground/40" />
-                }
-            </div>
-        </TableHead>
-    );
-}
 
 export function ExpensesReport() {
     const [projects, setProjects] = React.useState<any[]>([]);
@@ -86,7 +67,6 @@ export function ExpensesReport() {
                 setUser(meRes);
                 const isSuper = meRes.role === "SUPER_ADMIN";
                 
-                // Filter projects where canViewExpenses is true
                 const allowedProjects = projRes.filter((p: any) => {
                     if (isSuper) return true;
                     const link = meRes.links?.find((l: any) => l.projectId === p.id);
@@ -119,7 +99,6 @@ export function ExpensesReport() {
             const json = await res.json();
             const fetchedData = Array.isArray(json) ? json : [];
             setData(fetchedData);
-            // Default to all selected
             setSelectedIds(new Set(fetchedData.map((r, i) => r.campaignName || r.utmCampaign || `row-${i}`)));
         } catch (err) {
             console.error(err);
@@ -177,83 +156,98 @@ export function ExpensesReport() {
     }, [data, selectedIds]);
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-4 bg-muted/30 p-4 rounded-lg border">
-                <div className="w-full md:w-[250px]">
+        <div className="space-y-8 animate-in fade-in duration-700">
+            {/* Filters Bar */}
+            <div className="flex flex-col xl:flex-row xl:items-end gap-6 glass-card p-6 border-white/10 shadow-2xl">
+                <div className="w-full xl:w-[300px] group">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1 transition-colors group-hover:text-primary">Проект</label>
                     <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-12 glass-card border-white/5 hover:border-primary/30 transition-all">
                             <SelectValue placeholder="Выберите проект" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="glass-card border-white/10">
                             {projects.map(p => (
                                 <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="flex-1">
-                    <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                <div className="flex-1 group">
+                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1 transition-colors group-hover:text-primary">Период</label>
+                   <DatePickerWithRange date={dateRange} setDate={setDateRange} />
+                </div>
+                <div className="shrink-0">
+                    <Button 
+                        variant="outline" 
+                        onClick={fetchData} 
+                        className="h-12 rounded-xl px-8 font-bold border-primary/20 text-primary hover:bg-primary hover:text-white"
+                        disabled={loading}
+                    >
+                        {loading ? "Обновление..." : "Обновить данные"}
+                    </Button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Summary Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 <Card>
-                    <CardHeader className="py-4">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Общий расход</CardTitle>
+                    <CardHeader className="py-4 pb-2">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Общий расход</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totals.cost.toLocaleString('ru-RU')} ₽</div>
+                        <div className="text-3xl font-black tracking-tighter text-[#2800B8]">{totals.cost.toLocaleString('ru-RU')} <span className="text-xl opacity-30">₽</span></div>
+                    </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-[#71D878]">
+                    <CardHeader className="py-4 pb-2">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Выбранные лиды</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-3xl font-black tracking-tighter text-[#71D878]">{totals.leads}</div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="py-4">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Выбранные лиды</CardTitle>
+                    <CardHeader className="py-4 pb-2">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Средний CPL</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totals.leads}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="py-4">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Средний CPL</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">
-                            {totals.leads > 0 ? (totals.cost / totals.leads).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : 0} ₽
+                        <div className="text-3xl font-black tracking-tighter text-foreground">
+                            {totals.leads > 0 ? Math.round(totals.cost / totals.leads).toLocaleString('ru-RU') : 0} <span className="text-xl opacity-30">₽</span>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader className="py-4">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">Визиты</CardTitle>
+                    <CardHeader className="py-4 pb-2">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Визиты</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totals.visits.toLocaleString('ru-RU')}</div>
+                        <div className="text-3xl font-black tracking-tighter text-foreground">{totals.visits.toLocaleString('ru-RU')}</div>
                     </CardContent>
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Эффективность рекламных кампаний</CardTitle>
-                    <div className="text-sm text-muted-foreground">
-                        Выбрано строк: {selectedIds.size} из {data.length}
+            <Card className="overflow-hidden border-none shadow-2xl">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
+                    <div>
+                        <CardTitle className="text-2xl font-black tracking-tight">Эффективность рекламных кампаний</CardTitle>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
+                            {selectedIds.size} из {data.length} кампаний активно
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={toggleAll} className="text-[10px] font-black uppercase tracking-widest hover:bg-primary/10 hover:text-primary">
+                            {selectedIds.size === data.length ? "Снять всё" : "Выбрать всё"}
+                        </Button>
                     </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0 overflow-x-auto">
                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[40px] px-2 text-center">
-                                    <input 
-                                        type="checkbox" 
-                                        className="h-4 w-4 rounded cursor-pointer accent-primary" 
-                                        checked={data.length > 0 && selectedIds.size === data.length}
-                                        onChange={toggleAll}
-                                        title="Выбрать все"
-                                    />
+                        <TableHeader className="bg-muted/50">
+                            <TableRow className="hover:bg-transparent border-white/5">
+                                <TableHead className="w-[50px] px-4 text-center">
+                                    {/* Empty for selection checkboxes below */}
                                 </TableHead>
-                                <TableHead>Кампания</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground h-14">Кампания</TableHead>
                                 <SortableHead label="Визиты" col="totalVisits" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                                 <SortableHead label="Расход" col="totalCost" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
                                 <SortableHead label="Лиды" col="leadCount" sortCol={sortCol} sortDir={sortDir} onSort={handleSort} />
@@ -264,34 +258,47 @@ export function ExpensesReport() {
                         <TableBody>
                             {loading ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-10">Загрузка данных...</TableCell>
+                                    <TableCell colSpan={7} className="text-center py-20">
+                                        <div className="inline-flex flex-col items-center gap-3">
+                                            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                                            <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Загрузка данных...</span>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ) : sortedData.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-10 text-muted-foreground text-sm">
-                                        {selectedProjectId ? "Нет данных за выбранный период. Запустите синхронизацию в настройках проекта." : "Выберите проект для отображения отчета"}
+                                    <TableCell colSpan={7} className="text-center py-20 text-muted-foreground font-medium italic">
+                                        {selectedProjectId ? "Нет данных за выбранный период." : "Выберите проект для отображения отчета"}
                                     </TableCell>
                                 </TableRow>
                             ) : sortedData.map((row, i) => {
                                 const id = row.campaignName || row.utmCampaign || `row-${i}`;
                                 const isSelected = selectedIds.has(id);
                                 return (
-                                    <TableRow key={id} className={!isSelected ? "opacity-50 grayscale-[50%]" : ""}>
-                                        <TableCell className="px-2 text-center">
+                                    <TableRow 
+                                        key={id} 
+                                        className={cn(
+                                            "transition-all border-white/5 h-16 cursor-pointer group",
+                                            !isSelected && "opacity-30 grayscale hover:opacity-50",
+                                            isSelected && "hover:bg-primary/5"
+                                        )}
+                                        onClick={() => toggleSelection(id)}
+                                    >
+                                        <TableCell className="px-4 text-center" onClick={(e) => e.stopPropagation()}>
                                             <input 
                                                 type="checkbox" 
-                                                className="h-4 w-4 rounded cursor-pointer accent-primary"
+                                                className="h-5 w-5 rounded-lg cursor-pointer accent-[#2800B8] border-white/20 bg-white/5"
                                                 checked={isSelected}
                                                 onChange={() => toggleSelection(id)}
                                             />
                                         </TableCell>
-                                        <TableCell className="font-medium">{id}</TableCell>
-                                        <TableCell className="text-right">{row.totalVisits.toLocaleString('ru-RU')}</TableCell>
-                                        <TableCell className="text-right">{row.totalCost.toLocaleString('ru-RU')} ₽</TableCell>
-                                        <TableCell className="text-right font-semibold">{row.leadCount}</TableCell>
-                                        <TableCell className="text-right">{row.cpl.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</TableCell>
+                                        <TableCell className="font-bold text-foreground/80 max-w-[200px] truncate">{id}</TableCell>
+                                        <TableCell className="text-right tabular-nums font-medium">{row.totalVisits.toLocaleString('ru-RU')}</TableCell>
+                                        <TableCell className="text-right tabular-nums font-black text-[#2800B8]">{row.totalCost.toLocaleString('ru-RU')} ₽</TableCell>
+                                        <TableCell className="text-right tabular-nums font-black text-[#71D878]">{row.leadCount}</TableCell>
+                                        <TableCell className="text-right tabular-nums font-bold">{row.cpl.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽</TableCell>
                                         <TableCell className="text-right">
-                                            <div className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                            <div className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-500/10 text-purple-600 border border-purple-500/20">
                                                 {row.conversion.toFixed(2)}%
                                             </div>
                                         </TableCell>
@@ -303,5 +310,34 @@ export function ExpensesReport() {
                 </CardContent>
             </Card>
         </div>
+    );
+}
+
+function SortableHead({ label, col, sortCol, sortDir, onSort }: {
+    label: string;
+    col: SortKey;
+    sortCol: SortKey | null;
+    sortDir: SortDir;
+    onSort: (col: SortKey) => void;
+}) {
+    const active = sortCol === col;
+    return (
+        <TableHead 
+            className={cn(
+                "text-right cursor-pointer select-none h-14 group/head",
+                active ? "text-primary bg-primary/5" : "text-muted-foreground hover:text-foreground"
+            )} 
+            onClick={() => onSort(col)}
+        >
+            <div className="flex items-center justify-end gap-1.5 text-[10px] font-black uppercase tracking-widest">
+                {label}
+                <div className={cn(
+                    "transition-all duration-300",
+                    active ? "opacity-100" : "opacity-0 group-hover/head:opacity-40"
+                )}>
+                    {active && sortDir === "desc" ? <ArrowDown className="h-3 w-3" /> : <ArrowUp className="h-3 w-3" />}
+                </div>
+            </div>
+        </TableHead>
     );
 }

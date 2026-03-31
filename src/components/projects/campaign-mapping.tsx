@@ -171,27 +171,33 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
     }
   }
 
-  if (loading) return <div>Загрузка маппинга...</div>
+  if (loading) return (
+    <div className="py-20 flex flex-col items-center justify-center space-y-4">
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground font-medium animate-pulse uppercase text-[10px] tracking-widest leading-none">Загрузка маппинга кампаний...</p>
+    </div>
+  );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+    <Card className="border-none shadow-2xl glass-card overflow-hidden rounded-[2.5rem] animate-in fade-in duration-700">
+      <CardHeader className="bg-muted/30 border-b border-white/5 p-10 flex flex-col md:flex-row items-center justify-between gap-6">
         <div>
-          <CardTitle>Маппинг рекламных кампаний</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-2xl font-black tracking-tight">Маппинг рекламных кампаний</CardTitle>
+          <CardDescription className="text-sm font-medium mt-2">
             Свяжите метки из Метрики и названия из Директа в одну кампанию на платформе.
           </CardDescription>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" onClick={addAllExistingUtms} disabled={existingUtms.length === 0}>
-            <GitMerge className="h-4 w-4 mr-1 text-blue-600" /> Внести все метки
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Button size="sm" variant="outline" onClick={addAllExistingUtms} disabled={existingUtms.length === 0} className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest border-white/10 group">
+            <GitMerge className="h-4 w-4 mr-2 text-primary group-hover:scale-110 transition-transform" /> 
+            Перенести все UTM
           </Button>
-          <Button size="sm" onClick={addMapping}>
-            <Plus className="h-4 w-4 mr-1" /> Добавить строку
+          <Button size="sm" onClick={addMapping} className="rounded-2xl h-12 px-6 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
+            <Plus className="h-4 w-4 mr-2" /> Добавить
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <datalist id="existing-utms">
           {existingUtms
             .filter((camp) => !mappings.some(m => m.utmValue === camp.utm))
@@ -205,79 +211,93 @@ export function CampaignMappingSettings({ projectId }: { projectId: number }) {
           ))}
         </datalist>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[30%]">Метка в Метрике (UTM)</TableHead>
-              <TableHead className="w-[30%]">Название в Директе</TableHead>
-              <TableHead className="w-[30%]">Название на Платформе</TableHead>
-              <TableHead className="w-[10%] text-center">Скрыть</TableHead>
-              <TableHead className="w-[10%]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {mappings.map((m) => (
-              <TableRow key={m.id}>
-                <TableCell>
-                  <Input 
-                    value={m.utmValue} 
-                    placeholder="Выберите или введите..." 
-                    onChange={(e) => updateMapping(m.id, 'utmValue', e.target.value)}
-                    className="h-8 font-mono text-xs"
-                    list="existing-utms"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input 
-                    value={m.directValue} 
-                    placeholder="Выберите или введите..." 
-                    onChange={(e) => updateMapping(m.id, 'directValue', e.target.value)}
-                    className="h-8 font-mono text-xs"
-                    list="existing-directs"
-                  />
-                </TableCell>
-                <TableCell className="align-top">
-                  <Input 
-                    value={m.displayName} 
-                    placeholder="Напр. Поиск: Общие" 
-                    onChange={(e) => updateMapping(m.id, 'displayName', e.target.value)}
-                    className="h-8 text-xs font-medium"
-                  />
-                </TableCell>
-                <TableCell className="align-top text-center">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-muted-foreground"
-                    onClick={() => updateMapping(m.id, 'isHidden', !m.isHidden)}
-                    title={m.isHidden ? "Показать в отчетах" : "Скрыть из отчетов"}
-                  >
-                    {m.isHidden ? <EyeOff className="h-4 w-4 text-orange-500" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </TableCell>
-                <TableCell className="align-top">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => removeMapping(m.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className="overflow-x-auto">
+            <Table>
+            <TableHeader className="bg-muted/10 h-16">
+                <TableRow className="border-white/5 hover:bg-transparent">
+                <TableHead className="pl-10 text-[10px] font-black uppercase tracking-widest text-muted-foreground w-[28%]">UTM Метка (Метрика)</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground w-[28%]">ID/Имя Кампании (Директ)</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground w-[28%]">Название на Платформе</TableHead>
+                <TableHead className="text-[10px] font-black uppercase tracking-widest text-muted-foreground w-[8%] text-center">Статус</TableHead>
+                <TableHead className="w-[8%]"></TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {mappings.map((m) => (
+                <TableRow key={m.id} className="border-white/5 hover:bg-primary/5 group h-20">
+                    <TableCell className="pl-10">
+                    <Input 
+                        value={m.utmValue} 
+                        placeholder="utm_campaign..." 
+                        onChange={(e) => updateMapping(m.id, 'utmValue', e.target.value)}
+                        className="h-10 font-mono text-[11px] bg-slate-50/50 border-transparent rounded-xl px-4 hover:bg-white focus:bg-white transition-all shadow-sm"
+                        list="existing-utms"
+                    />
+                    </TableCell>
+                    <TableCell>
+                    <Input 
+                        value={m.directValue} 
+                        placeholder="ID или название..." 
+                        onChange={(e) => updateMapping(m.id, 'directValue', e.target.value)}
+                        className="h-10 font-mono text-[11px] bg-slate-50/50 border-transparent rounded-xl px-4 hover:bg-white focus:bg-white transition-all shadow-sm"
+                        list="existing-directs"
+                    />
+                    </TableCell>
+                    <TableCell>
+                    <Input 
+                        value={m.displayName} 
+                        placeholder="Напр. Поиск: Ретаргетинг" 
+                        onChange={(e) => updateMapping(m.id, 'displayName', e.target.value)}
+                        className="h-10 text-[11px] font-black tracking-tight bg-slate-50/50 border-transparent rounded-xl px-4 hover:bg-white focus:bg-white transition-all shadow-sm"
+                    />
+                    </TableCell>
+                    <TableCell className="text-center">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-10 w-10 rounded-xl"
+                        onClick={() => updateMapping(m.id, 'isHidden', !m.isHidden)}
+                        title={m.isHidden ? "Показать в отчетах" : "Скрыть из отчетов"}
+                    >
+                        {m.isHidden ? <EyeOff className="h-4 w-4 text-orange-500" /> : <Eye className="h-4 w-4 text-muted-foreground/40 group-hover:text-primary transition-colors" />}
+                    </Button>
+                    </TableCell>
+                    <TableCell className="pr-10">
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-10 w-10 rounded-xl text-slate-200 hover:text-destructive hover:bg-destructive/5 opacity-0 group-hover:opacity-100 transition-all"
+                        onClick={() => removeMapping(m.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                    </TableCell>
+                </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </div>
+
         {mappings.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-8 italic">
-            Маппинг не настроен. Нажмите «Добавить строку», чтобы начать.
-          </p>
+          <div className="flex flex-col items-center justify-center py-20 opacity-30">
+            <GitMerge className="h-12 w-12 mb-4 text-muted-foreground" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Маппинг не настроен</p>
+          </div>
         )}
-        <div className="mt-4 flex justify-end">
-          <Button onClick={saveMappings} disabled={saving}>
-            {saving ? "Сохранение..." : "Сохранить маппинг"}
-          </Button>
+        
+        <div className="p-10 bg-muted/20 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+           <div className="flex items-start gap-4 max-w-xl">
+             <div className="p-3 bg-primary/10 rounded-2xl shrink-0">
+               <Eye className="h-5 w-5 text-primary" />
+             </div>
+             <p className="text-[11px] font-medium leading-relaxed text-muted-foreground leading-relaxed">
+               <span className="font-black uppercase tracking-tight text-foreground/80 block mb-1">Как это работает:</span>
+               Объединяя UTM из Метрики и Кампании из Директа под одним общим именем, вы получаете сквозную аналитику в единой строке отчёта.
+             </p>
+           </div>
+           <Button onClick={saveMappings} disabled={saving} className="h-14 px-12 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl shadow-primary/30 w-full sm:w-auto">
+             {saving ? "Сохранение..." : "Сохранить маппинг"}
+           </Button>
         </div>
       </CardContent>
     </Card>

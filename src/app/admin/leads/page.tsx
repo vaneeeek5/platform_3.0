@@ -28,7 +28,6 @@ export default function GlobalLeadsPage() {
             setUser(meRes);
             const isSuper = meRes.role === "SUPER_ADMIN";
             
-            // Filter projects where canViewLeads is true
             const allowedProjects = projRes.filter((p: any) => {
                 if (isSuper) return true;
                 const link = meRes.links?.find((l: any) => l.projectId === p.id);
@@ -49,32 +48,41 @@ export default function GlobalLeadsPage() {
     init();
   }, []);
 
-  if (loading) return <div className="p-10 text-center text-muted-foreground animate-pulse">Загрузка лидов...</div>;
+  if (loading) return (
+    <div className="p-10 flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <p className="text-muted-foreground font-medium animate-pulse">Загрузка лидов...</p>
+    </div>
+  );
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-4 md:p-8 space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Все Лиды</h1>
-          <p className="text-muted-foreground">Общий список заявок по всем проектам.</p>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-foreground">
+            Все Лиды
+          </h1>
+          <p className="text-muted-foreground mt-2 font-medium">Общий список заявок по всем проектам.</p>
         </div>
-        <div className="w-64">
-           <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-              <SelectTrigger>
-                 <SelectValue placeholder="Все проекты" />
-              </SelectTrigger>
-              <SelectContent>
-                 {user?.role === "SUPER_ADMIN" && <SelectItem value="all">Все проекты</SelectItem>}
-                 {projects.map(p => (
-                    <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
-                 ))}
-              </SelectContent>
-           </Select>
+        
+        <div className="w-full md:w-72">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">Фильтр по проекту</div>
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                <SelectTrigger className="glass-card h-12 border-white/10 shadow-lg">
+                    <SelectValue placeholder="Все проекты" />
+                </SelectTrigger>
+                <SelectContent className="glass-card border-white/10">
+                    {user?.role === "SUPER_ADMIN" && <SelectItem value="all">Все проекты</SelectItem>}
+                    {projects.map(p => (
+                        <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
         </div>
       </div>
 
-      <Card>
-         <CardContent className="pt-6">
+      <Card className="border-none p-0 overflow-hidden shadow-2xl">
+         <CardContent className="p-0">
             <LeadsList 
                projectId={selectedProjectId === "all" ? 0 : parseInt(selectedProjectId)} 
                showProjectColumn={selectedProjectId === "all"}

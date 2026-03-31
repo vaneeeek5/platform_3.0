@@ -6,10 +6,13 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="min-h-screen bg-background relative selection:bg-primary selection:text-white">
       <AdminNav />
-      <main className="flex-1 p-8 bg-background overflow-y-auto">
-        {children}
+      {/* Main Content Area */}
+      <main className="lg:pl-[17rem] pt-16 lg:pt-0 transition-all duration-500">
+        <div className="max-w-[1600px] mx-auto min-h-screen pb-20">
+          {children}
+        </div>
       </main>
     </div>
   );
