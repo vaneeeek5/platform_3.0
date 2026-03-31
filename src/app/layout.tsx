@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "БЫТЬ — платформа аналитики",
   description: "Платформа аналитики рекламы",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
