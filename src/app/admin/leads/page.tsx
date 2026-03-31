@@ -14,10 +14,42 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 export default function GlobalLeadsPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all")
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/projects").then(res => res.json()).then(setProjects)
-  }, [])
+    const init = async () => {
+        try {
+            const [meRes, projRes] = await Promise.all([
+                fetch("/api/admin/me").then(r => r.json()),
+                fetch("/api/projects").then(r => r.json())
+            ]);
+            
+            setUser(meRes);
+            const isSuper = meRes.role === "SUPER_ADMIN";
+            
+            // Filter projects where canViewLeads is true
+            const allowedProjects = projRes.filter((p: any) => {
+                if (isSuper) return true;
+                const link = meRes.links?.find((l: any) => l.projectId === p.id);
+                return link?.canViewLeads;
+            });
+            
+            setProjects(allowedProjects);
+            
+            if (!isSuper && allowedProjects.length > 0) {
+                setSelectedProjectId(allowedProjects[0].id.toString());
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    init();
+  }, []);
+
+  if (loading) return <div className="p-10 text-center text-muted-foreground animate-pulse">Загрузка лидов...</div>;
 
   return (
     <div className="p-6 space-y-6">
@@ -32,7 +64,7 @@ export default function GlobalLeadsPage() {
                  <SelectValue placeholder="Все проекты" />
               </SelectTrigger>
               <SelectContent>
-                 <SelectItem value="all">Все проекты</SelectItem>
+                 {user?.role === "SUPER_ADMIN" && <SelectItem value="all">Все проекты</SelectItem>}
                  {projects.map(p => (
                     <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
                  ))}

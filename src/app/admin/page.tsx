@@ -44,14 +44,25 @@ export default function DashboardPage() {
     to: new Date()
   })
   const [data, setData] = useState<any>(null)
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    fetch("/api/admin/me")
+      .then(res => res.json())
+      .then(user => setUserRole(user.role))
+      .catch(console.error);
+
     fetch("/api/projects")
       .then(res => res.json())
-      .then(setProjectsData)
+      .then(projects => {
+        setProjectsData(projects);
+        if (userRole && userRole !== "SUPER_ADMIN" && projects.length > 0) {
+          setSelectedProjectId(projects[0].id.toString());
+        }
+      })
       .catch(console.error);
-  }, []);
+  }, [userRole]);
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -197,7 +208,7 @@ export default function DashboardPage() {
               <SelectValue placeholder="Все проекты" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="0">Все проекты</SelectItem>
+              {userRole === "SUPER_ADMIN" && <SelectItem value="0">Все проекты</SelectItem>}
               {projectsData?.map((p: any) => (
                 <SelectItem key={p.id} value={p.id.toString()}>{p.name}</SelectItem>
               ))}

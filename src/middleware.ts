@@ -38,7 +38,12 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // Remove the old /admin -> /admin/projects redirect to allow Dashboard access
+  // RESTRICT: Users can't access settings or logs directly
+  if (session && (path.startsWith("/admin/settings") || path.startsWith("/admin/logs"))) {
+    if (session.role !== "SUPER_ADMIN") {
+        return NextResponse.redirect(new URL("/admin", req.nextUrl));
+    }
+  }
   
   return NextResponse.next();
 }

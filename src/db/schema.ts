@@ -57,6 +57,11 @@ export const projectLinks = pgTable(
       .references(() => users.id, { onDelete: "cascade" })
       .notNull(),
     role: projectRoleEnum("role").notNull().default("VIEWER"),
+    canViewDashboard: boolean("can_view_dashboard").notNull().default(true),
+    canViewLeads: boolean("can_view_leads").notNull().default(true),
+    canViewExpenses: boolean("can_view_expenses").notNull().default(true),
+    canViewSettings: boolean("can_view_settings").notNull().default(false),
+    canViewLogs: boolean("can_view_logs").notNull().default(false),
   },
   (t) => ({
     unq: unique().on(t.projectId, t.userId),

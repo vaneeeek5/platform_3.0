@@ -73,10 +73,36 @@ export function ExpensesReport() {
     const [sortDir, setSortDir] = React.useState<SortDir>("desc");
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
+    const [user, setUser] = React.useState<any>(null);
+
     React.useEffect(() => {
-        fetch("/api/projects")
-            .then(res => res.json())
-            .then(setProjects);
+        const init = async () => {
+            try {
+                const [meRes, projRes] = await Promise.all([
+                    fetch("/api/admin/me").then(r => r.json()),
+                    fetch("/api/projects").then(r => r.json())
+                ]);
+                
+                setUser(meRes);
+                const isSuper = meRes.role === "SUPER_ADMIN";
+                
+                // Filter projects where canViewExpenses is true
+                const allowedProjects = projRes.filter((p: any) => {
+                    if (isSuper) return true;
+                    const link = meRes.links?.find((l: any) => l.projectId === p.id);
+                    return link?.canViewExpenses;
+                });
+                
+                setProjects(allowedProjects);
+                
+                if (allowedProjects.length > 0) {
+                    setSelectedProjectId(allowedProjects[0].id.toString());
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        };
+        init();
     }, []);
 
     const fetchData = React.useCallback(async () => {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { leads, goalAchievements, projects, targetStatuses, qualificationStatuses, leadStages } from "@/db/schema";
+import { leads, goalAchievements, projects, targetStatuses, qualificationStatuses, leadStages, projectLinks } from "@/db/schema";
 import { eq, and, desc, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
@@ -9,8 +9,36 @@ export async function GET(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const projectId = searchParams.get("projectId");
+  const projectIdStr = searchParams.get("projectId");
+  const isAllProjects = projectIdStr === "0" || !projectIdStr;
   
+  if (isAllProjects && session.role !== "SUPER_ADMIN") {
+      // For regular users, find projects they can view leads for
+      const allowedLinks = await db
+        .select()
+        .from(projectLinks)
+        .where(and(eq(projectLinks.userId, session.id), eq(projectLinks.canViewLeads, true)));
+      
+      const allowedProjectIds = allowedLinks.map((l: any) => l.projectId);
+      
+      if (allowedProjectIds.length === 0) {
+          return NextResponse.json([]);
+      }
+      
+      // Force filter by allowed projects
+      searchParams.set("allowedProjectIds", allowedProjectIds.join(","));
+  } else if (!isAllProjects && session.role !== "SUPER_ADMIN") {
+      const projId = parseInt(projectIdStr!);
+      const [access] = await db
+        .select()
+        .from(projectLinks)
+        .where(and(eq(projectLinks.projectId, projId), eq(projectLinks.userId, session.id)));
+      
+      if (!access || !access.canViewLeads) {
+          return NextResponse.json({ error: "Access denied to this project's leads" }, { status: 403 });
+      }
+  }
+
   const dateFromRaw = searchParams.get("dateFrom");
   const dateToRaw = searchParams.get("dateTo") || dateFromRaw;
   
@@ -20,12 +48,18 @@ export async function GET(request: Request) {
   const targetStatusIds = searchParams.get("targetStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
   const qualStatusIds = searchParams.get("qualStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
   const stageIds = searchParams.get("stageIds")?.split(",").filter(Boolean).map(id => parseInt(id));
+  const allowedProjectIdsStr = searchParams.get("allowedProjectIds");
 
     try {
         let baseWhere: any[] = [];
-        if (projectId && projectId !== '0') baseWhere.push(eq(leads.projectId, parseInt(projectId)));
+        if (projectIdStr && projectIdStr !== '0') {
+            baseWhere.push(eq(leads.projectId, parseInt(projectIdStr)));
+        } else if (allowedProjectIdsStr) {
+            const ids = allowedProjectIdsStr.split(",").map(id => parseInt(id));
+            baseWhere.push(inArray(leads.projectId, ids));
+        }
         
-        console.log(`[API Leads] Filters: dateFrom=${dateFromRaw}, dateTo=${dateToRaw}, projectId=${projectId}`);
+        console.log(`[API Leads] Filters: dateFrom=${dateFromRaw}, dateTo=${dateToRaw}, projectId=${projectIdStr}`);
 
         const parseDate = (raw: string | null, isEnd: boolean) => {
             if (!raw) return null;
@@ -129,6 +163,17 @@ export async function PATCH(request: Request) {
   const { id, leadId, stageId, targetStatusId, qualificationStatusId, saleAmount } = body;
 
   try {
+    // RBAC Check for PATCH
+    if (leadId && session.role !== "SUPER_ADMIN") {
+        const [lead] = await db.select().from(leads).where(eq(leads.id, leadId));
+        if (lead) {
+            const [access] = await db.select().from(projectLinks).where(and(eq(projectLinks.userId, session.id), eq(projectLinks.projectId, lead.projectId)));
+            if (!access || !access.canViewLeads) {
+                return NextResponse.json({ error: "No permission to edit this lead" }, { status: 403 });
+            }
+        }
+    }
+
     if (leadId && stageId !== undefined) {
       await db.update(leads).set({
         stageId: stageId === null ? null : stageId
@@ -154,6 +199,10 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  if (session.role !== "SUPER_ADMIN") {
+      return NextResponse.json({ error: "Only Super Admin can clear lead data" }, { status: 403 });
+  }
 
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get("projectId");

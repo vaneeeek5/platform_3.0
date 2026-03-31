@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 import { db } from "@/db";
-import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses, qualificationStatuses } from "@/db/schema";
+import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses, qualificationStatuses, projectLinks } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 import { eachDayOfInterval, format, startOfDay, startOfWeek, startOfMonth, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from "date-fns";
@@ -14,7 +14,26 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const projectIdStr = searchParams.get("projectId");
-  const projectId = projectIdStr && projectIdStr !== "0" ? parseInt(projectIdStr) : null;
+  const isAllProjects = projectIdStr === "0" || !projectIdStr;
+  
+  if (isAllProjects && session.role !== "SUPER_ADMIN") {
+    return NextResponse.json({ error: "Access to 'All Projects' is restricted to Super Admins" }, { status: 403 });
+  }
+
+  const projectId = !isAllProjects ? parseInt(projectIdStr!) : null;
+
+  // Check project access for regular users
+  if (projectId && session.role !== "SUPER_ADMIN") {
+    const [access] = await db
+      .select()
+      .from(projectLinks)
+      .where(and(eq(projectLinks.projectId, projectId), eq(projectLinks.userId, session.id)));
+    
+    if (!access || !access.canViewDashboard) {
+      return NextResponse.json({ error: "Access denied to this project's dashboard" }, { status: 403 });
+    }
+  }
+
   const dateFromStr = searchParams.get("dateFrom");
   const dateToStr = searchParams.get("dateTo");
   const granularity = searchParams.get("granularity") || "day";

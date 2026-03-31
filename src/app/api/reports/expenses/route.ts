@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { expenses, leads, goalAchievements, campaignMappings } from "@/db/schema";
+import { expenses, leads, goalAchievements, campaignMappings, projectLinks } from "@/db/schema";
 import { eq, and, gte, lte, sql, notInArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
 
@@ -11,13 +11,26 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const projectId = parseInt(searchParams.get("projectId") || "");
+  const projectIdStr = searchParams.get("projectId");
+  const projectId = projectIdStr ? parseInt(projectIdStr) : null;
   const dateFrom = searchParams.get("dateFrom");
   const dateTo = searchParams.get("dateTo");
   const raw = searchParams.get("raw") === "true";
 
   if (!projectId) {
     return NextResponse.json({ error: "No project ID" }, { status: 400 });
+  }
+
+  // RBAC Check
+  if (session.role !== "SUPER_ADMIN") {
+    const [access] = await db
+      .select()
+      .from(projectLinks)
+      .where(and(eq(projectLinks.projectId, projectId), eq(projectLinks.userId, session.id)));
+    
+    if (!access || !access.canViewExpenses) {
+      return NextResponse.json({ error: "Access denied to this project's expenses" }, { status: 403 });
+    }
   }
 
   try {
