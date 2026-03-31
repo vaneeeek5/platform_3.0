@@ -55,19 +55,24 @@ export function YandexSettings({ projectId }: { projectId: number }) {
   }, [projectId, token, counterId]);
 
   useEffect(() => {
+    setLoading(true);
     Promise.all([
       fetch(`/api/projects/${projectId}`).then(res => res.json()),
-      fetch(`/api/projects/${projectId}/tracked-goals`).then(res => res.json())
-    ]).then(([project, goals]) => {
+      fetch(`/api/projects/${projectId}/tracked-goals`).then(res => res.json()),
+      fetch(`/api/projects/${projectId}/utm-sources`).then(res => res.json())
+    ]).then(([project, goals, sources]) => {
       if (project) {
         setToken(project.yandexToken || "");
         setCounterId(project.yandexCounterId || "");
         setDirectLogins(project.yandexDirectLogins || "");
         setYandexUtmsAllowed(project.yandexUtmsAllowed || "");
+        
+        // Автоматически подгружаем цели только один раз при загрузке страницы
         if (project.yandexToken && project.yandexCounterId) {
-           fetchGoals(project.yandexToken, project.yandexCounterId);
+          fetchGoals(project.yandexToken, project.yandexCounterId);
         }
       }
+      
       if (Array.isArray(goals)) {
         setTrackedGoalsList(goals.map((g: any) => ({
            goalId: g.goalId,
@@ -75,16 +80,14 @@ export function YandexSettings({ projectId }: { projectId: number }) {
            displayName: g.displayName || g.goalName
         })));
       }
-      fetch(`/api/projects/${projectId}/utm-sources`)
-        .then(res => res.json())
-        .then(sources => {
-          if (Array.isArray(sources)) {
-            setAvailableUtmSources(sources);
-          }
-        })
-        .finally(() => setLoading(false));
-    });
-  }, [projectId, fetchGoals]);
+
+      if (Array.isArray(sources)) {
+        setAvailableUtmSources(sources);
+      }
+    })
+    .catch(err => console.error("Error loading project data:", err))
+    .finally(() => setLoading(false));
+  }, [projectId]); // Удалена зависимость от fetchGoals, которая вызывала сброс полей
 
   const handleSaveGoals = async () => {
     setSaving(true);
