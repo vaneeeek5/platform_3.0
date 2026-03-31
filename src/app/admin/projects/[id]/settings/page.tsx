@@ -28,6 +28,7 @@ export default function ProjectSettingsPage() {
   const id = params.id as string;
   const [activeTab, setActiveTab] = useState("yandex");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleClearLeads = async () => {
     setIsDeleting(true);
@@ -35,6 +36,7 @@ export default function ProjectSettingsPage() {
       const res = await fetch(`/api/leads?projectId=${id}`, { method: "DELETE" });
       if (res.ok) {
         toast.success("Все лиды проекта успешно удалены");
+        setIsDialogOpen(false);
       } else {
         toast.error("Ошибка при удалении данных");
       }
@@ -106,7 +108,7 @@ export default function ProjectSettingsPage() {
                     </p>
                   </div>
                   
-                  <Dialog>
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="destructive" size="sm">
                         <Trash2 className="h-4 w-4 mr-2" /> Очистить таблицу
@@ -121,7 +123,7 @@ export default function ProjectSettingsPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => {}}>Отмена</Button>
+                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Отмена</Button>
                         <Button variant="destructive" onClick={handleClearLeads} disabled={isDeleting}>
                           {isDeleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                           Да, удалить всё

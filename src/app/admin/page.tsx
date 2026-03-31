@@ -248,21 +248,8 @@ export default function DashboardPage() {
          </Card>
       </div>
 
-      {/* Row 2: Sales, CPL, ROMI */}
+      {/* Row 2: CPL, CPT, CPQ */}
       <div className="grid gap-4 md:grid-cols-3 mb-6">
-         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
-           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">Продажи и Выручка</CardTitle>
-             <ShoppingBag className="h-5 w-5 text-amber-500" />
-           </CardHeader>
-           <CardContent>
-             <div className="flex items-baseline gap-3">
-               <div className="text-3xl font-bold text-amber-600">{data?.summary?.sales || 0} шт</div>
-               <div className="text-xl font-medium text-amber-500">/ {Math.round(data?.summary?.revenue || 0).toLocaleString()} ₽</div>
-             </div>
-             <p className="text-xs text-muted-foreground mt-1 uppercase">успешные закрытия</p>
-           </CardContent>
-         </Card>
          <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">CPL (Лид)</CardTitle>
@@ -270,7 +257,51 @@ export default function DashboardPage() {
            </CardHeader>
            <CardContent>
              <div className="text-3xl font-bold">{Math.round(data?.summary?.cpl || 0).toLocaleString()} ₽</div>
-             <p className="text-xs text-muted-foreground mt-1 uppercase">цена лида</p>
+             <p className="text-xs text-muted-foreground mt-1 uppercase">стоимость лида</p>
+           </CardContent>
+         </Card>
+         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">CPT (Целевой)</CardTitle>
+             <Target className="h-5 w-5 text-emerald-400 opacity-50" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-3xl font-bold text-emerald-700">{Math.round(data?.summary?.cpt || 0).toLocaleString()} ₽</div>
+             <p className="text-xs text-muted-foreground mt-1 uppercase">стоимость целевого</p>
+           </CardContent>
+         </Card>
+         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">CPQ (Квал)</CardTitle>
+             <CheckCircle2 className="h-5 w-5 text-purple-400 opacity-50" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-3xl font-bold text-purple-700">{Math.round(data?.summary?.cpq || 0).toLocaleString()} ₽</div>
+             <p className="text-xs text-muted-foreground mt-1 uppercase">стоимость квала</p>
+           </CardContent>
+         </Card>
+      </div>
+
+      {/* Row 3: Sales, Sum, ROMI */}
+      <div className="grid gap-4 md:grid-cols-3 mb-6">
+         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-amber-400">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">Продажи (шт)</CardTitle>
+             <ShoppingBag className="h-5 w-5 text-amber-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-3xl font-bold text-amber-600">{data?.summary?.sales || 0}</div>
+             <p className="text-xs text-muted-foreground mt-1 uppercase">успешные сделки</p>
+           </CardContent>
+         </Card>
+         <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-slate-500">Сумма продаж</CardTitle>
+             <DollarSign className="h-5 w-5 text-amber-500" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-3xl font-bold text-amber-700">{Math.round(data?.summary?.revenue || 0).toLocaleString()} ₽</div>
+             <p className="text-xs text-muted-foreground mt-1 uppercase">выручка по CRM</p>
            </CardContent>
          </Card>
          <Card className="bg-white border-none shadow-sm hover:shadow-md transition-shadow">
@@ -285,9 +316,9 @@ export default function DashboardPage() {
          </Card>
       </div>
 
-      {/* Row 3: Full Width Chart */}
-      <div className="grid gap-4 grid-cols-1 mb-6">
-        <Card className="border-none shadow-sm h-full">
+      {/* Row 4: Full Width Chart */}
+      <div className="grid gap-4 grid-cols-1 mb-10">
+        <Card className="border-none shadow-sm h-full rounded-xl">
           <CardHeader>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
@@ -308,58 +339,53 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Row 4: Sources, Campaigns, CPL */}
-      <div className="grid gap-4 md:grid-cols-3">
-         <Card className="border-none shadow-sm">
-            <CardHeader><CardTitle className="text-lg">Топ кампаний</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {data?.topCampaigns?.map((c: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between text-base py-1 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors rounded px-2 -mx-2">
-                    <span className="font-medium truncate max-w-[280px] text-slate-700">{c.name}</span>
-                    <span className="font-bold tabular-nums">{c.leads}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-         </Card>
-         <Card className="border-none shadow-sm">
-            <CardHeader><CardTitle className="text-lg">Эффективность (CPL)</CardTitle></CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {data?.efficientCampaigns?.map((c: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between text-base py-1 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors rounded px-2 -mx-2">
-                    <span className="font-medium truncate max-w-[280px] text-slate-700">{c.name}</span>
-                    <span className="font-bold text-emerald-600 tabular-nums">{Math.round(c.cpl).toLocaleString()} ₽</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-         </Card>
-         <Card className="border-none shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Источники трафика</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-5 pt-2">
-              {data?.sources?.map((s: any, i: number) => {
-                const max = data.sources[0].value;
-                return (
-                  <div key={i} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm font-medium">
-                      <span className="truncate max-w-[150px]">{s.name}</span>
-                      <span className="text-slate-900 font-bold">{s.value}</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary/80 rounded-full" style={{ width: `${(s.value/max)*100}%` }} />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-         </Card>
+      <div className="space-y-10">
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-bold text-slate-800">Топ кампаний по количеству</h2>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+             <TopListCard title="Всего лидов" data={data?.topLeads} field="leads" />
+             <TopListCard title="Целевые" data={data?.topTarget} field="targetLeads" />
+             <TopListCard title="Квалы" data={data?.topQual} field="qualLeads" />
+          </div>
+        </section>
+
+        <section>
+           <div className="flex items-center gap-2 mb-4">
+            <h2 className="text-xl font-bold text-slate-800">Топ кампаний по стоимости (эффективность)</h2>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+             <TopListCard title="CPL (Лид)" data={data?.effCpl} field="cpl" isCurrency />
+             <TopListCard title="CPT (Целевой)" data={data?.effCpt} field="cpt" isCurrency />
+             <TopListCard title="CPQ (Квал)" data={data?.effCpq} field="cpq" isCurrency />
+          </div>
+        </section>
       </div>
     </div>
   )
+}
+
+function TopListCard({ title, data, field, isCurrency = false }: { title: string, data: any[], field: string, isCurrency?: boolean }) {
+  return (
+    <Card className="border-none shadow-sm">
+      <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-600">{title}</CardTitle></CardHeader>
+      <CardContent>
+        <div className="space-y-1">
+          {!data || data.length === 0 ? (
+            <div className="text-xs text-muted-foreground italic py-4 text-center">Нет данных</div>
+          ) : data.map((c: any, i: number) => (
+            <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors rounded px-2 -mx-2">
+              <span className="font-medium truncate max-w-[180px] text-slate-700">{c.name}</span>
+              <span className={`font-bold tabular-nums ${isCurrency ? 'text-emerald-700' : 'text-slate-900'}`}>
+                {isCurrency ? `${Math.round(c[field]).toLocaleString()} ₽` : c[field]}
+              </span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

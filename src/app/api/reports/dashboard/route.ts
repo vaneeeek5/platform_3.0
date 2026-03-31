@@ -146,7 +146,7 @@ export async function GET(request: Request) {
     let totalSalesCount = 0;
     let totalRevSum = 0;
     let totalCostSum = 0;
-    const campaignStats = new Map<string, { leads: number, cost: number, rev: number }>();
+    const campaignStats = new Map<string, { leads: number, targetLeads: number, qualLeads: number, cost: number, rev: number }>();
 
     dbLeads.forEach(l => {
       if (isHidden(l.utmCampaign, null, l.utmSource)) return;
@@ -168,8 +168,10 @@ export async function GET(request: Request) {
       }
       
       const name = resolveName(l.utmCampaign, null, l.utmSource);
-      const s = campaignStats.get(name) || { leads: 0, cost: 0, rev: 0 };
+      const s = campaignStats.get(name) || { leads: 0, targetLeads: 0, qualLeads: 0, cost: 0, rev: 0 };
       s.leads++;
+      if (lMeta.isTarget) s.targetLeads++;
+      if (lMeta.isQual) s.qualLeads++;
       s.rev += lMeta.revenue;
       campaignStats.set(name, s);
     });
@@ -183,7 +185,7 @@ export async function GET(request: Request) {
       if (t) t.cost += c;
       
       const name = resolveName(e.utmCampaign, e.directOrder);
-      const s = campaignStats.get(name) || { leads: 0, cost: 0, rev: 0 };
+      const s = campaignStats.get(name) || { leads: 0, targetLeads: 0, qualLeads: 0, cost: 0, rev: 0 };
       s.cost += c;
       campaignStats.set(name, s);
     });
@@ -195,7 +197,16 @@ export async function GET(request: Request) {
     // Filter out "Direct / Unknown" from campaign-level widgets
     const filteredCampaigns = Array.from(campaignStats.entries())
       .filter(([name]) => name !== "Direct / Unknown")
-      .map(([name, s]) => ({ name, leads: s.leads, cost: s.cost, cpl: s.leads > 0 ? s.cost / s.leads : 0 }));
+      .map(([name, s]) => ({ 
+        name, 
+        leads: s.leads, 
+        targetLeads: s.targetLeads,
+        qualLeads: s.qualLeads,
+        cost: s.cost, 
+        cpl: s.leads > 0 ? s.cost / s.leads : 0,
+        cpt: s.targetLeads > 0 ? s.cost / s.targetLeads : 0,
+        cpq: s.qualLeads > 0 ? s.cost / s.qualLeads : 0
+      }));
 
     return NextResponse.json({
       summary: {
@@ -208,12 +219,22 @@ export async function GET(request: Request) {
         cost: totalCostSum,
         revenue: totalRevSum,
         cpl: totalLeadsCount > 0 ? totalCostSum / totalLeadsCount : 0,
+        cpt: totalTargetCount > 0 ? totalCostSum / totalTargetCount : 0,
+        cpq: totalQualCount > 0 ? totalCostSum / totalQualCount : 0,
         romi: totalCostSum > 0 ? ((totalRevSum - totalCostSum) / totalCostSum) * 100 : 0
       },
       trends: Array.from(trendMap.values()).sort((a: any, b: any) => a.sortKey - b.sortKey),
       sources: sources.map(s => ({ name: s.source || "Direct / Internal", value: s.count })),
-      topCampaigns: filteredCampaigns.sort((a, b) => b.leads - a.leads).slice(0, 5),
-      efficientCampaigns: filteredCampaigns.filter(c => c.leads > 0).sort((a, b) => a.cpl - b.cpl).slice(0, 5)
+      
+      // Top by Quantities
+      topLeads: [...filteredCampaigns].sort((a, b) => b.leads - a.leads).slice(0, 5),
+      topTarget: [...filteredCampaigns].sort((a, b) => b.targetLeads - a.targetLeads).slice(0, 5),
+      topQual: [...filteredCampaigns].sort((a, b) => b.qualLeads - a.qualLeads).slice(0, 5),
+      
+      // Top by Efficiency (Strict filter: must have cost > 0 and leads > 0)
+      effCpl: filteredCampaigns.filter(c => c.leads > 0 && c.cost > 0).sort((a, b) => a.cpl - b.cpl).slice(0, 5),
+      effCpt: filteredCampaigns.filter(c => c.targetLeads > 0 && c.cost > 0).sort((a, b) => a.cpt - b.cpt).slice(0, 5),
+      effCpq: filteredCampaigns.filter(c => c.qualLeads > 0 && c.cost > 0).sort((a, b) => a.cpq - b.cpq).slice(0, 5)
     });
   } catch (err) {
     console.error("Dashboard API Error:", err);
