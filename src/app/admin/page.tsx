@@ -349,9 +349,9 @@ export default function DashboardPage() {
             <div className="h-px flex-1 bg-slate-200" />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-             <TopListCard title="Всего лидов" data={data?.topLeads} field="leads" />
-             <TopListCard title="Целевые" data={data?.topTarget} field="targetLeads" />
-             <TopListCard title="Квалы" data={data?.topQual} field="qualLeads" />
+             <TopListCard title="Всего лидов" data={data?.topLeads} field="leads" totalValue={data?.summary?.leads} />
+             <TopListCard title="Целевые" data={data?.topTarget} field="targetLeads" totalValue={data?.summary?.targetLeads} />
+             <TopListCard title="Квалы" data={data?.topQual} field="qualLeads" totalValue={data?.summary?.qualLeads} />
           </div>
         </section>
 
@@ -361,9 +361,9 @@ export default function DashboardPage() {
             <div className="h-px flex-1 bg-slate-200" />
           </div>
           <div className="grid gap-4 md:grid-cols-3">
-             <TopListCard title="CPL (Лид)" data={data?.effCpl} field="cpl" isCurrency />
-             <TopListCard title="CPT (Целевой)" data={data?.effCpt} field="cpt" isCurrency />
-             <TopListCard title="CPQ (Квал)" data={data?.effCpq} field="cpq" isCurrency />
+             <TopListCard title="CPL (Лид)" data={data?.effCpl} field="cpl" isCurrency totalValue={data?.summary?.cpl} />
+             <TopListCard title="CPT (Целевой)" data={data?.effCpt} field="cpt" isCurrency totalValue={data?.summary?.cpt} />
+             <TopListCard title="CPQ (Квал)" data={data?.effCpq} field="cpq" isCurrency totalValue={data?.summary?.cpq} />
           </div>
         </section>
       </div>
@@ -371,11 +371,20 @@ export default function DashboardPage() {
   )
 }
 
-function TopListCard({ title, data, field, isCurrency = false }: { title: string, data: any[], field: string, isCurrency?: boolean }) {
+function TopListCard({ title, data, field, isCurrency = false, totalValue }: { title: string, data: any[], field: string, isCurrency?: boolean, totalValue?: number }) {
   return (
-    <Card className="border-none shadow-sm">
-      <CardHeader className="pb-3"><CardTitle className="text-base font-semibold text-slate-600">{title}</CardTitle></CardHeader>
-      <CardContent>
+    <Card className="border-none shadow-sm overflow-hidden">
+      <CardHeader className="pb-3 bg-slate-50/50 border-b border-slate-100 mb-1">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-bold text-slate-700">{title}</CardTitle>
+          {totalValue !== undefined && (
+            <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${isCurrency ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>
+               ИТОГО: {isCurrency ? `${Math.round(totalValue).toLocaleString()} ₽` : totalValue}
+            </div>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
         <div className="space-y-1">
           {!data || data.length === 0 ? (
             <div className="text-xs text-muted-foreground italic py-4 text-center">Нет данных</div>
