@@ -9,6 +9,7 @@ import { YandexSettings } from "@/components/projects/yandex-settings";
 import { SyncSettings } from "@/components/projects/sync-settings";
 import { StatusSettings } from "@/components/projects/status-settings";
 import { CampaignMappingSettings } from "@/components/projects/campaign-mapping";
+import { BackupSettings } from "@/components/projects/backup-settings";
 import { LeadsList } from "@/components/leads/leads-list";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, AlertTriangle, Trash2, Loader2 } from "lucide-react";
@@ -119,6 +120,7 @@ export default function ProjectSettingsPage() {
                 <TabsTrigger value="campaigns" className="h-10 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Маппинг</TabsTrigger>
                 <TabsTrigger value="sync" className="h-10 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">CRM</TabsTrigger>
                 <TabsTrigger value="leads" className="h-10 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Лиды</TabsTrigger>
+                <TabsTrigger value="backup" className="h-10 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white transition-all">Бэкап</TabsTrigger>
                 {isSuperAdmin && <TabsTrigger value="danger" className="h-10 rounded-xl px-6 font-bold uppercase text-[10px] tracking-widest data-[state=active]:bg-destructive data-[state=active]:text-white text-destructive/80 transition-all">Опасная зона</TabsTrigger>}
             </TabsList>
         </div>
@@ -144,6 +146,10 @@ export default function ProjectSettingsPage() {
                 <div className="glass-card overflow-hidden shadow-2xl p-0">
                     <LeadsList projectId={projectId} />
                 </div>
+            </TabsContent>
+
+            <TabsContent value="backup" className="m-0 focus-visible:outline-none">
+                <BackupSettings projectId={projectId} />
             </TabsContent>
 
             {isSuperAdmin && (

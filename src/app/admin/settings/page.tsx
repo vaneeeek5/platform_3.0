@@ -38,7 +38,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Users, Shield, Plus, Key, Settings, LayoutDashboard, ClipboardList, Banknote, History, Trash2, X } from "lucide-react";
+import { Users, Shield, Plus, Key, Settings, LayoutDashboard, ClipboardList, Banknote, History, Trash2, X, Server, HardDrive, ShieldCheck, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function GlobalSettingsPage() {
@@ -49,6 +49,7 @@ export default function GlobalSettingsPage() {
   const [isAddUserOpen, setIsAddUserOpen] = React.useState(false);
   const [isPermissionsOpen, setIsPermissionsOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<any>(null);
+  const [isPlatformBackingUp, setIsPlatformBackingUp] = React.useState(false);
 
   // Form states
   const [newEmail, setNewEmail] = React.useState("");
@@ -112,6 +113,23 @@ export default function GlobalSettingsPage() {
       }
     } catch (e) {
       toast.error("Ошибка сети");
+    }
+  };
+
+  const handlePlatformBackup = async () => {
+    setIsPlatformBackingUp(true);
+    try {
+        const res = await fetch("/api/admin/backup/platform", { method: "POST" });
+        const data = await res.json();
+        if (res.ok) {
+            toast.success(`Снимок платформы создан: ${data.fileName}`);
+        } else {
+            toast.error(data.error || "Ошибка создания бэкапа");
+        }
+    } catch (e) {
+        toast.error("Ошибка сети");
+    } finally {
+        setIsPlatformBackingUp(false);
     }
   };
 
@@ -316,6 +334,29 @@ export default function GlobalSettingsPage() {
                     Глобальные настройки позволяют управлять ролями и привязками проектов в реальном времени.
                  </p>
             </div>
+
+            <Card className="glass-card border-none shadow-2xl p-6 relative overflow-hidden bg-white/40 dark:bg-black/20 border border-white/5">
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="p-3 bg-primary/10 rounded-2xl">
+                        <HardDrive className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-black uppercase tracking-tight">Платформа</h3>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">Полный бэкап системы</p>
+                    </div>
+                </div>
+                <p className="text-[11px] font-medium leading-relaxed text-muted-foreground/70 mb-8">
+                    Создайте мгновенный снимок исходного кода всей платформы. Архив будет сохранен на сервере в папке <code>/root/backups/</code>.
+                </p>
+                <Button 
+                    onClick={handlePlatformBackup} 
+                    disabled={isPlatformBackingUp}
+                    className="w-full h-14 rounded-2xl bg-white text-primary hover:bg-primary hover:text-white transition-all shadow-xl font-black uppercase text-[10px] tracking-widest border border-primary/10"
+                >
+                    {isPlatformBackingUp ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+                    Сохранить платформу
+                </Button>
+            </Card>
         </div>
       </div>
 
