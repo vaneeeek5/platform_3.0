@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<any>(null)
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     fetch("/api/admin/me")
@@ -63,6 +64,7 @@ export default function DashboardPage() {
                 });
             }
         }
+        setIsInitialized(true);
       })
       .catch(console.error);
 
@@ -77,7 +79,7 @@ export default function DashboardPage() {
         }
       })
       .catch(console.error);
-  }, [userRole]);
+  }, []);
 
   const fetchDashboardData = async () => {
     if (selectedProjectId === undefined || (selectedProjectId === "0" && userRole !== "SUPER_ADMIN")) {
@@ -114,7 +116,7 @@ export default function DashboardPage() {
 
   // Sync preferences to DB
   useEffect(() => {
-    if (!userRole) return;
+    if (!isInitialized || !userRole) return;
     const timer = setTimeout(() => {
         fetch("/api/admin/preferences", {
             method: "PATCH",
@@ -131,7 +133,7 @@ export default function DashboardPage() {
         });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [granularity, dateRange, userRole]);
+  }, [granularity, dateRange, userRole, isInitialized]);
 
   // SVG Chart Renderer
   const renderLineChart = () => {

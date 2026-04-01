@@ -53,6 +53,7 @@ export function ExpensesReport() {
     const [sortCol, setSortCol] = React.useState<SortKey | null>("totalCost");
     const [sortDir, setSortDir] = React.useState<SortDir>("desc");
     const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+    const [isInitialized, setIsInitialized] = React.useState(false);
 
     const [user, setUser] = React.useState<any>(null);
 
@@ -74,6 +75,7 @@ export function ExpensesReport() {
                         });
                     }
                 }
+                setIsInitialized(true);
                 const isSuper = meRes.role === "SUPER_ADMIN";
                 
                 const allowedProjects = projRes.filter((p: any) => {
@@ -96,7 +98,7 @@ export function ExpensesReport() {
 
     // Sync preferences to DB
     React.useEffect(() => {
-        if (!user) return;
+        if (!isInitialized || !user) return;
         const timer = setTimeout(() => {
             fetch("/api/admin/preferences", {
                 method: "PATCH",
@@ -112,7 +114,7 @@ export function ExpensesReport() {
             });
         }, 1000);
         return () => clearTimeout(timer);
-    }, [dateRange, user]);
+    }, [dateRange, user, isInitialized]);
 
     const fetchData = React.useCallback(async () => {
         if (!selectedProjectId || !dateRange?.from || !dateRange?.to) return;

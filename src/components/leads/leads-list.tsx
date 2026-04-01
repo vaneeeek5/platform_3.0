@@ -59,6 +59,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [filterStageIds, setFilterStageIds] = useState<string[]>([])
   const [filterOptions, setFilterOptions] = useState<{ sources: string[], goals: string[] }>({ sources: [], goals: [] })
   const [user, setUser] = useState<any>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                 });
             }
         }
+        setIsInitialized(true);
     });
   }, []);
 
@@ -107,7 +109,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
 
   // Sync preferences to DB
   useEffect(() => {
-    if (!user) return;
+    if (!isInitialized || !user) return;
     const timer = setTimeout(() => {
         fetch("/api/admin/preferences", {
             method: "PATCH",
@@ -123,7 +125,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
         });
     }, 1000);
     return () => clearTimeout(timer);
-  }, [dateRange, user]);
+  }, [dateRange, user, isInitialized]);
 
   const fetchLeads = async () => {
     setLoading(true)
