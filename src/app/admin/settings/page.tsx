@@ -101,8 +101,8 @@ export default function GlobalSettingsPage() {
 
   const handleUpdatePermission = async (userId: number, projectId: number, permissions: any, removeLink = false) => {
     try {
-      const res = await fetch("/api/admin/users/permissions", {
-        method: "POST",
+      const res = await fetch("/api/admin/users", {
+        method: "PATCH",
         body: JSON.stringify({ userId, projectId, permissions, removeLink }),
       });
       if (res.ok) {
