@@ -95,6 +95,11 @@ export function AdminNav() {
                 <div className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
             )}
           </Link>
+        );
+      })}
+    </nav>
+  );
+
   const Logo = ({ mobile = false }: { mobile?: boolean }) => (
     <Link 
       href="/admin" 
@@ -186,10 +191,6 @@ export function AdminNav() {
       </aside>
       
       <div className="hidden lg:block w-[280px] shrink-0" />
-      <div className="lg:hidden h-24" />
-    </>
-  );
-ssName="hidden lg:block w-72 shrink-0" />
       <div className="lg:hidden h-24" />
     </>
   );
