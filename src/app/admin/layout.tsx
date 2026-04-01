@@ -9,7 +9,7 @@ export default function AdminLayout({
     <div className="min-h-screen bg-background relative selection:bg-primary selection:text-white">
       <AdminNav />
       {/* Main Content Area */}
-      <main className="lg:pl-[17rem] pt-16 lg:pt-0 transition-all duration-500">
+      <main className="lg:pl-80 pt-16 lg:pt-0 transition-all duration-500">
         <div className="max-w-[1600px] mx-auto min-h-screen pb-20">
           {children}
         </div>

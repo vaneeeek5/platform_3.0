@@ -225,7 +225,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
                <Input 
                   placeholder="ClientID или Кампания..." 
-                  className="pl-11 h-11 glass-card border-white/5 focus-visible:ring-primary/20 rounded-xl"
+                  className="pl-11 h-11 glass-card border-white/5 focus-visible:ring-primary/20 rounded-2xl"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && fetchLeads()}
@@ -244,26 +244,26 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                  variant="ghost" 
                  size="sm" 
                  onClick={handleResetAll}
-                 className="text-destructive hover:bg-destructive/10 h-11 px-4 rounded-xl font-bold uppercase text-[10px] tracking-widest"
+                 className="text-destructive hover:bg-destructive/10 h-11 px-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
                >
                  Сбросить всё
                </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleDedup} disabled={loading} className="h-11 px-4 rounded-xl border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold uppercase text-[10px] tracking-widest">
+            <Button variant="outline" size="sm" onClick={handleDedup} disabled={loading} className="h-11 px-4 rounded-2xl border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold uppercase text-[10px] tracking-widest">
                Дубли
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={leads.length === 0} className="h-11 px-6 rounded-xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={leads.length === 0} className="h-11 px-6 rounded-2xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest">
                <Download className="h-4 w-4 mr-2" />
                Excel
             </Button>
-            <Button size="sm" onClick={fetchLeads} disabled={loading} className="h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-primary/20">
+            <Button size="sm" onClick={fetchLeads} disabled={loading} className="h-11 px-8 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-primary/20">
                Обновить
             </Button>
          </div>
       </div>
 
-      <div className="glass-card bg-primary/5 border-primary/10 p-3 flex items-center gap-3 rounded-2xl">
-         <div className="p-2 bg-primary/10 rounded-xl">
+      <div className="glass-card bg-primary/5 border-primary/10 p-4 flex items-center gap-3 rounded-2xl">
+         <div className="p-2 bg-primary/10 rounded-2xl">
              <AlertCircle className="h-4 w-4 text-primary" />
          </div>
          <p className="text-[10px] font-bold text-primary/80 uppercase tracking-wider">
@@ -466,7 +466,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl"
+                    className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-2xl"
                     onClick={() => {
                        setSelectedLead(item)
                        setIsEditDialogOpen(true)

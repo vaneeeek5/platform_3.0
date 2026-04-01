@@ -224,7 +224,7 @@ export default function DashboardPage() {
          <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Всего лидов</CardTitle>
-             <div className="p-2 bg-primary/10 rounded-xl"><Briefcase className="h-5 w-5 text-primary" /></div>
+             <div className="p-2 bg-primary/10 rounded-2xl"><Briefcase className="h-5 w-5 text-primary" /></div>
            </CardHeader>
            <CardContent>
              <div className="text-5xl font-black tracking-tighter text-primary drop-shadow-sm">{data?.summary?.leads || 0}</div>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
          <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Целевые</CardTitle>
-             <div className="p-2 bg-[#71D878]/10 rounded-xl"><Target className="h-5 w-5 text-[#71D878]" /></div>
+             <div className="p-2 bg-[#71D878]/10 rounded-2xl"><Target className="h-5 w-5 text-[#71D878]" /></div>
            </CardHeader>
            <CardContent>
              <div className="text-5xl font-black tracking-tighter text-[#71D878] drop-shadow-sm">{data?.summary?.targetLeads || 0}</div>
@@ -251,7 +251,7 @@ export default function DashboardPage() {
          <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Квалы</CardTitle>
-             <div className="p-2 bg-purple-500/10 rounded-xl"><CheckCircle2 className="h-5 w-5 text-purple-500" /></div>
+             <div className="p-2 bg-purple-500/10 rounded-2xl"><CheckCircle2 className="h-5 w-5 text-purple-500" /></div>
            </CardHeader>
            <CardContent>
              <div className="text-5xl font-black tracking-tighter text-purple-500 drop-shadow-sm">{data?.summary?.qualLeads || 0}</div>
@@ -306,7 +306,7 @@ export default function DashboardPage() {
          <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Успешные сделки</CardTitle>
-             <div className="p-2 bg-amber-500/10 rounded-xl"><ShoppingBag className="h-5 w-5 text-amber-500" /></div>
+             <div className="p-2 bg-amber-500/10 rounded-2xl"><ShoppingBag className="h-5 w-5 text-amber-500" /></div>
            </CardHeader>
            <CardContent>
              <div className="text-5xl font-black tracking-tighter text-amber-500 drop-shadow-sm">{data?.summary?.sales || 0} <span className="text-xl font-bold opacity-30">шт</span></div>
@@ -315,7 +315,7 @@ export default function DashboardPage() {
          <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Сумма продаж</CardTitle>
-             <div className="p-2 bg-amber-500/10 rounded-xl"><DollarSign className="h-5 w-5 text-amber-500" /></div>
+             <div className="p-2 bg-amber-500/10 rounded-2xl"><DollarSign className="h-5 w-5 text-amber-500" /></div>
            </CardHeader>
            <CardContent>
              <div className="text-5xl font-black tracking-tighter text-foreground drop-shadow-sm">{Math.round(data?.summary?.revenue || 0).toLocaleString()} <span className="text-xl font-bold text-muted-foreground/30">₽</span></div>
@@ -328,7 +328,7 @@ export default function DashboardPage() {
            )} />
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">ROMI</CardTitle>
-             <div className="p-2 bg-primary/10 rounded-xl"><TrendingUp className="h-5 w-5 text-primary" /></div>
+             <div className="p-2 bg-primary/10 rounded-2xl"><TrendingUp className="h-5 w-5 text-primary" /></div>
            </CardHeader>
            <CardContent>
              <div className={cn(

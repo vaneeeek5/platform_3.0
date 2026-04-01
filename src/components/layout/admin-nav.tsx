@@ -140,7 +140,7 @@ export function AdminNav() {
 
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex fixed left-6 top-6 bottom-6 w-72 glass-card flex-col z-50",
+        "hidden lg:flex fixed left-6 top-6 bottom-6 w-80 glass-card flex-col z-50",
         "animate-in fade-in slide-in-from-left-8 duration-1000"
       )}>
         <div className="p-10 pb-8">
@@ -180,7 +180,7 @@ export function AdminNav() {
         </div>
       </aside>
       
-      <div className="hidden lg:block w-[22rem]" />
+      <div className="hidden lg:block w-80 shrink-0" />
       <div className="lg:hidden h-20" />
     </>
   );

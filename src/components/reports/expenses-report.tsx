@@ -180,7 +180,7 @@ export function ExpensesReport() {
                     <Button 
                         variant="outline" 
                         onClick={fetchData} 
-                        className="h-12 rounded-xl px-8 font-bold border-primary/20 text-primary hover:bg-primary hover:text-white"
+                        className="h-12 rounded-2xl px-8 font-bold border-primary/20 text-primary hover:bg-primary hover:text-white transition-all"
                         disabled={loading}
                     >
                         {loading ? "Обновление..." : "Обновить данные"}
