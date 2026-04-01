@@ -95,25 +95,26 @@ export function AdminNav() {
                 <div className="absolute right-3 w-1.5 h-1.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.8)]" />
             )}
           </Link>
-        );
-      })}
-    </nav>
-  );
-
-  const Logo = () => (
-    <div className="flex flex-col">
+  const Logo = ({ mobile = false }: { mobile?: boolean }) => (
+    <Link 
+      href="/admin" 
+      className={cn(
+        "flex flex-col group transition-transform active:scale-95",
+        mobile ? "" : "hover:translate-x-1"
+      )}
+    >
         <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-br from-primary via-primary to-[#71D878] bg-clip-text text-transparent drop-shadow-xl">
           БЫТЬ
         </h1>
         <p className="text-[9px] text-muted-foreground/40 uppercase font-black tracking-[0.35em] -mt-1 pl-1">платформа аналитики</p>
-    </div>
+    </Link>
   );
 
   return (
     <>
       {/* Mobile Floating Header */}
-      <header className="lg:hidden fixed top-4 left-4 right-4 z-50 h-16 glass-card flex items-center justify-between px-6 border-none shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700">
-        <Logo />
+      <header className="lg:hidden fixed top-4 left-4 right-4 z-40 h-16 glass-card flex items-center justify-between px-6 border-none shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700">
+        <Logo mobile />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all active:scale-95">
@@ -123,7 +124,7 @@ export function AdminNav() {
           <SheetContent side="left" className="glass-card w-[300px] p-0 border-none shadow-2xl backdrop-blur-3xl">
             <div className="flex flex-col h-full">
                 <SheetHeader className="p-8 border-b border-white/5">
-                    <SheetTitle><Logo /></SheetTitle>
+                    <SheetTitle aria-label="Logo"><Logo mobile /></SheetTitle>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto px-4 py-8">
                     <NavLinks mobile />
@@ -147,7 +148,7 @@ export function AdminNav() {
         "hidden lg:flex fixed left-6 top-6 bottom-6 w-64 glass-card flex-col z-50 shadow-[0_32px_64px_-12px_rgba(40,0,184,0.12)]",
         "animate-in fade-in slide-in-from-left-8 duration-1000 ease-out"
       )}>
-        <div className="p-6 pb-6 text-center lg:text-left">
+        <div className="p-8 pb-6 text-center lg:text-left">
           <Logo />
         </div>
         
@@ -155,7 +156,7 @@ export function AdminNav() {
             <NavLinks />
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="p-6 space-y-4">
           <div className="p-4 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all duration-500">
             <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-[#71D878] flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
@@ -184,7 +185,11 @@ export function AdminNav() {
         </div>
       </aside>
       
-      <div className="hidden lg:block w-72 shrink-0" />
+      <div className="hidden lg:block w-[280px] shrink-0" />
+      <div className="lg:hidden h-24" />
+    </>
+  );
+ssName="hidden lg:block w-72 shrink-0" />
       <div className="lg:hidden h-24" />
     </>
   );

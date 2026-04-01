@@ -247,14 +247,16 @@ export default function DashboardPage() {
             <DatePickerWithRange date={dateRange} setDate={setDateRange} />
             
             <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-            <SelectTrigger className="w-full md:w-[240px] glass-card h-12 border-none font-black uppercase text-[10px] tracking-widest shadow-xl">
-              <Filter className="w-4 h-4 mr-2 text-primary" />
-              <SelectValue placeholder="Все проекты" />
+            <SelectTrigger className="w-full md:min-w-[240px] glass-card h-12 border-none font-black uppercase text-[10px] tracking-widest shadow-xl rounded-2xl hover:bg-white/5 transition-all">
+              <div className="flex items-center gap-3">
+                <Filter className="w-4 h-4 text-primary" />
+                <SelectValue placeholder="Все проекты" />
+              </div>
             </SelectTrigger>
-            <SelectContent className="glass-card border-none shadow-2xl">
-              {userRole === "SUPER_ADMIN" && <SelectItem value="0" className="font-black uppercase text-[10px] tracking-widest">Все проекты</SelectItem>}
+            <SelectContent className="glass-card border-none shadow-2xl rounded-2xl p-2">
+              {userRole === "SUPER_ADMIN" && <SelectItem value="0" className="font-black uppercase text-[10px] tracking-widest rounded-xl">Все проекты</SelectItem>}
               {projectsData?.map((p: any) => (
-                <SelectItem key={p.id} value={p.id.toString()} className="font-black uppercase text-[10px] tracking-widest">{p.name}</SelectItem>
+                <SelectItem key={p.id} value={p.id.toString()} className="font-black uppercase text-[10px] tracking-widest rounded-xl">{p.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>

@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       if (res.ok) {
         toast.success("Вход выполнен успешно")
-        router.push("/admin/projects")
+        router.push("/admin")
       } else {
         const data = await res.json()
         toast.error(data.error || "Неверный логин или пароль")

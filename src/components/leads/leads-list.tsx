@@ -255,9 +255,9 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
 
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-700">
-      <div className="glass-card p-6 border-white/10 shadow-xl flex flex-col xl:flex-row gap-6 items-end">
-         <div className="flex flex-col gap-2 w-full xl:w-[320px]">
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="glass-card p-10 border-white/10 shadow-xl flex flex-col xl:flex-row gap-8 items-end">
+         <div className="flex flex-col gap-3 w-full xl:w-[300px]">
             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Поиск</label>
             <div className="relative group">
                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
@@ -271,51 +271,51 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
             </div>
          </div>
          
-         <div className="w-full xl:w-[320px]">
-             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">Период</label>
+         <div className="w-full xl:w-[300px]">
+             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 mb-3 block">Период</label>
              <DatePickerWithRange date={dateRange} setDate={setDateRange} />
          </div>
 
-         <div className="flex flex-wrap gap-3 flex-1 justify-end">
+         <div className="flex flex-wrap gap-4 flex-1 justify-end">
             {(filterSources.length > 0 || filterGoals.length > 0 || filterTargetStatusIds.length > 0 || filterQualStatusIds.length > 0 || filterStageIds.length > 0 || query) && (
                <Button 
                  variant="ghost" 
                  size="sm" 
                  onClick={handleResetAll}
-                 className="text-destructive hover:bg-destructive/10 h-11 px-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest"
+                 className="text-destructive hover:bg-destructive/10 h-11 px-6 rounded-2xl font-bold uppercase text-[10px] tracking-widest transition-all"
                >
                  Сбросить всё
                </Button>
             )}
-            <Button variant="outline" size="sm" onClick={handleDedup} disabled={loading} className="h-11 px-4 rounded-2xl border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold uppercase text-[10px] tracking-widest">
+            <Button variant="outline" size="sm" onClick={handleDedup} disabled={loading} className="h-11 px-6 rounded-2xl border-red-500/20 text-red-500 hover:bg-red-500/10 font-bold uppercase text-[10px] tracking-widest transition-all">
                Дубли
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} disabled={leads.length === 0} className="h-11 px-6 rounded-2xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest">
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={leads.length === 0} className="h-11 px-8 rounded-2xl border-primary/20 text-primary font-bold uppercase text-[10px] tracking-widest transition-all shadow-sm">
                <Download className="h-4 w-4 mr-2" />
                Excel
             </Button>
-            <Button size="sm" onClick={fetchLeads} disabled={loading} className="h-11 px-8 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-lg shadow-primary/20">
+            <Button size="sm" onClick={fetchLeads} disabled={loading} className="h-11 px-10 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] shadow-xl shadow-primary/20 active:scale-95 transition-all">
                Обновить
             </Button>
          </div>
       </div>
 
-      <div className="glass-card bg-primary/5 border-primary/10 p-4 flex items-center gap-3 rounded-2xl">
-         <div className="p-2 bg-primary/10 rounded-2xl">
-             <AlertCircle className="h-4 w-4 text-primary" />
+      <div className="glass-card bg-primary/5 border-primary/10 px-6 py-5 md:px-10 md:py-6 flex items-center gap-4 rounded-[2rem] shadow-sm">
+         <div className="p-3 bg-primary/10 rounded-2xl shadow-inner border border-primary/5">
+             <AlertCircle className="h-5 w-5 text-primary" />
          </div>
-         <p className="text-[10px] font-bold text-primary/80 uppercase tracking-wider">
+         <p className="text-[11px] font-black text-primary/80 uppercase tracking-widest leading-relaxed">
             Яндекс.Метрика (Logs API) передает данные с задержкой 24ч.
          </p>
       </div>
 
       <div className="glass-card border-none overflow-hidden shadow-2xl rounded-[2.5rem]">
         <Table>
-          <TableHeader className="bg-muted/30">
+          <TableHeader className="bg-white/5 dark:bg-black/20">
             <TableRow className="border-white/5 hover:bg-transparent">
-              <TableHead className="w-[150px] text-[10px] font-black uppercase tracking-widest h-14 pl-8">Дата</TableHead>
+              <TableHead className="w-[120px] text-[10px] font-black uppercase tracking-widest h-16 pl-10">Дата</TableHead>
               {showProjectColumn && <TableHead className="text-[10px] font-black uppercase tracking-widest">Проект</TableHead>}
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[140px]">
                  <div className="flex items-center gap-2">
                     Источник
                     <FilterPopover 
@@ -326,7 +326,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest min-w-[150px]">
                  <div className="flex items-center gap-2">
                     Цели
                     <FilterPopover 
@@ -337,8 +337,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">ClientID</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">ClientID</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">
                  <div className="flex items-center gap-2">
                     Статус
                     <FilterPopover 
@@ -350,7 +350,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">
                  <div className="flex items-center gap-2">
                     Квал
                     <FilterPopover 
@@ -362,7 +362,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">
                  <div className="flex items-center gap-2">
                     Этап сделки
                     <FilterPopover 
@@ -374,21 +374,21 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     />
                  </div>
               </TableHead>
-              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-8">Сумма</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
+              <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-10 w-[100px]">Сумма</TableHead>
+              <TableHead className="w-[70px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!projectId ? (
               <TableRow>
                 <TableCell colSpan={showProjectColumn ? 10 : 9} className="h-60 text-center">
-                  <div className="flex flex-col items-center gap-4 max-w-sm mx-auto p-10 rounded-[2.5rem] bg-primary/5 border border-primary/10 animate-in fade-in zoom-in duration-500">
-                      <div className="p-4 bg-primary/10 rounded-full">
-                        <Filter className="h-8 w-8 text-primary opacity-40" />
+                  <div className="flex flex-col items-center gap-4 max-w-sm mx-auto p-12 rounded-[2.5rem] bg-primary/5 border border-primary/10 animate-in fade-in zoom-in duration-500 shadow-inner">
+                      <div className="p-5 bg-primary/10 rounded-full shadow-lg">
+                        <Filter className="h-8 w-8 text-primary opacity-60" />
                       </div>
-                      <div className="space-y-1">
-                        <span className="text-sm font-black uppercase tracking-tight text-primary">Выберите проект и дату</span>
-                        <p className="text-[10px] font-medium text-muted-foreground leading-relaxed">
+                      <div className="space-y-2">
+                        <span className="text-base font-black uppercase tracking-tight text-primary">Выберите проект и дату</span>
+                        <p className="text-[11px] font-bold text-muted-foreground/60 leading-relaxed uppercase tracking-wider">
                           Для просмотра списка лидов необходимо выбрать конкретный проект в фильтре справа.
                         </p>
                       </div>
@@ -396,45 +396,45 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                 </TableCell>
               </TableRow>
             ) : loading ? (
-              <TableRow><TableCell colSpan={showProjectColumn ? 10 : 9} className="h-40 text-center">
-                  <div className="flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Загрузка данных...</span>
+              <TableRow><TableCell colSpan={showProjectColumn ? 10 : 9} className="h-40 text-center border-none">
+                  <div className="flex flex-col items-center gap-4">
+                      <div className="w-10 h-10 border-4 border-primary/10 border-t-primary rounded-full animate-spin shadow-primary/20" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 translate-y-1">Загрузка данных...</span>
                   </div>
               </TableCell></TableRow>
             ) : leads.length === 0 ? (
-              <TableRow><TableCell colSpan={showProjectColumn ? 10 : 9} className="h-40 text-center text-[10px] font-black uppercase tracking-widest text-muted-foreground italic">Лиды не найдены</TableCell></TableRow>
+              <TableRow><TableCell colSpan={showProjectColumn ? 10 : 9} className="h-40 text-center text-[11px] font-black uppercase tracking-widest text-muted-foreground/30 italic">Данные отсутствуют</TableCell></TableRow>
             ) : leads.map((item) => (
-              <TableRow key={item.lead.id} className="border-white/5 hover:bg-primary/5 transition-all group h-20">
-                <TableCell className="text-[11px] font-bold pl-8">
+              <TableRow key={item.lead.id} className="border-white/5 hover:bg-primary/[0.03] transition-all group h-[72px]">
+                <TableCell className="text-[11px] font-black tabular-nums pl-10 text-muted-foreground/70">
                   {mounted && item.lead?.date ? format(new Date(item.lead.date), "dd.MM.yyyy HH:mm", { locale: ru }) : '—'}
                 </TableCell>
                 {showProjectColumn && (
-                   <TableCell className="text-xs font-bold text-primary">{item.project?.name}</TableCell>
+                   <TableCell className="text-xs font-black text-primary uppercase tracking-tight">{item.project?.name}</TableCell>
                 )}
-                <TableCell className="py-4">
-                  <div className="flex flex-col min-w-0 max-w-[150px]">
-                    <span className="text-[11px] font-black tracking-tight truncate" title={item.lead.utmSource || 'direct'}>
+                <TableCell className="py-3">
+                  <div className="flex flex-col min-w-0 max-w-[120px]">
+                    <span className="text-[11px] font-black tracking-tight truncate uppercase" title={item.lead.utmSource || 'direct'}>
                         {item.lead.utmSource || 'direct'}
                     </span>
                     {item.lead.utmCampaign && (
-                      <span className="text-[9px] text-muted-foreground truncate font-bold uppercase tracking-wider" title={item.lead.utmCampaign}>
+                      <span className="text-[9px] text-muted-foreground/50 truncate font-black uppercase tracking-widest mt-0.5" title={item.lead.utmCampaign}>
                         {item.lead.utmCampaign}
                       </span>
                     )}
                   </div>
                 </TableCell>
                 <TableCell>
-                   <div className="flex flex-wrap gap-1.5">
+                   <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                       {item.achievements?.map((a: any) => (
-                         <span key={a.id} className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg bg-[#2800B8]/10 text-[#2800B8] border border-[#2800B8]/10 whitespace-nowrap">
+                         <span key={a.id} className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-primary/5 text-primary border border-primary/5 whitespace-nowrap shadow-sm hover:bg-primary/10 transition-colors cursor-default">
                             {a.goalName}
                          </span>
                       ))}
                    </div>
                 </TableCell>
-                <TableCell className="text-[10px] font-mono text-muted-foreground font-medium">
-                  <div className="truncate max-w-[100px]" title={item.lead.metrikaClientId || ''}>
+                <TableCell className="text-[10px] font-mono text-muted-foreground/40 font-medium">
+                  <div className="truncate max-w-[90px] border-b border-primary/10 border-dotted" title={item.lead.metrikaClientId || ''}>
                     {item.lead.metrikaClientId || '—'}
                   </div>
                 </TableCell>
@@ -446,15 +446,15 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                           value={a.targetStatusId?.toString() || "none"} 
                           onValueChange={(val) => updateLeadStatus(a.id, 'targetStatusId', val)}
                         >
-                          <SelectTrigger className="h-8 text-[9px] font-black uppercase tracking-wider px-3 w-[120px] glass-card border-white/5 shadow-sm hover:border-primary/20 transition-all">
+                          <SelectTrigger className="h-7 text-[9px] font-black uppercase tracking-wider px-2.5 w-[100px] glass-card border-white/5 shadow-sm hover:border-primary/20 transition-all bg-white/40 dark:bg-black/20">
                             <SelectValue placeholder="Статус" className="truncate" />
                           </SelectTrigger>
-                          <SelectContent className="glass-card border-white/10">
-                            <SelectItem value="none" className="text-[10px] font-bold uppercase">Не выбран</SelectItem>
+                          <SelectContent className="glass-card border-white/10 shadow-2xl rounded-xl">
+                            <SelectItem value="none" className="text-[10px] font-black uppercase tracking-widest">Не выбран</SelectItem>
                             {targetStatuses.map(s => (
-                              <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-bold uppercase">
+                              <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-black uppercase tracking-widest">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-2.5 h-2.5 rounded-full shadow-inner" style={{ backgroundColor: s.color }} />
+                                  <div className="w-2.5 h-2.5 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: s.color }} />
                                   {s.label}
                                 </div>
                               </SelectItem>
@@ -473,15 +473,15 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                           value={a.qualificationStatusId?.toString() || "none"} 
                           onValueChange={(val) => updateLeadStatus(a.id, 'qualificationStatusId', val)}
                         >
-                          <SelectTrigger className="h-8 text-[9px] font-black uppercase tracking-wider px-3 w-[120px] glass-card border-white/5 shadow-sm hover:border-primary/20 transition-all">
+                          <SelectTrigger className="h-7 text-[9px] font-black uppercase tracking-wider px-2.5 w-[100px] glass-card border-white/5 shadow-sm hover:border-primary/20 transition-all bg-white/40 dark:bg-black/20">
                             <SelectValue placeholder="Квал" className="truncate" />
                           </SelectTrigger>
-                          <SelectContent className="glass-card border-white/10">
-                            <SelectItem value="none" className="text-[10px] font-bold uppercase">Не выбран</SelectItem>
+                          <SelectContent className="glass-card border-white/10 shadow-2xl rounded-xl">
+                            <SelectItem value="none" className="text-[10px] font-black uppercase tracking-widest">Не выбран</SelectItem>
                             {qualStatuses.map(s => (
-                              <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-bold uppercase">
+                              <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-black uppercase tracking-widest">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-2.5 h-2.5 rounded-full shadow-inner" style={{ backgroundColor: s.color }} />
+                                  <div className="w-2.5 h-2.5 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: s.color }} />
                                   {s.label}
                                 </div>
                               </SelectItem>
@@ -497,15 +497,15 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                         value={item.lead.stageId?.toString() || "none"} 
                         onValueChange={(val) => updateLeadStage(item.lead.id, val)}
                     >
-                        <SelectTrigger className="h-9 text-[10px] font-black uppercase tracking-widest px-4 w-[140px] glass-card bg-primary/5 hover:bg-primary/10 border-primary/10 shadow-lg">
+                        <SelectTrigger className="h-8 text-[9px] font-black uppercase tracking-wider px-3 w-[120px] glass-card bg-primary/5 hover:bg-primary/10 border-primary/10 shadow-md transition-all active:scale-95">
                         <SelectValue placeholder="Этап" className="truncate w-full" />
                         </SelectTrigger>
-                        <SelectContent className="glass-card border-white/10">
-                        <SelectItem value="none" className="text-[10px] font-bold uppercase tracking-wider">Не выбран</SelectItem>
+                        <SelectContent className="glass-card border-white/10 shadow-2xl rounded-2xl">
+                        <SelectItem value="none" className="text-[10px] font-black uppercase tracking-widest">Не выбран</SelectItem>
                         {leadStages.map(s => (
-                            <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-bold uppercase tracking-wider">
+                            <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-black uppercase tracking-widest">
                             <div className="flex items-center gap-3">
-                                <div className="w-3 h-3 rounded-md shadow-lg" style={{ backgroundColor: s.color }} />
+                                <div className="w-3 h-3 rounded-md shadow-lg border border-white/10" style={{ backgroundColor: s.color }} />
                                 {s.label}
                             </div>
                             </SelectItem>
@@ -514,17 +514,22 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     </Select>
                 </TableCell>
 
-                <TableCell className="text-right text-xs font-black text-foreground tabular-nums pr-8">
+                <TableCell className="text-right text-[13px] font-black text-foreground tabular-nums pr-10">
                   {(() => {
                     const total = item.achievements?.reduce((acc: number, a: any) => acc + (parseFloat(a.saleAmount) || 0), 0) || 0;
-                    return total > 0 ? `${total.toLocaleString()} ₽` : "—";
+                    return total > 0 ? (
+                      <div className="flex flex-col items-end">
+                         <span>{total.toLocaleString()} ₽</span>
+                         <span className="text-[8px] text-muted-foreground/40 uppercase tracking-widest -mt-1">Оплачено</span>
+                      </div>
+                    ) : "—";
                   })()}
                 </TableCell>
-                <TableCell className="pr-4">
+                <TableCell className="pr-6">
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="h-10 w-10 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-2xl"
+                    className="h-10 w-10 text-muted-foreground/40 hover:text-primary hover:bg-primary/10 rounded-2xl transition-all"
                     onClick={() => {
                        setSelectedLead(item)
                        setIsEditDialogOpen(true)
