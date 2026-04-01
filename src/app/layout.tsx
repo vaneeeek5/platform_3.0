@@ -9,7 +9,10 @@ export const metadata: Metadata = {
   title: "БЫТЬ — платформа аналитики",
   description: "Платформа аналитики рекламы",
   icons: {
-    icon: "/favicon.svg",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/favicon.svg",
   },
 };
 
