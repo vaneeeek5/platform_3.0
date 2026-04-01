@@ -58,10 +58,26 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [filterQualStatusIds, setFilterQualStatusIds] = useState<string[]>([])
   const [filterStageIds, setFilterStageIds] = useState<string[]>([])
   const [filterOptions, setFilterOptions] = useState<{ sources: string[], goals: string[] }>({ sources: [], goals: [] })
+  const [user, setUser] = useState<any>(null)
 
 
   useEffect(() => {
     setMounted(true)
+    fetch("/api/admin/me").then(r => r.json()).then(me => {
+        setUser(me);
+        if (me.preferences?.leads?.dateRange) {
+            const p = me.preferences.leads.dateRange;
+            if (p.from && p.to) {
+                setDateRange({
+                    from: new Date(p.from),
+                    to: new Date(p.to)
+                });
+            }
+        }
+    });
+  }, []);
+
+  useEffect(() => {
     if (projectId) {
        fetchLeads()
        fetchStatuses()
@@ -88,6 +104,26 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     if (qRes.ok) setQualStatuses(await qRes.json())
     if (sRes.ok) setLeadStages(await sRes.json())
   }
+
+  // Sync preferences to DB
+  useEffect(() => {
+    if (!user) return;
+    const timer = setTimeout(() => {
+        fetch("/api/admin/preferences", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                leads: {
+                    dateRange: {
+                        from: dateRange?.from?.toISOString(),
+                        to: dateRange?.to?.toISOString()
+                    }
+                }
+            })
+        });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [dateRange, user]);
 
   const fetchLeads = async () => {
     setLoading(true)

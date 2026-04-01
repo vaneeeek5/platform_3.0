@@ -65,6 +65,15 @@ export function ExpensesReport() {
                 ]);
                 
                 setUser(meRes);
+                if (meRes.preferences?.expenses?.dateRange) {
+                    const p = meRes.preferences.expenses.dateRange;
+                    if (p.from && p.to) {
+                        setDateRange({
+                            from: new Date(p.from),
+                            to: new Date(p.to)
+                        });
+                    }
+                }
                 const isSuper = meRes.role === "SUPER_ADMIN";
                 
                 const allowedProjects = projRes.filter((p: any) => {
@@ -84,6 +93,26 @@ export function ExpensesReport() {
         };
         init();
     }, []);
+
+    // Sync preferences to DB
+    React.useEffect(() => {
+        if (!user) return;
+        const timer = setTimeout(() => {
+            fetch("/api/admin/preferences", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    expenses: {
+                        dateRange: {
+                            from: dateRange?.from?.toISOString(),
+                            to: dateRange?.to?.toISOString()
+                        }
+                    }
+                })
+            });
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [dateRange, user]);
 
     const fetchData = React.useCallback(async () => {
         if (!selectedProjectId || !dateRange?.from || !dateRange?.to) return;

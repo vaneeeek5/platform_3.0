@@ -51,7 +51,19 @@ export default function DashboardPage() {
   useEffect(() => {
     fetch("/api/admin/me")
       .then(res => res.json())
-      .then(user => setUserRole(user.role))
+      .then(user => {
+        setUserRole(user.role);
+        if (user.preferences?.dashboard) {
+            const p = user.preferences.dashboard;
+            if (p.granularity) setGranularity(p.granularity as any);
+            if (p.dateRange?.from && p.dateRange?.to) {
+                setDateRange({
+                    from: new Date(p.dateRange.from),
+                    to: new Date(p.dateRange.to)
+                });
+            }
+        }
+      })
       .catch(console.error);
 
      fetch("/api/projects")
@@ -99,6 +111,27 @@ export default function DashboardPage() {
       fetchDashboardData();
     }
   }, [selectedProjectId, granularity, dateRange, userRole]);
+
+  // Sync preferences to DB
+  useEffect(() => {
+    if (!userRole) return;
+    const timer = setTimeout(() => {
+        fetch("/api/admin/preferences", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                dashboard: {
+                    granularity,
+                    dateRange: {
+                        from: dateRange?.from?.toISOString(),
+                        to: dateRange?.to?.toISOString()
+                    }
+                }
+            })
+        });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [granularity, dateRange, userRole]);
 
   // SVG Chart Renderer
   const renderLineChart = () => {

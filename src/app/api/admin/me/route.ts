@@ -20,6 +20,7 @@ export async function GET() {
     id: session.id,
     email: session.email,
     role: session.role,
-    links: userLinks
+    links: userLinks,
+    preferences: session.preferences || {}
   });
 }

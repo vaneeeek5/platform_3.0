@@ -25,6 +25,11 @@ export const users = pgTable("users", {
   email: text("email").unique().notNull(),
   passwordHash: text("password_hash").notNull(),
   role: userRoleEnum("role").notNull().default("USER"),
+  preferences: jsonb("preferences").$type<{
+    dashboard?: { granularity?: string, dateRange?: { from?: string, to?: string } },
+    expenses?: { dateRange?: { from?: string, to?: string } },
+    leads?: { dateRange?: { from?: string, to?: string } }
+  }>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
