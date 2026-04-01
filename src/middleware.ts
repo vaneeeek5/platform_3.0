@@ -33,9 +33,7 @@ export default async function middleware(req: NextRequest) {
 
   // Role-based redirects for the root "/" path
   if (path === "/" && session) {
-    if (session.role === "SUPER_ADMIN" || session.role === "ADMIN") {
-      return NextResponse.redirect(new URL("/admin", req.nextUrl));
-    }
+    return NextResponse.redirect(new URL("/admin", req.nextUrl));
   }
 
   // RESTRICT: Users can't access settings or logs directly
