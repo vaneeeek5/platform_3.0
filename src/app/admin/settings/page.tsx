@@ -149,7 +149,7 @@ export default function GlobalSettingsPage() {
   );
 
   return (
-    <div className="p-6 md:p-10 space-y-10 min-h-screen">
+    <div className="space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         <div>
            <div className="flex items-center gap-4 mb-2">
@@ -189,12 +189,12 @@ export default function GlobalSettingsPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         <div className="xl:col-span-2 space-y-10">
-          <Card className="glass-card border-none shadow-2xl p-0 overflow-hidden">
-            <CardHeader className="p-8 pb-6 border-b border-white/5 bg-white/5 dark:bg-black/20">
+          <Card className="glass-card border-none shadow-2xl p-0 overflow-hidden rounded-[2.5rem]">
+            <CardHeader className="p-10 pb-8 border-b border-white/5 bg-white/5 dark:bg-black/20">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
                 <div>
                   <CardTitle className="text-2xl font-black tracking-tighter uppercase">Пользователи</CardTitle>
-                  <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mt-1">Доступ к платформе</CardDescription>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mt-1">Доступ к платформе ({usersList.length})</CardDescription>
                 </div>
                 <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
                   <DialogTrigger asChild>
@@ -248,16 +248,16 @@ export default function GlobalSettingsPage() {
                 </TableHeader>
                 <TableBody>
                   {usersList.map((user) => (
-                    <TableRow key={user.id} className="border-white/5 hover:bg-primary/5 transition-colors group h-16">
-                      <TableCell className="pl-8 py-4">
-                        <div className="flex items-center gap-3">
+                    <TableRow key={user.id} className="border-white/5 hover:bg-primary/5 transition-colors group h-20">
+                      <TableCell className="pl-10 py-4">
+                        <div className="flex items-center gap-4">
                           <div className={cn(
-                              "h-9 w-9 rounded-xl flex items-center justify-center border transition-all",
+                              "h-10 w-10 rounded-xl flex items-center justify-center border transition-all",
                               "bg-primary/5 border-primary/10 group-hover:bg-primary/20"
                           )}>
                             <Users className="h-4 w-4 text-primary" />
                           </div>
-                          <span className="font-black text-sm text-foreground/80">{user.email}</span>
+                          <span className="font-black text-sm text-foreground/80 truncate max-w-[200px]" title={user.email}>{user.email}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -268,7 +268,7 @@ export default function GlobalSettingsPage() {
                           {user.role}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right pr-8">
+                      <TableCell className="text-right pr-10">
                         <div className="flex items-center justify-end gap-2">
                            <Button 
                               variant="ghost" 
@@ -306,7 +306,7 @@ export default function GlobalSettingsPage() {
         </div>
 
         <div className="space-y-8">
-            <Card className="glass-card border-none shadow-2xl p-6 relative overflow-hidden">
+            <Card className="glass-card border-none shadow-2xl p-8 relative overflow-hidden rounded-[2.5rem]">
                 <div className="p-3 bg-primary/10 rounded-2xl w-fit mb-4">
                     <Shield className="h-6 w-6 text-primary" />
                 </div>
@@ -335,7 +335,7 @@ export default function GlobalSettingsPage() {
                  </p>
             </div>
 
-            <Card className="glass-card border-none shadow-2xl p-6 relative overflow-hidden bg-white/40 dark:bg-black/20 border border-white/5">
+            <Card className="glass-card border-none shadow-2xl p-8 relative overflow-hidden bg-white/40 dark:bg-black/20 border border-white/5 rounded-[2.5rem]">
                 <div className="flex items-center gap-4 mb-6">
                     <div className="p-3 bg-primary/10 rounded-2xl">
                         <HardDrive className="h-6 w-6 text-primary" />

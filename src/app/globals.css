@@ -22,12 +22,13 @@
   --border: 220 13% 91%;
   --input: 220 13% 91%;
   --ring: 243 100% 40%;
-  --radius: 2rem;
+  --radius-card: 2.5rem;
+  --radius-item: 1.25rem;
   
   /* Apple Glass Tokens */
   --glass-bg: rgba(255, 255, 255, 0.45);
   --glass-border-color: rgba(255, 255, 255, 0.6);
-  --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+  --glass-shadow: 0 10px 50px -10px rgba(40, 0, 184, 0.08);
 }
 
 .dark {
@@ -50,12 +51,13 @@
   --border: 240 3.7% 12%;
   --input: 240 3.7% 12%;
   --ring: 235 100% 60%;
-  --radius: 2rem;
+  --radius-card: 2.5rem;
+  --radius-item: 1.25rem;
   
   /* Apple Glass Tokens Dark */
-  --glass-bg: rgba(10, 10, 15, 0.35);
-  --glass-border-color: rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.6);
+  --glass-bg: rgba(10, 10, 20, 0.4);
+  --glass-border-color: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.7);
 }
 
 @layer base {
@@ -75,10 +77,10 @@
 
 @layer components {
   .glass-card {
-    @apply backdrop-blur-3xl saturate-[2] border-none relative overflow-hidden;
+    @apply backdrop-blur-[40px] saturate-[1.8] border-none relative overflow-hidden;
     background: var(--glass-bg);
     box-shadow: var(--glass-shadow);
-    border-radius: var(--radius);
+    border-radius: var(--radius-card);
   }
 
   .glass-card::after {

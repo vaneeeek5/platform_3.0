@@ -229,7 +229,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-6 md:p-10 space-y-10 min-h-screen">
+    <div className="space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         <div>
            <div className="flex items-center gap-4 mb-2">
@@ -263,7 +263,7 @@ export default function DashboardPage() {
 
       {/* Row 1: Leads, Target, Quals */}
       <div className="grid gap-8 md:grid-cols-3 mb-8">
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Всего лидов</CardTitle>
              <div className="p-2 bg-primary/10 rounded-2xl"><Briefcase className="h-5 w-5 text-primary" /></div>
@@ -273,7 +273,7 @@ export default function DashboardPage() {
              <p className="text-[9px] text-muted-foreground/40 mt-3 uppercase font-black tracking-[0.15em]">за выбранный период</p>
            </CardContent>
          </Card>
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Целевые</CardTitle>
              <div className="p-2 bg-[#71D878]/10 rounded-2xl"><Target className="h-5 w-5 text-[#71D878]" /></div>
@@ -290,7 +290,7 @@ export default function DashboardPage() {
              </div>
            </CardContent>
          </Card>
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Квалы</CardTitle>
              <div className="p-2 bg-purple-500/10 rounded-2xl"><CheckCircle2 className="h-5 w-5 text-purple-500" /></div>
@@ -311,7 +311,7 @@ export default function DashboardPage() {
 
       {/* Row 2: CPL, CPT, CPQ */}
       <div className="grid gap-8 md:grid-cols-3 mb-8">
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">CPL (Лид)</CardTitle>
              <RussianRuble className="h-4 w-4 text-primary/40" />
@@ -321,7 +321,7 @@ export default function DashboardPage() {
              <p className="text-[9px] text-muted-foreground/40 mt-3 uppercase font-black tracking-[0.15em]">стоимость лида</p>
            </CardContent>
          </Card>
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">CPT (Целевой)</CardTitle>
              <Target className="h-4 w-4 text-[#71D878]/40" />
@@ -331,7 +331,7 @@ export default function DashboardPage() {
              <p className="text-[9px] text-muted-foreground/40 mt-3 uppercase font-black tracking-[0.15em]">стоимость целевого</p>
            </CardContent>
          </Card>
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">CPQ (Квал)</CardTitle>
              <CheckCircle2 className="h-4 w-4 text-purple-500/40" />
@@ -345,7 +345,7 @@ export default function DashboardPage() {
 
       {/* Row 3: Sales, Sum, ROMI */}
       <div className="grid gap-8 md:grid-cols-3 mb-8">
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Успешные сделки</CardTitle>
              <div className="p-2 bg-amber-500/10 rounded-2xl"><ShoppingBag className="h-5 w-5 text-amber-500" /></div>
@@ -354,7 +354,7 @@ export default function DashboardPage() {
              <div className="text-5xl font-black tracking-tighter text-amber-500 drop-shadow-sm">{data?.summary?.sales || 0} <span className="text-xl font-bold opacity-30">шт</span></div>
            </CardContent>
          </Card>
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 rounded-[2rem]">
            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
              <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Сумма продаж</CardTitle>
              <div className="p-2 bg-amber-500/10 rounded-2xl"><DollarSign className="h-5 w-5 text-amber-500" /></div>
@@ -363,7 +363,7 @@ export default function DashboardPage() {
              <div className="text-5xl font-black tracking-tighter text-foreground drop-shadow-sm">{Math.round(data?.summary?.revenue || 0).toLocaleString()} <span className="text-xl font-bold text-muted-foreground/30">₽</span></div>
            </CardContent>
          </Card>
-         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 overflow-hidden relative">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500 overflow-hidden relative rounded-[2rem]">
            <div className={cn(
                "absolute top-0 right-0 w-32 h-32 blur-3xl rounded-full -mr-16 -mt-16 opacity-20",
                (data?.summary?.romi || 0) > 0 ? "bg-[#71D878]" : "bg-destructive"
@@ -384,29 +384,29 @@ export default function DashboardPage() {
 
       {/* Row 4: Full Width Chart */}
       <div className="grid gap-8 grid-cols-1 mb-12">
-        <Card className="glass-card border-none shadow-2xl transition-all duration-1000 p-2">
-          <CardHeader className="p-8 pb-4">
+        <Card className="glass-card border-none shadow-2xl transition-all duration-1000 p-2 rounded-[2.5rem]">
+          <CardHeader className="p-10 pb-4">
             <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8">
               <div>
-                <CardTitle className="text-3xl font-black tracking-tighter">Динамика воронки</CardTitle>
+                <CardTitle className="text-3xl font-black tracking-tighter uppercase">Динамика воронки</CardTitle>
                 <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mt-1">Активность маркетинга по времени</CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-8">
-                <div className="flex items-center gap-1.5 glass-card p-1.5 border-none shadow-inner bg-black/5 dark:bg-white/5 rounded-2xl">
-                  <Button variant={granularity === "day" ? "default" : "ghost"} size="sm" onClick={() => setGranularity("day")} className="h-9 text-[10px] px-5 rounded-xl font-black uppercase tracking-widest">Дни</Button>
-                  <Button variant={granularity === "week" ? "default" : "ghost"} size="sm" onClick={() => setGranularity("week")} className="h-9 text-[10px] px-5 rounded-xl font-black uppercase tracking-widest">Недели</Button>
-                  <Button variant={granularity === "month" ? "default" : "ghost"} size="sm" onClick={() => setGranularity("month")} className="h-9 text-[10px] px-5 rounded-xl font-black uppercase tracking-widest">Месяцы</Button>
+                <div className="flex items-center gap-2 glass-card p-2 border-none shadow-inner bg-black/5 dark:bg-white/5 rounded-2xl">
+                  <Button variant={granularity === "day" ? "default" : "ghost"} size="sm" onClick={() => setGranularity("day")} className="h-10 text-[10px] px-6 rounded-xl font-black uppercase tracking-widest transition-all">Дни</Button>
+                  <Button variant={granularity === "week" ? "default" : "ghost"} size="sm" onClick={() => setGranularity("week")} className="h-10 text-[10px] px-6 rounded-xl font-black uppercase tracking-widest transition-all">Недели</Button>
+                  <Button variant={granularity === "month" ? "default" : "ghost"} size="sm" onClick={() => setGranularity("month")} className="h-10 text-[10px] px-6 rounded-xl font-black uppercase tracking-widest transition-all">Месяцы</Button>
                 </div>
               </div>
             </div>
           </CardHeader>
-          <CardContent className="px-8 pb-10">
+          <CardContent className="px-10 pb-12">
             {renderLineChart()}
-            <div className="flex flex-wrap items-center justify-center gap-10 mt-10 pt-8 border-t border-white/5">
-                <div className="flex items-center gap-3"><div className="w-3 h-3 bg-primary rounded-full shadow-[0_0_10px_rgba(40,0,184,0.5)]" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Лиды</span></div>
-                <div className="flex items-center gap-3"><div className="w-3 h-3 bg-[#71D878] rounded-full shadow-[0_0_10px_rgba(113,216,120,0.5)]" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Целевые</span></div>
-                <div className="flex items-center gap-3 opacity-40"><div className="w-3 h-3 bg-purple-500 rounded-full" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Квалы</span></div>
-                <div className="flex items-center gap-3"><div className="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.3)]" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Продажи</span></div>
+            <div className="flex flex-wrap items-center justify-center gap-10 mt-10 pt-10 border-t border-white/5">
+                <div className="flex items-center gap-3 active:scale-95 transition-all"><div className="w-3.5 h-3.5 bg-primary rounded-full shadow-[0_0_15px_rgba(40,0,184,0.6)]" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 transition-colors hover:text-foreground cursor-default">Лиды</span></div>
+                <div className="flex items-center gap-3 active:scale-95 transition-all"><div className="w-3.5 h-3.5 bg-[#71D878] rounded-full shadow-[0_0_15px_rgba(113,216,120,0.6)]" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 transition-colors hover:text-foreground cursor-default">Целевые</span></div>
+                <div className="flex items-center gap-3 opacity-40 active:scale-95 transition-all"><div className="w-3.5 h-3.5 bg-purple-500 rounded-full" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 transition-colors hover:text-foreground cursor-default">Квалы</span></div>
+                <div className="flex items-center gap-3 active:scale-95 transition-all"><div className="w-3.5 h-3.5 bg-amber-500 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.5)]" /><span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 transition-colors hover:text-foreground cursor-default">Продажи</span></div>
             </div>
           </CardContent>
         </Card>
@@ -443,13 +443,13 @@ export default function DashboardPage() {
 
 function TopListCard({ title, data, field, isCurrency = false, totalValue, color }: { title: string, data: any[], field: string, isCurrency?: boolean, totalValue?: number, color?: string }) {
   return (
-    <Card className="glass-card border-none shadow-2xl group overflow-hidden transition-all duration-500">
-      <CardHeader className="p-6 pb-4 border-b border-white/5 bg-white/5 dark:bg-black/20">
+    <Card className="glass-card border-none shadow-2xl group overflow-hidden transition-all duration-500 rounded-[2rem]">
+      <CardHeader className="p-8 pb-6 border-b border-white/5 bg-white/5 dark:bg-black/20">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{title}</CardTitle>
           {totalValue !== undefined && (
             <div className={cn(
-                "text-[9px] font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-inner",
+                "text-[9px] font-black px-4 py-2 rounded-full uppercase tracking-widest shadow-inner",
                 isCurrency ? "bg-primary/10 text-primary" : "bg-white/5 text-muted-foreground/40"
             )}>
                {isCurrency ? `${Math.round(totalValue).toLocaleString()} ₽` : `Σ ${totalValue}`}
@@ -457,19 +457,19 @@ function TopListCard({ title, data, field, isCurrency = false, totalValue, color
           )}
         </div>
       </CardHeader>
-      <CardContent className="p-4">
-        <div className="space-y-2">
+      <CardContent className="p-6">
+        <div className="space-y-3">
           {!data || data.length === 0 ? (
-            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/20 py-10 text-center italic">Нет данных</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/20 py-12 text-center italic">Нет данных</div>
           ) : data.map((c: any, i: number) => (
-            <div key={i} className="flex relative items-center justify-between text-xs p-4 rounded-[1.5rem] hover:bg-primary/5 transition-all cursor-default border border-transparent hover:border-primary/10 group/item">
-              <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: color }} />
-                  <span className="font-black tracking-tight truncate text-foreground/70 group-hover/item:text-foreground transition-colors">{c.name}</span>
+            <div key={i} className="flex relative items-center justify-between text-xs p-5 rounded-[1.5rem] hover:bg-white/5 transition-all cursor-default border border-transparent hover:border-white/5 group/item">
+              <div className="flex items-center gap-4 min-w-0 max-w-[70%]">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: color }} />
+                  <span className="font-black tracking-tight truncate text-foreground/70 group-hover/item:text-foreground transition-colors" title={c.name}>{c.name}</span>
               </div>
               <span className="font-black tabular-nums shrink-0 pl-6 text-sm" style={{ color: isCurrency ? undefined : color }}>
                 {isCurrency ? `${Math.round(c[field]).toLocaleString()}` : c[field]}
-                {isCurrency && <span className="ml-1 opacity-20 text-[10px]">₽</span>}
+                {isCurrency && <span className="ml-1.5 opacity-20 text-[10px]">₽</span>}
               </span>
             </div>
           ))}

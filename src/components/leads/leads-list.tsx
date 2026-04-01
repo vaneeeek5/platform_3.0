@@ -263,7 +263,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-40 group-focus-within:opacity-100 transition-opacity" />
                <Input 
                   placeholder="ClientID или Кампания..." 
-                  className="pl-11 h-11 glass-card border-white/5 focus-visible:ring-primary/20 rounded-2xl"
+                  className="pl-11 h-11 glass-card border-white/5 focus-visible:ring-primary/20 rounded-2xl text-xs font-medium"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && fetchLeads()}
@@ -309,7 +309,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
          </p>
       </div>
 
-      <div className="glass-card border-none overflow-hidden shadow-2xl rounded-[2rem]">
+      <div className="glass-card border-none overflow-hidden shadow-2xl rounded-[2.5rem]">
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="border-white/5 hover:bg-transparent">
@@ -412,11 +412,13 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                 {showProjectColumn && (
                    <TableCell className="text-xs font-bold text-primary">{item.project?.name}</TableCell>
                 )}
-                <TableCell>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-black tracking-tight truncate max-w-[120px]">{item.lead.utmSource || 'direct'}</span>
+                <TableCell className="py-4">
+                  <div className="flex flex-col min-w-0 max-w-[150px]">
+                    <span className="text-[11px] font-black tracking-tight truncate" title={item.lead.utmSource || 'direct'}>
+                        {item.lead.utmSource || 'direct'}
+                    </span>
                     {item.lead.utmCampaign && (
-                      <span className="text-[9px] text-muted-foreground truncate max-w-[150px] font-bold uppercase tracking-wider">
+                      <span className="text-[9px] text-muted-foreground truncate font-bold uppercase tracking-wider" title={item.lead.utmCampaign}>
                         {item.lead.utmCampaign}
                       </span>
                     )}
@@ -432,7 +434,9 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                    </div>
                 </TableCell>
                 <TableCell className="text-[10px] font-mono text-muted-foreground font-medium">
-                  {item.lead.metrikaClientId || '—'}
+                  <div className="truncate max-w-[100px]" title={item.lead.metrikaClientId || ''}>
+                    {item.lead.metrikaClientId || '—'}
+                  </div>
                 </TableCell>
                 <TableCell>
                    <div className="flex flex-col gap-1.5">

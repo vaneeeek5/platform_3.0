@@ -111,28 +111,32 @@ export function AdminNav() {
 
   return (
     <>
-      {/* Mobile Top Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 h-20 glass-card flex items-center justify-between px-8 border-none rounded-none shadow-xl">
+      {/* Mobile Floating Header */}
+      <header className="lg:hidden fixed top-4 left-4 right-4 z-50 h-16 glass-card flex items-center justify-between px-6 border-none shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700">
         <Logo />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-primary/5 hover:bg-primary/10 border border-primary/10">
-              <Menu className="h-6 w-6 text-primary" />
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-all active:scale-95">
+              <Menu className="h-5 w-5 text-primary" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="glass-card w-[300px] p-0 border-none shadow-2xl">
-            <SheetHeader className="p-8 border-b border-white/5">
-              <SheetTitle><Logo /></SheetTitle>
-            </SheetHeader>
-            <NavLinks mobile />
-            <div className="absolute bottom-10 left-8 right-8 flex flex-col gap-6">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Тема</span>
-                    <ThemeToggle />
+          <SheetContent side="left" className="glass-card w-[300px] p-0 border-none shadow-2xl backdrop-blur-3xl">
+            <div className="flex flex-col h-full">
+                <SheetHeader className="p-8 border-b border-white/5">
+                    <SheetTitle><Logo /></SheetTitle>
+                </SheetHeader>
+                <div className="flex-1 overflow-y-auto px-4 py-8">
+                    <NavLinks mobile />
                 </div>
-                <Button variant="ghost" className="h-14 rounded-2xl bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-all font-black uppercase text-[10px] tracking-widest" onClick={handleLogout}>
-                    Выйти <LogOut className="ml-2 h-4 w-4" />
-                </Button>
+                <div className="p-8 border-t border-white/5 space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-primary/60">Тема</span>
+                        <ThemeToggle />
+                    </div>
+                    <Button variant="ghost" className="w-full h-14 rounded-2xl bg-destructive/5 text-destructive hover:bg-destructive hover:text-white transition-all font-black uppercase text-[10px] tracking-widest gap-3" onClick={handleLogout}>
+                        Выйти из системы <LogOut className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
           </SheetContent>
         </Sheet>
@@ -140,8 +144,8 @@ export function AdminNav() {
 
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex fixed left-6 top-6 bottom-6 w-64 glass-card flex-col z-50",
-        "animate-in fade-in slide-in-from-left-8 duration-1000"
+        "hidden lg:flex fixed left-6 top-6 bottom-6 w-64 glass-card flex-col z-50 shadow-[0_32px_64px_-12px_rgba(40,0,184,0.12)]",
+        "animate-in fade-in slide-in-from-left-8 duration-1000 ease-out"
       )}>
         <div className="p-6 pb-6 text-center lg:text-left">
           <Logo />
@@ -180,8 +184,8 @@ export function AdminNav() {
         </div>
       </aside>
       
-      <div className="hidden lg:block w-64 shrink-0" />
-      <div className="lg:hidden h-20" />
+      <div className="hidden lg:block w-72 shrink-0" />
+      <div className="lg:hidden h-24" />
     </>
   );
 }

@@ -189,11 +189,11 @@ export function ExpensesReport() {
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             {/* Filters Bar */}
-            <div className="flex flex-col xl:flex-row xl:items-end gap-6 glass-card p-6 border-white/10 shadow-2xl">
+            <div className="flex flex-col xl:flex-row xl:items-end gap-6 glass-card p-8 border-white/10 shadow-2xl rounded-[2.5rem]">
                 <div className="w-full xl:w-[300px] group">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2 block ml-1 transition-colors group-hover:text-primary">Проект</label>
                     <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                        <SelectTrigger className="h-12 glass-card border-white/5 hover:border-primary/30 transition-all">
+                        <SelectTrigger className="h-12 glass-card border-white/5 hover:border-primary/30 transition-all rounded-2xl text-xs font-medium">
                             <SelectValue placeholder="Выберите проект" />
                         </SelectTrigger>
                         <SelectContent className="glass-card border-white/10">
@@ -221,7 +221,7 @@ export function ExpensesReport() {
 
             {/* Summary Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                <Card>
+                <Card className="rounded-[2rem] border-none shadow-xl glass-card backdrop-blur-xl">
                     <CardHeader className="py-4 pb-2">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Общий расход</CardTitle>
                     </CardHeader>
@@ -229,7 +229,7 @@ export function ExpensesReport() {
                         <div className="text-3xl font-black tracking-tighter text-[#2800B8]">{totals.cost.toLocaleString('ru-RU')} <span className="text-xl opacity-30">₽</span></div>
                     </CardContent>
                 </Card>
-                <Card className="border-l-4 border-l-[#71D878]">
+                <Card className="rounded-[2rem] border-none shadow-xl glass-card backdrop-blur-xl border-l-4 border-l-[#71D878]">
                     <CardHeader className="py-4 pb-2">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Выбранные лиды</CardTitle>
                     </CardHeader>
@@ -237,7 +237,7 @@ export function ExpensesReport() {
                         <div className="text-3xl font-black tracking-tighter text-[#71D878]">{totals.leads}</div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="rounded-[2rem] border-none shadow-xl glass-card backdrop-blur-xl">
                     <CardHeader className="py-4 pb-2">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Средний CPL</CardTitle>
                     </CardHeader>
@@ -247,7 +247,7 @@ export function ExpensesReport() {
                         </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="rounded-[2rem] border-none shadow-xl glass-card backdrop-blur-xl">
                     <CardHeader className="py-4 pb-2">
                         <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Визиты</CardTitle>
                     </CardHeader>
@@ -257,7 +257,7 @@ export function ExpensesReport() {
                 </Card>
             </div>
 
-            <Card className="overflow-hidden border-none shadow-2xl">
+            <Card className="overflow-hidden border-none shadow-2xl rounded-[2.5rem] glass-card backdrop-blur-xl">
                 <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/5 pb-6">
                     <div>
                         <CardTitle className="text-2xl font-black tracking-tight">Эффективность рекламных кампаний</CardTitle>
@@ -323,7 +323,9 @@ export function ExpensesReport() {
                                                 onChange={() => toggleSelection(id)}
                                             />
                                         </TableCell>
-                                        <TableCell className="font-bold text-foreground/80 max-w-[200px] truncate">{id}</TableCell>
+                                        <TableCell className="font-bold text-foreground/80 max-w-[250px]">
+                                            <div className="truncate" title={id}>{id}</div>
+                                        </TableCell>
                                         <TableCell className="text-right tabular-nums font-medium">{row.totalVisits.toLocaleString('ru-RU')}</TableCell>
                                         <TableCell className="text-right tabular-nums font-black text-[#2800B8]">{row.totalCost.toLocaleString('ru-RU')} ₽</TableCell>
                                         <TableCell className="text-right tabular-nums font-black text-[#71D878]">{row.leadCount}</TableCell>
