@@ -48,7 +48,11 @@ export default function GlobalSettingsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isAddUserOpen, setIsAddUserOpen] = React.useState(false);
   const [isPermissionsOpen, setIsPermissionsOpen] = React.useState(false);
-  const [selectedUser, setSelectedUser] = React.useState<any>(null);
+  const [selectedUserId, setSelectedUserId] = React.useState<number | null>(null);
+  const selectedUser = React.useMemo(() => 
+    usersList.find(u => u.id === selectedUserId), 
+    [usersList, selectedUserId]
+  );
   const [isPlatformBackingUp, setIsPlatformBackingUp] = React.useState(false);
 
   // Form states
@@ -56,8 +60,8 @@ export default function GlobalSettingsPage() {
   const [newPassword, setNewPassword] = React.useState("");
   const [newRole, setNewRole] = React.useState("USER");
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const [meRes, userRes, projRes] = await Promise.all([
         fetch("/api/admin/me").then(r => r.json()),
@@ -70,7 +74,7 @@ export default function GlobalSettingsPage() {
     } catch (e) {
       toast.error("Ошибка загрузки данных");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -107,7 +111,7 @@ export default function GlobalSettingsPage() {
       });
       if (res.ok) {
         toast.success("Права обновлены");
-        fetchData();
+        fetchData(true);
       } else {
         toast.error("Ошибка обновления прав");
       }
@@ -275,7 +279,7 @@ export default function GlobalSettingsPage() {
                               size="sm" 
                               className="h-10 rounded-xl hover:bg-primary/10 text-primary px-4 text-[10px] font-black uppercase tracking-widest"
                               onClick={() => {
-                                setSelectedUser(user);
+                                setSelectedUserId(user.id);
                                 setIsPermissionsOpen(true);
                               }}
                             >
