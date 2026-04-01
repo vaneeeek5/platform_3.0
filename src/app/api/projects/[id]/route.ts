@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 import { eq } from "drizzle-orm";
 
 export async function GET(
@@ -16,6 +17,13 @@ export async function GET(
   try {
     const { id } = await params;
     const projectId = parseInt(id);
+
+    // SECURITY: Check project access
+    const hasAccess = await verifyProjectAccess(session.id, session.role, projectId);
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden: No access to this project" }, { status: 403 });
+    }
+
     const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
     if (!project) {
       return NextResponse.json({ error: "Project not found" }, { status: 404 });

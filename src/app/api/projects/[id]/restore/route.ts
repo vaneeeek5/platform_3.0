@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 
 export async function POST(
   request: Request,
@@ -25,6 +26,12 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const projectId = parseInt(id);
+
+  // SECURITY: Check restore permissions (same as backup)
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId, 'canManageBackups');
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden: No restore permissions" }, { status: 403 });
+  }
 
   try {
     const backup = await request.json();

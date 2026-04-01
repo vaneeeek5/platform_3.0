@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 import { syncMetrikaLeads, syncMetrikaVisits } from "@/lib/sync/yandex-metrika";
 import { db } from "@/db";
 import { projects } from "@/db/schema";
@@ -14,6 +15,11 @@ export async function POST(
 
   const { id } = await params;
   const projectId = parseInt(id);
+
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId);
+  if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await request.json().catch(() => ({}));

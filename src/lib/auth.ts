@@ -2,8 +2,11 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
-const secretKey = "secret";
-const key = new TextEncoder().encode(process.env.JWT_SECRET || secretKey);
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && process.env.NODE_ENV === "production") {
+    throw new Error("JWT_SECRET must be set in production");
+}
+const key = new TextEncoder().encode(jwtSecret || "secret-development-only");
 
 export async function encrypt(payload: any) {
   return await new SignJWT(payload)
@@ -25,7 +28,13 @@ export async function login(payload: any) {
   const session = await encrypt(payload);
 
   const cookieStore = await cookies();
-  cookieStore.set("auth_token", session, { expires, httpOnly: true, secure: false, sameSite: "lax", path: "/" });
+  cookieStore.set("auth_token", session, { 
+    expires, 
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === "production", 
+    sameSite: "lax", 
+    path: "/" 
+  });
 }
 
 export async function logout() {

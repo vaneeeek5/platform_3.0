@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { expenses, leads, goalAchievements, campaignMappings, projectLinks } from "@/db/schema";
 import { eq, and, gte, lte, sql, notInArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -22,15 +23,9 @@ export async function GET(request: Request) {
   }
 
   // RBAC Check
-  if (session.role !== "SUPER_ADMIN") {
-    const [access] = await db
-      .select()
-      .from(projectLinks)
-      .where(and(eq(projectLinks.projectId, projectId), eq(projectLinks.userId, session.id)));
-    
-    if (!access || !access.canViewExpenses) {
-      return NextResponse.json({ error: "Access denied to this project's expenses" }, { status: 403 });
-    }
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId, 'canViewExpenses');
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden: No access to expenses for this project" }, { status: 403 });
   }
 
   try {

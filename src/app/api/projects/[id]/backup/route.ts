@@ -15,6 +15,7 @@ import {
 } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 import fs from "fs";
 import path from "path";
 
@@ -27,6 +28,12 @@ export async function GET(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const projectId = parseInt(id);
+  
+  // SECURITY: Check backup permissions
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId, 'canManageBackups');
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden: No backup permissions" }, { status: 403 });
+  }
 
   try {
     const data = await getProjectBackupData(projectId);
@@ -46,6 +53,12 @@ export async function POST(
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const projectId = parseInt(id);
+  
+  // SECURITY: Check backup permissions
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId, 'canManageBackups');
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden: No backup permissions" }, { status: 403 });
+  }
 
   try {
     const data = await getProjectBackupData(projectId);

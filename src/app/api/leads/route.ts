@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { leads, goalAchievements, projects, targetStatuses, qualificationStatuses, leadStages, projectLinks } from "@/db/schema";
 import { eq, and, desc, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -27,14 +28,11 @@ export async function GET(request: Request) {
       
       // Force filter by allowed projects
       searchParams.set("allowedProjectIds", allowedProjectIds.join(","));
-  } else if (!isAllProjects && session.role !== "SUPER_ADMIN") {
+  } else if (!isAllProjects) {
       const projId = parseInt(projectIdStr!);
-      const [access] = await db
-        .select()
-        .from(projectLinks)
-        .where(and(eq(projectLinks.projectId, projId), eq(projectLinks.userId, session.id)));
+      const hasAccess = await verifyProjectAccess(session.id, session.role, projId, 'canViewLeads');
       
-      if (!access || !access.canViewLeads) {
+      if (!hasAccess) {
           return NextResponse.json({ error: "Access denied to this project's leads" }, { status: 403 });
       }
   }

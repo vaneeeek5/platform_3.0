@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses, qualificationStatuses, projectLinks } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 import { eachDayOfInterval, format, startOfDay, startOfWeek, startOfMonth, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from "date-fns";
 import { ru } from "date-fns/locale";
 
@@ -23,14 +24,10 @@ export async function GET(request: Request) {
   const projectId = !isAllProjects ? parseInt(projectIdStr!) : null;
 
   // Check project access for regular users
-  if (projectId && session.role !== "SUPER_ADMIN") {
-    const [access] = await db
-      .select()
-      .from(projectLinks)
-      .where(and(eq(projectLinks.projectId, projectId), eq(projectLinks.userId, session.id)));
-    
-    if (!access || !access.canViewDashboard) {
-      return NextResponse.json({ error: "Access denied to this project's dashboard" }, { status: 403 });
+  if (projectId) {
+    const hasAccess = await verifyProjectAccess(session.id, session.role, projectId, 'canViewDashboard');
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Forbidden: No access to this dashboard" }, { status: 403 });
     }
   }
 
