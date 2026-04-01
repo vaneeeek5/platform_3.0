@@ -338,7 +338,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                  </div>
               </TableHead>
               <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">ClientID</TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[130px]">
                  <div className="flex items-center gap-2">
                     Статус
                     <FilterPopover 
@@ -350,7 +350,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[130px]">
                  <div className="flex items-center gap-2">
                     Квал
                     <FilterPopover 
@@ -362,7 +362,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[150px]">
                  <div className="flex items-center gap-2">
                     Этап сделки
                     <FilterPopover 
@@ -427,14 +427,18 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                 <TableCell>
                    <div className="flex flex-wrap gap-1.5 max-w-[200px]">
                       {item.achievements?.map((a: any) => (
-                         <span key={a.id} className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-primary/5 text-primary border border-primary/5 whitespace-nowrap shadow-sm hover:bg-primary/10 transition-colors cursor-default">
+                         <span 
+                            key={a.id} 
+                            title={a.goalName}
+                            className="text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-primary/5 text-primary border border-primary/5 truncate max-w-[160px] shadow-sm hover:bg-primary/10 transition-colors cursor-default"
+                         >
                             {a.goalName}
                          </span>
                       ))}
                    </div>
                 </TableCell>
                 <TableCell className="text-[10px] font-mono text-muted-foreground/40 font-medium">
-                  <div className="truncate max-w-[90px] border-b border-primary/10 border-dotted" title={item.lead.metrikaClientId || ''}>
+                  <div className="truncate w-[90px] border-b border-primary/10 border-dotted" title={item.lead.metrikaClientId || ''}>
                     {item.lead.metrikaClientId || '—'}
                   </div>
                 </TableCell>
