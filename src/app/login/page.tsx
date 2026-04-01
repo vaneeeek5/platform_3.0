@@ -47,7 +47,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-[400px] glass-card border-none shadow-[0_32px_64px_-12px_rgba(40,0,184,0.12)] rounded-[2.5rem] relative overflow-hidden animate-in fade-in zoom-in-95 duration-1000">
         <CardHeader className="space-y-4 p-10 pb-6 text-center">
           <div className="mx-auto w-16 h-16 bg-primary rounded-[1.5rem] flex items-center justify-center shadow-xl shadow-primary/20 mb-2 rotate-12 transition-transform hover:rotate-0 duration-500">
-             <span className="text-white font-black text-2xl">P</span>
+             <span className="text-white font-black text-3xl">Б</span>
           </div>
           <div className="space-y-1">
             <CardTitle className="text-4xl font-black tracking-tighter text-foreground uppercase">Вход</CardTitle>
