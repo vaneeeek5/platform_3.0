@@ -38,7 +38,7 @@ import { toast } from "sonner"
 
 export default function DashboardPage() {
   const [projectsData, setProjectsData] = useState<any[]>([])
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("0")
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [granularity, setGranularity] = useState<"day" | "week" | "month">("day");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
@@ -54,11 +54,13 @@ export default function DashboardPage() {
       .then(user => setUserRole(user.role))
       .catch(console.error);
 
-    fetch("/api/projects")
+     fetch("/api/projects")
       .then(res => res.json())
       .then(projects => {
         setProjectsData(projects);
-        if (userRole && userRole !== "SUPER_ADMIN" && projects.length > 0) {
+        if (userRole === "SUPER_ADMIN") {
+          setSelectedProjectId("0");
+        } else if (projects.length > 0) {
           setSelectedProjectId(projects[0].id.toString());
         }
       })
@@ -66,6 +68,9 @@ export default function DashboardPage() {
   }, [userRole]);
 
   const fetchDashboardData = async () => {
+    if (!selectedProjectId || (selectedProjectId === "0" && userRole !== "SUPER_ADMIN")) {
+        return;
+    }
     setIsLoading(true);
     try {
       const queryParams = new URLSearchParams({
@@ -90,8 +95,10 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
-  }, [selectedProjectId, granularity, dateRange]);
+    if (userRole && selectedProjectId) {
+      fetchDashboardData();
+    }
+  }, [selectedProjectId, granularity, dateRange, userRole]);
 
   // SVG Chart Renderer
   const renderLineChart = () => {
