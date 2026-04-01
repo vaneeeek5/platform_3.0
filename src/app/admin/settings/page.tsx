@@ -86,6 +86,8 @@ export default function GlobalSettingsPage() {
       if (res.ok) {
         toast.success("Пользователь добавлен");
         setIsAddUserOpen(false);
+        setNewEmail("");
+        setNewPassword("");
         fetchData();
       } else {
         const d = await res.json();
@@ -98,13 +100,15 @@ export default function GlobalSettingsPage() {
 
   const handleUpdatePermission = async (userId: number, projectId: number, permissions: any, removeLink = false) => {
     try {
-      const res = await fetch("/api/admin/users", {
-        method: "PATCH",
+      const res = await fetch("/api/admin/users/permissions", {
+        method: "POST",
         body: JSON.stringify({ userId, projectId, permissions, removeLink }),
       });
       if (res.ok) {
         toast.success("Права обновлены");
         fetchData();
+      } else {
+        toast.error("Ошибка обновления прав");
       }
     } catch (e) {
       toast.error("Ошибка сети");
@@ -114,7 +118,7 @@ export default function GlobalSettingsPage() {
   if (isLoading) return (
     <div className="p-10 flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-        <p className="text-muted-foreground font-medium animate-pulse">Загрузка настроек...</p>
+        <p className="text-muted-foreground font-black uppercase text-[10px] tracking-widest animate-pulse">Загрузка...</p>
     </div>
   );
   
@@ -127,274 +131,280 @@ export default function GlobalSettingsPage() {
   );
 
   return (
-    <div className="p-4 md:p-8 space-y-10 max-w-7xl mx-auto animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+    <div className="p-6 md:p-10 space-y-10 min-h-screen">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
         <div>
-          <h1 className="text-3xl md:text-5xl font-black tracking-tighter text-foreground flex items-center gap-4">
-             Настройки
-          </h1>
-          <p className="text-muted-foreground font-medium mt-1">Управление пользователями, проектами и глобальной безопасностью.</p>
-        </div>
-        <div className="flex gap-4 w-full md:w-auto">
-           <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-            <DialogTrigger asChild>
-                <Button className="h-12 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 flex-1 md:flex-none">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Добавить пользователя
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="glass-card border-white/20 shadow-2xl rounded-[2rem]">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-black tracking-tight">Новый пользователь</DialogTitle>
-                    <DialogDescription className="font-medium">Создайте учетную запись для доступа к платформе.</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-6 py-6">
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Email</Label>
-                        <Input value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="user@example.com" className="h-11 glass-card border-white/10 rounded-xl" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Пароль</Label>
-                        <div className="relative group">
-                            <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-primary opacity-30 group-focus-within:opacity-100 transition-opacity" />
-                            <Input className="pl-11 h-11 glass-card border-white/10 rounded-xl" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Глобальная роль</Label>
-                        <Select value={newRole} onValueChange={setNewRole}>
-                            <SelectTrigger className="h-11 glass-card border-white/10 rounded-xl font-bold">
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="glass-card border-white/10">
-                                <SelectItem value="USER" className="font-bold">Обычный пользователь</SelectItem>
-                                <SelectItem value="SUPER_ADMIN" className="font-bold">Супер-админ</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <p className="text-[10px] text-muted-foreground font-medium pl-1 italic">Супер-админы имеют доступ ко ВСЕМ проектам.</p>
-                    </div>
-                </div>
-                <DialogFooter className="gap-3">
-                    <Button variant="outline" className="rounded-xl h-11 px-6 font-bold" onClick={() => setIsAddUserOpen(false)}>Отмена</Button>
-                    <Button onClick={handleAddUser} className="rounded-xl h-11 px-8 font-black uppercase text-[10px] tracking-widest">Создать</Button>
-                </DialogFooter>
-            </DialogContent>
-           </Dialog>
+           <div className="flex items-center gap-4 mb-2">
+              <div className="p-3 glass-card rounded-2xl shadow-xl border-none">
+                <Settings className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-foreground">
+                Настройки
+              </h1>
+           </div>
+           <p className="text-muted-foreground/60 font-black uppercase tracking-[0.2em] text-[10px] pl-1">Управление пользователями и правами</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Users Table */}
-        <div className="xl:col-span-2 space-y-6">
-            <Card className="border-none shadow-2xl p-0 overflow-hidden ring-1 ring-white/10">
-              <CardHeader className="bg-muted/30 border-b border-white/5 pb-6">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-xl">
-                        <Users className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                        <CardTitle className="text-xl font-black uppercase tracking-widest">Пользователи</CardTitle>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">
-                            {usersList.length} учётных записей в системе
-                        </CardDescription>
-                    </div>
+      <div className="grid gap-8 md:grid-cols-3">
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Всего аккаунтов</CardTitle>
+             <div className="p-2 bg-primary/10 rounded-xl"><Users className="h-5 w-5 text-primary" /></div>
+           </CardHeader>
+           <CardContent>
+             <div className="text-5xl font-black tracking-tighter text-primary drop-shadow-sm">{usersList.length}</div>
+             <p className="text-[9px] text-muted-foreground/40 mt-3 uppercase font-black tracking-[0.15em]">активных пользователей</p>
+           </CardContent>
+         </Card>
+         <Card className="glass-card border-none shadow-2xl transition-all hover:scale-[1.02] duration-500">
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+             <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Ваш статус</CardTitle>
+             <div className="p-2 bg-primary/10 rounded-xl"><Shield className="h-5 w-5 text-primary" /></div>
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-black tracking-tighter uppercase text-primary drop-shadow-sm">{me?.role || "..."}</div>
+             <p className="text-[9px] text-muted-foreground/40 mt-3 uppercase font-black tracking-[0.15em]">текущая роль в системе</p>
+           </CardContent>
+         </Card>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
+        <div className="xl:col-span-2 space-y-10">
+          <Card className="glass-card border-none shadow-2xl p-0 overflow-hidden">
+            <CardHeader className="p-8 pb-6 border-b border-white/5 bg-white/5 dark:bg-black/20">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                <div>
+                  <CardTitle className="text-2xl font-black tracking-tighter uppercase">Пользователи</CardTitle>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 mt-1">Доступ к платформе</CardDescription>
                 </div>
-              </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-muted/10 h-14">
-                    <TableRow className="border-white/5 hover:bg-transparent">
-                      <TableHead className="pl-8 text-[10px] font-black uppercase tracking-widest">Email</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest">Роль</TableHead>
-                      <TableHead className="text-[10px] font-black uppercase tracking-widest">Доступ</TableHead>
-                      <TableHead className="text-right pr-8 text-[10px] font-black uppercase tracking-widest">Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usersList.map((user) => (
-                      <TableRow key={user.id} className="border-white/5 hover:bg-primary/5 transition-all h-16 group">
-                        <TableCell className="pl-8 font-black text-foreground/80">{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === 'SUPER_ADMIN' ? 'default' : 'secondary'} className={cn(
-                              "uppercase text-[9px] font-black tracking-widest px-3 py-1 rounded-full",
-                              user.role === 'SUPER_ADMIN' ? "bg-primary text-white" : "bg-muted/10 text-muted-foreground"
+                <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="h-11 rounded-2xl bg-primary text-white hover:bg-primary/90 transition-all font-black uppercase text-[10px] tracking-widest px-6 shadow-xl shadow-primary/20">
+                      <Plus className="mr-2 h-4 w-4" /> Добавить
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="glass-card border-none shadow-2xl max-w-md p-8">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-black tracking-tight">Новый пользователь</DialogTitle>
+                      <DialogDescription className="text-sm font-medium">Введите почту и пароль для доступа</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-6 py-6 font-medium">
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 focus:text-primary transition-colors">Email</Label>
+                        <Input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} className="h-12 rounded-2xl glass-card border-none shadow-xl focus:ring-2 focus:ring-primary/20" placeholder="email@example.com" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Пароль</Label>
+                        <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-12 rounded-2xl glass-card border-none shadow-xl focus:ring-2 focus:ring-primary/20" placeholder="********" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Роль</Label>
+                        <Select value={newRole} onValueChange={setNewRole}>
+                          <SelectTrigger className="h-12 rounded-2xl glass-card border-none shadow-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="glass-card border-none shadow-2xl">
+                            <SelectItem value="USER" className="font-black uppercase text-[10px] tracking-widest">Менеджер</SelectItem>
+                            <SelectItem value="SUPER_ADMIN" className="font-black uppercase text-[10px] tracking-widest">Супер Админ</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="ghost" onClick={() => setIsAddUserOpen(false)} className="h-12 rounded-2xl font-black uppercase text-[10px] tracking-widest">Отмена</Button>
+                      <Button onClick={handleAddUser} className="h-12 rounded-2xl bg-primary text-white px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">Создать</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-white/5 dark:bg-black/20">
+                  <TableRow className="border-white/5 hover:bg-transparent">
+                    <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] pl-8 h-14">Аккаунт</TableHead>
+                    <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] h-14">Роль</TableHead>
+                    <TableHead className="font-black uppercase text-[10px] tracking-[0.2em] text-right pr-8 h-14">Управление</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usersList.map((user) => (
+                    <TableRow key={user.id} className="border-white/5 hover:bg-primary/5 transition-colors group h-16">
+                      <TableCell className="pl-8 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                              "h-9 w-9 rounded-xl flex items-center justify-center border transition-all",
+                              "bg-primary/5 border-primary/10 group-hover:bg-primary/20"
                           )}>
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {user.role === 'SUPER_ADMIN' ? (
-                            <span className="text-[10px] font-black text-primary/60 uppercase tracking-widest">Полный доступ</span>
-                          ) : (
-                            <div className="flex flex-wrap gap-1.5">
-                              {user.links.length === 0 ? (
-                                <span className="text-[10px] font-black uppercase tracking-widest text-amber-500/60 italic">Нет привязок</span>
-                              ) : user.links.map((link: any) => {
-                                const p = projects.find(proj => proj.id === link.projectId);
-                                return (
-                                    <Badge key={link.id} variant="outline" className="bg-white/5 text-[9px] font-black uppercase tracking-wider border-white/10 text-muted-foreground">
-                                        {p?.name || 'Unknown'}
-                                    </Badge>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right pr-8">
-                          {user.role !== 'SUPER_ADMIN' && (
-                              <Button variant="ghost" size="sm" className="h-9 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/10 text-primary hover:bg-primary/10" onClick={() => { setSelectedUser(user); setIsPermissionsOpen(true); }}>
-                                Настроить
-                              </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+                            <Users className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="font-black text-sm text-foreground/80">{user.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'SUPER_ADMIN' ? 'default' : 'secondary'} className={cn(
+                            "uppercase text-[9px] font-black tracking-widest px-3 py-1 rounded-full border-none",
+                            user.role === 'SUPER_ADMIN' ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-white/5 text-muted-foreground/40"
+                        )}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right pr-8">
+                        <div className="flex items-center justify-end gap-2">
+                           <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-10 rounded-xl hover:bg-primary/10 text-primary px-4 text-[10px] font-black uppercase tracking-widest"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsPermissionsOpen(true);
+                              }}
+                            >
+                              <Shield className="h-3.5 w-3.5 mr-2" />
+                              Доступы
+                            </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-10 w-10 rounded-xl hover:bg-destructive/10 text-destructive/40 hover:text-destructive"
+                            onClick={async () => {
+                              if (confirm('Удалить пользователя?')) {
+                                  await fetch(`/api/admin/users?id=${user.id}`, { method: 'DELETE' });
+                                  fetchData();
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* System Sidebar Info */}
         <div className="space-y-8">
-            <Card className="border-none shadow-2xl overflow-hidden ring-1 ring-white/10">
-                 <CardHeader className="bg-muted/30 border-b border-white/5 pb-4">
-                    <CardTitle className="text-xs font-black uppercase tracking-widest">Статус системы</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6 space-y-6">
-                    <div className="flex items-center justify-between group">
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Воркер синхронизации</span>
-                        </div>
-                        <Badge variant="outline" className="text-[9px] font-black bg-amber-500/10 text-amber-500 border-amber-500/20 uppercase tracking-widest">Ожидание</Badge>
+            <Card className="glass-card border-none shadow-2xl p-6 relative overflow-hidden">
+                <div className="p-3 bg-primary/10 rounded-2xl w-fit mb-4">
+                    <Shield className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-lg font-black uppercase tracking-tight mb-2">Безопасность</h3>
+                <p className="text-[11px] font-medium leading-relaxed text-muted-foreground/70 mb-6">
+                    Используйте RBAC модель для ограничения доступа менеджеров только к их проектам.
+                </p>
+                <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/5">
+                        <div className="w-2 h-2 rounded-full bg-[#71D878] shadow-[0_0_10px_rgba(113,216,120,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Database Sync</span>
                     </div>
-                    <div className="flex items-center justify-between group">
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-[#71D878]" />
-                            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">Очередь BullMQ</span>
-                        </div>
-                        <Badge variant="outline" className="text-[9px] font-black bg-[#71D878]/10 text-[#71D878] border-[#71D878]/20 uppercase tracking-widest">Активен (Redis)</Badge>
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-white/5">
+                        <div className="w-2 h-2 rounded-full bg-[#71D878] shadow-[0_0_10px_rgba(113,216,120,0.5)]" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Redis Queue</span>
                     </div>
-                    <div className="flex items-center justify-between group">
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-[#71D878]" />
-                            <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground group-hover:text-foreground transition-colors">База данных</span>
-                        </div>
-                        <Badge variant="outline" className="text-[9px] font-black bg-primary/10 text-primary border-primary/20 uppercase tracking-widest">Подключено</Badge>
-                    </div>
-                </CardContent>
+                </div>
             </Card>
 
-            <div className="glass-card p-6 border-white/10 bg-primary/5 text-primary rounded-[2rem] space-y-4">
-                <div className="p-3 bg-primary/10 rounded-2xl w-fit">
-                    <Shield className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-black uppercase tracking-tight">Безопасность</h3>
-                <p className="text-[11px] font-medium leading-relaxed opacity-70">
-                    Управление доступом осуществляется на уровне RBAC (Role Based Access Control). 
-                    Для предоставления доступа к новым модулям используйте окно настройки прав.
-                </p>
+            <div className="glass-card p-8 border-none bg-primary/5 rounded-[2.5rem] relative group cursor-default shadow-xl">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-3xl -mr-16 -mt-16 rounded-full group-hover:scale-150 transition-transform duration-1000" />
+                 <Key className="h-8 w-8 text-primary mb-6 opacity-40" />
+                 <h4 className="text-sm font-black uppercase tracking-widest text-primary mb-2">Менеджмент</h4>
+                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40 leading-relaxed">
+                    Глобальные настройки позволяют управлять ролями и привязками проектов в реальном времени.
+                 </p>
             </div>
         </div>
       </div>
 
       {/* Permissions Dialog */}
       <Dialog open={isPermissionsOpen} onOpenChange={setIsPermissionsOpen}>
-        <DialogContent className="max-w-3xl glass-card border-white/20 shadow-2xl rounded-[2.5rem] overflow-hidden p-0">
-          <div className="p-8 border-b border-white/5 bg-muted/30">
-            <DialogHeader>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <DialogTitle className="text-3xl font-black tracking-tight">Управление доступом</DialogTitle>
-                        <DialogDescription className="text-sm font-bold uppercase tracking-widest text-primary mt-1">{selectedUser?.email}</DialogDescription>
-                    </div>
-                    <div className="p-3 bg-primary rounded-2xl shadow-xl shadow-primary/20 text-white">
-                        <Key className="h-6 w-6" />
-                    </div>
+        <DialogContent className="glass-card border-none shadow-2xl max-w-4xl max-h-[85vh] p-0 overflow-hidden flex flex-col rounded-[2.5rem]">
+          <DialogHeader className="p-10 pb-6 border-b border-white/5">
+            <div className="flex items-center justify-between">
+                <div>
+                   <DialogTitle className="text-3xl font-black tracking-tighter">Настройка доступа</DialogTitle>
+                   <DialogDescription className="text-xs font-black uppercase tracking-[0.2em] text-primary mt-1">{selectedUser?.email}</DialogDescription>
                 </div>
-            </DialogHeader>
-          </div>
+                <div className="p-4 glass-card rounded-[1.5rem] border-primary/20 shadow-xl shadow-primary/10">
+                   <Shield className="h-7 w-7 text-primary" />
+                </div>
+            </div>
+          </DialogHeader>
           
-          <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
-             {projects.map(project => {
-                const link = selectedUser?.links?.find((l: any) => l.projectId === project.id);
-                const hasAccess = !!link;
+          <div className="flex-1 overflow-y-auto p-10 custom-scrollbar space-y-8">
+              {projects.map((proj) => {
+                const link = selectedUser?.links?.find((l: any) => l.projectId === proj.id);
+                const hasLink = !!link;
                 
                 return (
-                    <div key={project.id} className={cn(
-                        "p-6 rounded-[1.5rem] border transition-all duration-500",
-                        hasAccess ? "glass-card border-primary/30 bg-primary/5 shadow-lg shadow-primary/5" : "border-white/5 bg-white/5 grayscale opacity-60"
-                    )}>
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-                            <div className="flex items-center gap-4">
-                                <div className={cn(
-                                    "p-3 rounded-2xl transition-all",
-                                    hasAccess ? "bg-primary text-white scale-110 shadow-lg shadow-primary/30" : "bg-muted text-muted-foreground"
-                                )}>
-                                    <Shield className="h-6 w-6" />
-                                </div>
-                                <div>
-                                    <h4 className="text-xl font-black tracking-tight">{project.name}</h4>
-                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{project.slug}</p>
-                                </div>
+                  <div key={proj.id} className={cn(
+                      "p-8 rounded-[2rem] border transition-all duration-500",
+                      hasLink ? "glass-card border-primary/20 bg-primary/5 shadow-2xl" : "border-white/5 bg-white/5 grayscale opacity-40 hover:grayscale-0 hover:opacity-100"
+                  )}>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-8">
+                        <div className="flex items-center gap-4">
+                            <div className={cn(
+                                "h-12 w-12 rounded-2xl flex items-center justify-center transition-all",
+                                hasLink ? "bg-primary text-white shadow-xl shadow-primary/20 scale-110" : "bg-muted text-muted-foreground"
+                            )}>
+                                <LayoutDashboard className="h-6 w-6" />
                             </div>
-                            <Button 
-                                variant={hasAccess ? "ghost" : "default"} 
-                                size="sm" 
-                                className={cn(
-                                    "h-10 rounded-xl px-6 font-black uppercase text-[10px] tracking-widest",
-                                    hasAccess ? "text-destructive hover:bg-destructive/10" : "shadow-lg shadow-primary/20"
-                                )}
-                                onClick={() => handleUpdatePermission(selectedUser.id, project.id, {}, hasAccess)}
-                            >
-                                {hasAccess ? <Trash2 className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                                {hasAccess ? "Отозвать" : "Добавить"}
-                            </Button>
+                            <div>
+                                <h4 className="text-xl font-black tracking-tight">{proj.name}</h4>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">{proj.slug}</p>
+                            </div>
                         </div>
-
-                        {hasAccess && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 xl:pl-4">
-                                <PermissionToggle 
-                                    label="Дашборд" 
-                                    icon={LayoutDashboard} 
-                                    checked={link.canViewDashboard} 
-                                    onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, project.id, { ...link, canViewDashboard: val })} 
-                                />
-                                <PermissionToggle 
-                                    label="Лиды" 
-                                    icon={ClipboardList} 
-                                    checked={link.canViewLeads} 
-                                    onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, project.id, { ...link, canViewLeads: val })} 
-                                />
-                                <PermissionToggle 
-                                    label="Расходы" 
-                                    icon={Banknote} 
-                                    checked={link.canViewExpenses} 
-                                    onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, project.id, { ...link, canViewExpenses: val })} 
-                                />
-                                <PermissionToggle 
-                                    label="Логи" 
-                                    icon={History} 
-                                    checked={link.canViewLogs} 
-                                    onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, project.id, { ...link, canViewLogs: val })} 
-                                />
-                                <PermissionToggle 
-                                    label="Настройки" 
-                                    icon={Settings} 
-                                    checked={link.canViewSettings} 
-                                    onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, project.id, { ...link, canViewSettings: val })} 
-                                />
-                            </div>
-                        )}
+                        <Button 
+                            variant={hasLink ? "ghost" : "default"}
+                            onClick={() => handleUpdatePermission(selectedUser.id, proj.id, {}, hasLink)}
+                            className={cn(
+                                "h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest",
+                                hasLink ? "text-destructive hover:bg-destructive/10" : "bg-primary text-white shadow-lg shadow-primary/30"
+                            )}
+                        >
+                            {hasLink ? <Trash2 className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                            {hasLink ? "Отключить" : "Подключить"}
+                        </Button>
                     </div>
-                );
-             })}
-          </div>
 
-          <div className="p-8 border-t border-white/5 bg-muted/20 flex justify-end">
-            <Button size="lg" className="rounded-xl h-14 px-10 font-black uppercase text-[10px] tracking-widest" onClick={() => setIsPermissionsOpen(false)}>Готово</Button>
+                    {hasLink && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <PermissionToggle 
+                                label="Дашборд" 
+                                icon={LayoutDashboard} 
+                                checked={link.canViewDashboard} 
+                                onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, proj.id, { ...link, canViewDashboard: val })} 
+                            />
+                            <PermissionToggle 
+                                label="Лиды" 
+                                icon={ClipboardList} 
+                                checked={link.canViewLeads} 
+                                onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, proj.id, { ...link, canViewLeads: val })} 
+                            />
+                            <PermissionToggle 
+                                label="Расходы" 
+                                icon={Banknote} 
+                                checked={link.canViewExpenses} 
+                                onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, proj.id, { ...link, canViewExpenses: val })} 
+                            />
+                            <PermissionToggle 
+                                label="Настройки" 
+                                icon={Settings} 
+                                checked={link.canViewSettings} 
+                                onCheckedChange={(val: boolean) => handleUpdatePermission(selectedUser.id, proj.id, { ...link, canViewSettings: val })} 
+                            />
+                        </div>
+                    )}
+                  </div>
+                );
+              })}
           </div>
+          <DialogFooter className="p-10 border-t border-white/5 bg-white/5">
+            <Button onClick={() => setIsPermissionsOpen(false)} className="h-14 rounded-2xl bg-primary text-white font-black uppercase text-[10px] tracking-widest px-12 shadow-xl shadow-primary/20">Готово</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
@@ -403,24 +413,29 @@ export default function GlobalSettingsPage() {
 
 function PermissionToggle({ label, icon: Icon, checked, onCheckedChange }: any) {
     return (
-        <div className={cn(
-            "flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border cursor-pointer select-none group",
-            checked ? "bg-white border-primary/20 shadow-xl shadow-primary/5 ring-1 ring-primary/5" : "bg-white/5 border-transparent opacity-60 hover:opacity-100 hover:bg-white/10"
-        )} onClick={() => onCheckedChange(!checked)}>
-            <div className={cn(
-                "p-2.5 rounded-xl transition-all",
-                checked ? "bg-primary/10 text-primary scale-110" : "bg-muted/20 text-muted-foreground group-hover:bg-muted/40"
-            )}>
-                <Icon className="h-4 w-4" />
+        <div 
+            className={cn(
+                "flex flex-col gap-3 p-5 rounded-2xl border transition-all duration-300 cursor-pointer group",
+                checked ? "bg-white border-primary/20 shadow-xl shadow-primary/5" : "bg-white/5 border-transparent opacity-60 hover:opacity-100"
+            )}
+            onClick={() => onCheckedChange(!checked)}
+        >
+            <div className="flex items-center justify-between">
+                <div className={cn(
+                    "p-2.5 rounded-xl transition-all",
+                    checked ? "bg-primary/10 text-primary" : "bg-muted/20 text-muted-foreground"
+                )}>
+                    <Icon className="h-4 w-4" />
+                </div>
+                <Checkbox checked={checked} onCheckedChange={onCheckedChange} className="w-5 h-5 rounded-lg border-primary/20 data-[state=checked]:bg-primary shadow-inner" />
             </div>
-            <div className="flex-1 flex flex-col">
-                <span className={cn(
-                    "text-[10px] font-black uppercase tracking-wider transition-colors",
-                    checked ? "text-primary" : "text-muted-foreground"
-                )}>{label}</span>
-                <span className="text-[10px] text-muted-foreground/60 font-medium">{checked ? "Включено" : "Выключено"}</span>
+            <div>
+                <div className={cn(
+                    "text-[10px] font-black uppercase tracking-wider mb-0.5 transition-colors",
+                    checked ? "text-primary" : "text-muted-foreground/60"
+                )}>{label}</div>
+                <div className="text-[9px] font-bold text-muted-foreground/30 uppercase tracking-widest">{checked ? "Доступ есть" : "Нет доступа"}</div>
             </div>
-            <Checkbox id={label} checked={checked} onCheckedChange={onCheckedChange} className="w-5 h-5 rounded-lg border-primary/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
         </div>
     );
 }

@@ -3,17 +3,17 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
+  --background: 220 33% 98%;
   --foreground: 224 71.4% 4.1%;
-  --card: 0 0% 98% / 0.7;
+  --card: 0 0% 100% / 0.6;
   --card-foreground: 224 71.4% 4.1%;
   --popover: 0 0% 100% / 0.8;
   --popover-foreground: 224 71.4% 4.1%;
-  --primary: 253 100% 36%;
+  --primary: 243 100% 40%; /* Royal Blue #2800B8 adjusted slightly to hue 243 */
   --primary-foreground: 210 20% 98%;
   --secondary: 124 58% 65%;
   --secondary-foreground: 224 71.4% 4.1%;
-  --muted: 220 14.3% 95.9%;
+  --muted: 220 14.3% 94%;
   --muted-foreground: 220 8.9% 46.1%;
   --accent: 220 14.3% 95.9%;
   --accent-foreground: 224 71.4% 4.1%;
@@ -21,40 +21,40 @@
   --destructive-foreground: 210 20% 98%;
   --border: 220 13% 91%;
   --input: 220 13% 91%;
-  --ring: 253 100% 36%;
-  --radius: 1.5rem;
+  --ring: 243 100% 40%;
+  --radius: 1.75rem;
   
   /* Apple Glass Tokens */
-  --glass-bg: rgba(255, 255, 255, 0.5);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  --glass-bg: rgba(255, 255, 255, 0.45);
+  --glass-border-color: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
 }
 
 .dark {
-  --background: 240 10% 3.9%;
+  --background: 240 10% 2%;
   --foreground: 0 0% 98%;
-  --card: 240 10% 5% / 0.7;
+  --card: 240 10% 4% / 0.4;
   --card-foreground: 0 0% 98%;
-  --popover: 240 10% 5% / 0.8;
+  --popover: 240 10% 4% / 0.8;
   --popover-foreground: 0 0% 98%;
-  --primary: 253 100% 64%;
+  --primary: 235 100% 60%; /* Brighter, purer blue in dark mode */
   --primary-foreground: 240 5.9% 10%;
   --secondary: 124 58% 65%;
   --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 3.7% 15.9%;
+  --muted: 240 3.7% 12%;
   --muted-foreground: 240 5% 64.9%;
   --accent: 240 3.7% 15.9%;
   --accent-foreground: 0 0% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 17%;
-  --input: 240 3.7% 17%;
-  --ring: 253 100% 64%;
+  --border: 240 3.7% 12%;
+  --input: 240 3.7% 12%;
+  --ring: 235 100% 60%;
   
   /* Apple Glass Tokens Dark */
-  --glass-bg: rgba(15, 15, 20, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --glass-bg: rgba(10, 10, 15, 0.35);
+  --glass-border-color: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.6);
 }
 
 @layer base {
@@ -63,10 +63,10 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
     background-image: 
-      radial-gradient(at 0% 0%, hsla(253, 100%, 36%, 0.03) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(124, 58%, 65%, 0.03) 0px, transparent 50%);
+      radial-gradient(at 0% 0%, hsla(243, 100%, 40%, 0.04) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(124, 58%, 65%, 0.04) 0px, transparent 50%);
     background-attachment: fixed;
     overflow-x: hidden;
   }
@@ -74,10 +74,44 @@
 
 @layer components {
   .glass-card {
-    @apply backdrop-blur-2xl saturate-[1.8] border;
+    @apply backdrop-blur-3xl saturate-[2] border-none relative overflow-hidden;
     background: var(--glass-bg);
-    border-color: var(--glass-border);
     box-shadow: var(--glass-shadow);
+  }
+
+  .glass-card::after {
+    content: "";
+    @apply absolute inset-0 pointer-events-none;
+    box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.03);
+    z-index: 2;
+    border-radius: inherit;
+  }
+
+  /* Advance Apple Glass Border */
+  .glass-card::before {
+    content: "";
+    @apply absolute inset-0 pointer-events-none;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.4) 0%,   
+        rgba(255, 255, 255, 0.03) 35%,    
+        rgba(255, 255, 255, 0.02) 65%,    
+        rgba(255, 255, 255, 0.15) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    z-index: 3;
+  }
+
+  .dark .glass-card::before {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%,   
+        rgba(255, 255, 255, 0.01) 35%,    
+        rgba(255, 255, 255, 0.01) 65%,    
+        rgba(255, 255, 255, 0.08) 100%
+    );
   }
 
   /* Custom Apple-style scrollbar */
@@ -94,6 +128,18 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
   }
+}
+
+/* Global simple list style for standard elements */
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/10 rounded-full hover:bg-muted-foreground/20;
 }
 
 /* Global simple list style for standard elements */
