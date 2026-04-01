@@ -38,7 +38,7 @@ import { toast } from "sonner"
 
 export default function DashboardPage() {
   const [projectsData, setProjectsData] = useState<any[]>([])
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>(undefined)
   const [granularity, setGranularity] = useState<"day" | "week" | "month">("day");
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
@@ -68,7 +68,7 @@ export default function DashboardPage() {
   }, [userRole]);
 
   const fetchDashboardData = async () => {
-    if (!selectedProjectId || (selectedProjectId === "0" && userRole !== "SUPER_ADMIN")) {
+    if (selectedProjectId === undefined || (selectedProjectId === "0" && userRole !== "SUPER_ADMIN")) {
         return;
     }
     setIsLoading(true);
