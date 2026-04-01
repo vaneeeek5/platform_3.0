@@ -132,7 +132,7 @@ export function DatePickerWithRange({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 flex flex-row" align="start">
+        <PopoverContent className="w-auto p-0 flex flex-row glass-card backdrop-blur-md shadow-2xl border-white/20 animate-in zoom-in-95 duration-200" align="start">
           <div className="flex flex-col border-r border-border p-2 bg-muted/10 min-w-[160px]">
             <div className="text-[10px] font-semibold text-muted-foreground px-2 py-1 mb-1 uppercase tracking-wider">Быстрый выбор</div>
             {(() => {

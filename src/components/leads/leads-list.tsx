@@ -379,7 +379,23 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {!projectId ? (
+              <TableRow>
+                <TableCell colSpan={showProjectColumn ? 10 : 9} className="h-60 text-center">
+                  <div className="flex flex-col items-center gap-4 max-w-sm mx-auto p-10 rounded-[2.5rem] bg-primary/5 border border-primary/10 animate-in fade-in zoom-in duration-500">
+                      <div className="p-4 bg-primary/10 rounded-full">
+                        <Filter className="h-8 w-8 text-primary opacity-40" />
+                      </div>
+                      <div className="space-y-1">
+                        <span className="text-sm font-black uppercase tracking-tight text-primary">Выберите проект и дату</span>
+                        <p className="text-[10px] font-medium text-muted-foreground leading-relaxed">
+                          Для просмотра списка лидов необходимо выбрать конкретный проект в фильтре справа.
+                        </p>
+                      </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : loading ? (
               <TableRow><TableCell colSpan={showProjectColumn ? 10 : 9} className="h-40 text-center">
                   <div className="flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />

@@ -41,7 +41,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm rounded-[2rem] shadow-2xl border-none">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Вход в систему</CardTitle>
           <CardDescription className="text-center">
@@ -52,28 +52,30 @@ export default function LoginPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  className="rounded-2xl h-11"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Пароль</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+                <Input
+                  id="password"
+                  type="password"
+                  className="rounded-2xl h-11"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" type="submit" disabled={loading}>
+            <Button className="w-full h-11 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20" type="submit" disabled={loading}>
               {loading ? "Вход..." : "Войти"}
             </Button>
           </CardFooter>

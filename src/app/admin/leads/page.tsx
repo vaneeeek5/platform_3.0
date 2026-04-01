@@ -56,7 +56,7 @@ export default function GlobalLeadsPage() {
   );
 
   return (
-    <div className="p-4 md:p-8 space-y-8">
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tight text-foreground">
@@ -68,7 +68,7 @@ export default function GlobalLeadsPage() {
         <div className="w-full md:w-72">
             <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ml-1">Фильтр по проекту</div>
             <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger className="glass-card h-12 border-white/10 shadow-lg">
+                <SelectTrigger className="glass-card h-12 border-white/10 shadow-lg rounded-2xl">
                     <SelectValue placeholder="Все проекты" />
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
@@ -81,7 +81,7 @@ export default function GlobalLeadsPage() {
         </div>
       </div>
 
-      <Card className="border-none p-0 overflow-hidden shadow-2xl">
+      <Card className="border-none p-0 overflow-hidden shadow-2xl rounded-[2rem]">
          <CardContent className="p-0">
             <LeadsList 
                projectId={selectedProjectId === "all" ? 0 : parseInt(selectedProjectId)} 
