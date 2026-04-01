@@ -140,10 +140,10 @@ export function AdminNav() {
 
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex fixed left-6 top-6 bottom-6 w-80 glass-card flex-col z-50",
+        "hidden lg:flex fixed left-6 top-6 bottom-6 w-64 glass-card flex-col z-50",
         "animate-in fade-in slide-in-from-left-8 duration-1000"
       )}>
-        <div className="p-10 pb-8">
+        <div className="p-6 pb-6 text-center lg:text-left">
           <Logo />
         </div>
         
@@ -151,36 +151,36 @@ export function AdminNav() {
             <NavLinks />
         </div>
 
-        <div className="p-8 space-y-8">
-          <div className="p-5 rounded-[2rem] bg-white/5 border border-white/5 group hover:bg-white/10 transition-all duration-500">
-            <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-primary to-[#71D878] flex items-center justify-center shadow-lg shadow-primary/20">
-                    <User className="h-6 w-6 text-white" />
+        <div className="p-4 space-y-4">
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/10 transition-all duration-500">
+            <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-primary to-[#71D878] flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+                    <User className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                    <span className="text-[9px] font-black text-muted-foreground/60 uppercase tracking-[0.2em] leading-none mb-1.5">Администратор</span>
-                    <span className="text-sm font-black truncate tracking-tight">{user?.email?.split('@')[0] || '...'}</span>
+                    <span className="text-[8px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] leading-none mb-1">Администратор</span>
+                    <span className="text-xs font-black truncate tracking-tight">{user?.email?.split('@')[0] || '...'}</span>
                 </div>
             </div>
           </div>
           
-          <div className="flex items-center justify-between gap-3">
-            <div className="p-1 bg-white/5 rounded-2xl border border-white/5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="p-1 bg-white/5 rounded-xl border border-white/5">
                  <ThemeToggle />
             </div>
             <Button 
               variant="ghost" 
-              className="flex-1 h-12 justify-center gap-3 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/5 rounded-2xl transition-all font-black uppercase text-[10px] tracking-widest border border-transparent hover:border-destructive/10"
+              className="flex-1 h-11 justify-center gap-2 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/5 rounded-xl transition-all font-black uppercase text-[9px] tracking-widest border border-transparent hover:border-destructive/10"
               onClick={handleLogout}
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
               Выход
             </Button>
           </div>
         </div>
       </aside>
       
-      <div className="hidden lg:block w-80 shrink-0" />
+      <div className="hidden lg:block w-64 shrink-0" />
       <div className="lg:hidden h-20" />
     </>
   );
