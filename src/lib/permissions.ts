@@ -31,7 +31,7 @@ export async function verifyProjectAccess(
 
   // If a specific permission is requested, check it
   if (permission) {
-    return !!access[permission];
+    return !!(access as any)[permission];
   }
 
   // If no specific permission is requested, just being linked is enough

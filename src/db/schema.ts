@@ -67,6 +67,7 @@ export const projectLinks = pgTable(
     canViewExpenses: boolean("can_view_expenses").notNull().default(true),
     canViewSettings: boolean("can_view_settings").notNull().default(false),
     canViewLogs: boolean("can_view_logs").notNull().default(false),
+    canManageBackups: boolean("can_manage_backups").notNull().default(false),
   },
   (t) => ({
     unq: unique().on(t.projectId, t.userId),
