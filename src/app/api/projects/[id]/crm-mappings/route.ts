@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { crmStageMappings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
 
 export async function GET(
   request: Request,
@@ -13,6 +14,13 @@ export async function GET(
 
   const resolvedParams = await params;
   const projectId = parseInt(resolvedParams.id);
+
+  // SECURITY: Check project access
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden: No access to this project" }, { status: 403 });
+  }
+
   const data = await db
     .select()
     .from(crmStageMappings)
@@ -30,6 +38,13 @@ export async function PUT(
 
   const resolvedParams = await params;
   const projectId = parseInt(resolvedParams.id);
+
+  // SECURITY: Check project access
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden: No access to this project" }, { status: 403 });
+  }
+
   const { mappings } = await request.json();
 
   try {

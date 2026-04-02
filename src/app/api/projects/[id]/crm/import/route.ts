@@ -1,8 +1,29 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { leads, goalAchievements, targetStatuses, qualificationStatuses } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { leads, goalAchievements, crmStageMappings } from "@/db/schema";
+import { eq, inArray, and } from "drizzle-orm";
 import { getSession } from "@/lib/auth";
+import { verifyProjectAccess } from "@/lib/permissions";
+
+/**
+ * Robust date parser for various formats (common in CRM exports)
+ */
+function parseDate(dateStr: string): Date {
+  if (!dateStr) return new Date();
+  
+  // Try DD.MM.YYYY or DD/MM/YYYY
+  const parts = dateStr.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})/);
+  if (parts) {
+    const d = parseInt(parts[1]);
+    const m = parseInt(parts[2]);
+    const y = parseInt(parts[3]);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    if (!isNaN(date.getTime())) return date;
+  }
+
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? new Date() : d;
+}
 
 export async function POST(
   request: Request,
@@ -13,97 +34,114 @@ export async function POST(
 
   const { id } = await params;
   const projectId = parseInt(id);
+  
+  // SECURITY: Check project access
+  const hasAccess = await verifyProjectAccess(session.id, session.role, projectId);
+  if (!hasAccess) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { data, mapping, headers } = await request.json();
 
   if (!data || !mapping.clientId || !mapping.status) {
     return NextResponse.json({ error: "Missing data or mapping" }, { status: 400 });
   }
 
-  // Get project statuses for mapping strings
-  const [targetS, qualS] = await Promise.all([
-    db.select().from(targetStatuses).where(eq(targetStatuses.projectId, projectId)),
-    db.select().from(qualificationStatuses).where(eq(qualificationStatuses.projectId, projectId))
-  ]);
+  // 1. Fetch project mappings to resolve statuses/stages
+  const projectMappings = await db.select().from(crmStageMappings).where(eq(crmStageMappings.projectId, projectId));
 
   const ciIdx = headers.indexOf(mapping.clientId);
   const stIdx = headers.indexOf(mapping.status);
   const amIdx = mapping.amount ? headers.indexOf(mapping.amount) : -1;
   const dtIdx = mapping.date ? headers.indexOf(mapping.date) : -1;
 
-  let updatedCount = 0;
-  let createdCount = 0;
+  // 2. Prepare unique Client IDs from input
+  const inputClientIds = Array.from(new Set(data.map((row: any) => row[ciIdx]?.toString()).filter(Boolean)));
+  
+  if (inputClientIds.length === 0) {
+      return NextResponse.json({ success: true, updated: 0, created: 0 });
+  }
 
   try {
-    for (const row of data) {
-      const clientId = row[ciIdx]?.toString();
-      const statusLabel = row[stIdx]?.toString();
-      const amount = amIdx !== -1 ? parseFloat(row[amIdx]?.toString().replace(',', '.') || "0") : 0;
-      const date = dtIdx !== -1 ? new Date(row[dtIdx]) : new Date();
+    // 3. Fetch all existing leads for these client IDs in this project
+    const existingLeads = await db.select().from(leads).where(
+        and(eq(leads.projectId, projectId), inArray(leads.metrikaClientId, inputClientIds as string[]))
+    );
+    
+    // Cache for faster lookup
+    const leadMap = new Map(existingLeads.map(l => [l.metrikaClientId, l]));
 
-      if (!clientId) continue;
+    let updatedCount = 0;
+    let createdCount = 0;
 
-      // 1. Try to find existing lead by metrikaClientId
-      const existingLead = await db.query.leads.findFirst({
-        where: (leads, { and, eq }) => and(
-          eq(leads.projectId, projectId),
-          eq(leads.metrikaClientId, clientId)
-        )
-      });
+    // 4. Batch Process within a single transaction
+    await db.transaction(async (tx) => {
+      for (const row of data) {
+        const clientId = row[ciIdx]?.toString();
+        const statusLabel = row[stIdx]?.toString();
+        const amount = amIdx !== -1 ? parseFloat(row[amIdx]?.toString().replace(',', '.') || "0") : 0;
+        const date = dtIdx !== -1 ? parseDate(row[dtIdx]?.toString()) : new Date();
 
-      // Map status label to status ID if possible
-      const tStatus = targetS.find(s => s.label.toLowerCase() === statusLabel?.toLowerCase());
-      const qStatus = qualS.find(s => s.label.toLowerCase() === statusLabel?.toLowerCase());
+        if (!clientId) continue;
 
-      if (existingLead) {
-        // Update first goal achievement or lead directly
-        // Usually, we'd update goal_achievements
-        const ga = await db.query.goalAchievements.findFirst({
-           where: (ga, { eq }) => eq(ga.leadId, existingLead.id)
-        });
+        // Find mapping for the CRM status text
+        const rule = projectMappings.find(m => m.crmStageName.toLowerCase() === statusLabel?.toLowerCase());
+        
+        let leadId: number;
+        const existingLead = leadMap.get(clientId);
 
-        if (ga) {
-           await db.update(goalAchievements).set({
-              targetStatusId: tStatus?.id || ga.targetStatusId,
-              qualificationStatusId: qStatus?.id || ga.qualificationStatusId,
-              saleAmount: amount ? amount.toString() : ga.saleAmount,
-           }).where(eq(goalAchievements.id, ga.id));
+        if (existingLead) {
+          leadId = existingLead.id;
+          updatedCount++;
         } else {
-           // Insert new achievement if none exists
-           await db.insert(goalAchievements).values({
-               leadId: existingLead.id,
-               goalId: "manual_crm",
-               goalName: "Manual Import",
-               targetStatusId: tStatus?.id,
-               qualificationStatusId: qStatus?.id,
-               saleAmount: amount.toString(),
-           });
+          // Create new lead if it doesn't exist
+          const [newLead] = await tx.insert(leads).values({
+            projectId,
+            metrikaVisitId: `crm_${Date.now()}_${Math.random().toString(36).substring(2, 7)}_${clientId}`,
+            metrikaClientId: clientId,
+            date: date,
+            utmSource: 'crm'
+          }).returning({ id: leads.id });
+          
+          leadId = newLead.id;
+          createdCount++;
         }
-        updatedCount++;
-      } else {
-        // Create new standalone lead for CRM data
-        const [newLead] = await db.insert(leads).values({
-          projectId,
-          metrikaVisitId: `crm_${Date.now()}_${clientId}`,
-          metrikaClientId: clientId,
-          date: isNaN(date.getTime()) ? new Date() : date,
-          utmSource: 'crm'
-        }).returning();
 
-        await db.insert(goalAchievements).values({
-          leadId: newLead.id,
-          goalId: "manual_crm",
-          goalName: "Manual Import",
-          targetStatusId: tStatus?.id,
-          qualificationStatusId: qStatus?.id,
-          saleAmount: amount.toString(),
-        });
-        createdCount++;
+        // Upsert goal achievement (matching by leadId and "manual_crm" goal)
+        // Drizzle doesn't have a clean upsert for multiple conditions without constraints,
+        // but here we can check first and then act via the tx
+        const [existingGa] = await tx.select().from(goalAchievements).where(
+            and(eq(goalAchievements.leadId, leadId), eq(goalAchievements.goalId, "manual_crm"))
+        ).limit(1);
+
+        if (existingGa) {
+            await tx.update(goalAchievements).set({
+                targetStatusId: rule?.targetStatusId ?? existingGa.targetStatusId,
+                qualificationStatusId: rule?.qualificationStatusId ?? existingGa.qualificationStatusId,
+                saleAmount: amount ? amount.toString() : existingGa.saleAmount,
+                updatedAt: new Date()
+            }).where(eq(goalAchievements.id, existingGa.id));
+        } else {
+            await tx.insert(goalAchievements).values({
+                leadId: leadId,
+                goalId: "manual_crm",
+                goalName: "Manual Import",
+                targetStatusId: rule?.targetStatusId,
+                qualificationStatusId: rule?.qualificationStatusId,
+                saleAmount: amount.toString(),
+            });
+        }
+        
+        // Update lead stage if mapping exists
+        if (rule?.leadStageId) {
+            await tx.update(leads).set({ stageId: rule.leadStageId }).where(eq(leads.id, leadId));
+        }
       }
-    }
+    });
 
     return NextResponse.json({ success: true, updated: updatedCount, created: createdCount });
-  } catch (error) {
+  } catch (error: any) {
     console.error("CRM Import error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }
