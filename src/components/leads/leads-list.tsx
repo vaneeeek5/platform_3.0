@@ -56,7 +56,9 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   const [leadStages, setLeadStages] = useState<any[]>([])
   const [filterTargetStatusIds, setFilterTargetStatusIds] = useState<string[]>([])
   const [filterQualStatusIds, setFilterQualStatusIds] = useState<string[]>([])
+  const [filterSaleStatusIds, setFilterSaleStatusIds] = useState<string[]>([])
   const [filterStageIds, setFilterStageIds] = useState<string[]>([])
+  const [saleStatuses, setSaleStatuses] = useState<any[]>([])
   const [filterOptions, setFilterOptions] = useState<{ sources: string[], goals: string[] }>({ sources: [], goals: [] })
   const [user, setUser] = useState<any>(null)
   const [isInitialized, setIsInitialized] = useState(false)
@@ -85,7 +87,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
        fetchStatuses()
        fetchFilterOptions()
     }
-  }, [projectId, dateRange, filterSources, filterGoals, filterTargetStatusIds, filterQualStatusIds, filterStageIds])
+  }, [projectId, dateRange, filterSources, filterGoals, filterTargetStatusIds, filterQualStatusIds, filterSaleStatusIds, filterStageIds])
 
   const fetchFilterOptions = async () => {
     try {
@@ -97,13 +99,15 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
   }
 
   const fetchStatuses = async () => {
-    const [tRes, qRes, sRes] = await Promise.all([
+    const [tRes, qRes, saleRes, sRes] = await Promise.all([
       fetch(`/api/projects/${projectId}/statuses/target`),
       fetch(`/api/projects/${projectId}/statuses/qualification`),
+      fetch(`/api/projects/${projectId}/statuses/sale`),
       fetch(`/api/projects/${projectId}/statuses/stages`)
     ])
     if (tRes.ok) setTargetStatuses(await tRes.json())
     if (qRes.ok) setQualStatuses(await qRes.json())
+    if (saleRes.ok) setSaleStatuses(await saleRes.json())
     if (sRes.ok) setLeadStages(await sRes.json())
   }
 
@@ -140,6 +144,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     if (filterGoals.length > 0) params.append("goals", filterGoals.join(","))
     if (filterTargetStatusIds.length > 0) params.append("targetStatusIds", filterTargetStatusIds.join(","))
     if (filterQualStatusIds.length > 0) params.append("qualStatusIds", filterQualStatusIds.join(","))
+    if (filterSaleStatusIds.length > 0) params.append("saleStatusIds", filterSaleStatusIds.join(","))
     if (filterStageIds.length > 0) params.append("stageIds", filterStageIds.join(","))
     
     try {
@@ -162,6 +167,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     setFilterGoals([]);
     setFilterTargetStatusIds([]);
     setFilterQualStatusIds([]);
+    setFilterSaleStatusIds([]);
     setFilterStageIds([]);
     setQuery("");
     toast.success("Все фильтры сброшены");
@@ -333,11 +339,10 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        title="ФИЛЬТР ПО ЦЕЛЯМ"
                        options={filterOptions.goals} 
                        selected={filterGoals} 
-                       onChange={(val) => setFilterGoals(val)} 
-                    />
+                       onChange={(val) => setFilterGoals(val)}                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[110px]">ClientID</TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest hidden xl:table-cell w-[110px]">ClientID</TableHead>
               <TableHead className="text-[10px] font-black uppercase tracking-widest w-[130px]">
                  <div className="flex items-center gap-2">
                     Статус
@@ -358,6 +363,18 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        options={qualStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
                        selected={filterQualStatusIds} 
                        onChange={(val) => setFilterQualStatusIds(val)} 
+                       useObjects
+                    />
+                 </div>
+              </TableHead>
+              <TableHead className="text-[10px] font-black uppercase tracking-widest w-[130px]">
+                 <div className="flex items-center gap-2">
+                    Продажа
+                    <FilterPopover 
+                       title="ФИЛЬТР ПО ПРОДАЖЕ"
+                       options={saleStatuses.map(s => ({ label: s.label, value: s.id.toString() }))} 
+                       selected={filterSaleStatusIds} 
+                       onChange={(val) => setFilterSaleStatusIds(val)} 
                        useObjects
                     />
                  </div>
@@ -437,7 +454,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                       ))}
                    </div>
                 </TableCell>
-                <TableCell className="text-[10px] font-mono text-muted-foreground/40 font-medium">
+                <TableCell className="text-[10px] font-mono text-muted-foreground/40 font-medium hidden xl:table-cell">
                   <div className="truncate w-[90px] border-b border-primary/10 border-dotted" title={item.lead.metrikaClientId || ''}>
                     {item.lead.metrikaClientId || '—'}
                   </div>
@@ -483,6 +500,33 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                           <SelectContent className="glass-card border-white/10 shadow-2xl rounded-xl">
                             <SelectItem value="none" className="text-[10px] font-black uppercase tracking-widest">Не выбран</SelectItem>
                             {qualStatuses.map(s => (
+                              <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-black uppercase tracking-widest">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-2.5 h-2.5 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: s.color }} />
+                                  {s.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ))}
+                   </div>
+                </TableCell>
+
+                <TableCell>
+                   <div className="flex flex-col gap-1.5">
+                      {item.achievements?.map((a: any) => (
+                        <Select 
+                          key={a.id}
+                          value={a.saleStatusId?.toString() || "none"} 
+                          onValueChange={(val) => updateLeadStatus(a.id, 'saleStatusId', val)}
+                        >
+                          <SelectTrigger className="h-7 text-[9px] font-black uppercase tracking-wider px-2.5 w-[100px] glass-card border-white/5 shadow-sm hover:border-primary/20 transition-all bg-white/40 dark:bg-black/20">
+                            <SelectValue placeholder="Продажа" className="truncate" />
+                          </SelectTrigger>
+                          <SelectContent className="glass-card border-white/10 shadow-2xl rounded-xl">
+                            <SelectItem value="none" className="text-[10px] font-black uppercase tracking-widest">Не выбран</SelectItem>
+                            {saleStatuses.map(s => (
                               <SelectItem key={s.id} value={s.id.toString()} className="text-[10px] font-black uppercase tracking-widest">
                                 <div className="flex items-center gap-3">
                                   <div className="w-2.5 h-2.5 rounded-full shadow-inner border border-white/10" style={{ backgroundColor: s.color }} />

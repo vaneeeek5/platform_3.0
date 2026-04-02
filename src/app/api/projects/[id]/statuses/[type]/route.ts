@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { targetStatuses, qualificationStatuses, leadStages } from "@/db/schema";
+import { targetStatuses, qualificationStatuses, leadStages, saleStatuses } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { eq } from "drizzle-orm";
 
@@ -13,7 +13,10 @@ export async function GET(
 
   const { id, type } = await params;
   const projectId = parseInt(id);
-  const table = type === "target" ? targetStatuses : type === "qualification" ? qualificationStatuses : leadStages;
+  const table = type === "target" ? targetStatuses 
+    : type === "qualification" ? qualificationStatuses 
+    : type === "sale" ? saleStatuses
+    : leadStages;
 
   const results = await db.select().from(table).where(eq(table.projectId, projectId)).orderBy(table.sortOrder);
   return NextResponse.json(results);
@@ -29,8 +32,10 @@ export async function POST(
   const { id, type } = await params;
   const projectId = parseInt(id);
   const { label, color, isPositive } = await request.json();
-  const isTarget = type === "target";
-  const table = isTarget ? targetStatuses : type === "qualification" ? qualificationStatuses : leadStages;
+  const table = type === "target" ? targetStatuses 
+    : type === "qualification" ? qualificationStatuses 
+    : type === "sale" ? saleStatuses
+    : leadStages;
 
   const values: any = {
     projectId,

@@ -45,6 +45,7 @@ export async function GET(request: Request) {
   const goals = searchParams.get("goals")?.split(",").filter(Boolean);
   const targetStatusIds = searchParams.get("targetStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
   const qualStatusIds = searchParams.get("qualStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
+  const saleStatusIds = searchParams.get("saleStatusIds")?.split(",").filter(Boolean).map(id => parseInt(id));
   const stageIds = searchParams.get("stageIds")?.split(",").filter(Boolean).map(id => parseInt(id));
   const allowedProjectIdsStr = searchParams.get("allowedProjectIds");
 
@@ -109,6 +110,10 @@ export async function GET(request: Request) {
         baseWhere.push(inArray(goalAchievements.qualificationStatusId, qualStatusIds));
     }
 
+    if (saleStatusIds && saleStatusIds.length > 0) {
+        baseWhere.push(inArray(goalAchievements.saleStatusId, saleStatusIds));
+    }
+
     // Search by client ID or Campaign
     if (query) {
         baseWhere.push(or(
@@ -128,7 +133,8 @@ export async function GET(request: Request) {
             'goalId', ${goalAchievements.goalId},
             'saleAmount', ${goalAchievements.saleAmount},
             'targetStatusId', ${goalAchievements.targetStatusId},
-            'qualificationStatusId', ${goalAchievements.qualificationStatusId}
+            'qualificationStatusId', ${goalAchievements.qualificationStatusId},
+            'saleStatusId', ${goalAchievements.saleStatusId}
           )
         ) FILTER (WHERE ${goalAchievements.id} IS NOT NULL),
         '[]'
@@ -158,7 +164,7 @@ export async function PATCH(request: Request) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { id, leadId, stageId, targetStatusId, qualificationStatusId, saleAmount } = body;
+  const { id, leadId, stageId, targetStatusId, qualificationStatusId, saleStatusId, saleAmount } = body;
 
   try {
     // RBAC Check for PATCH
@@ -182,6 +188,7 @@ export async function PATCH(request: Request) {
       await db.update(goalAchievements).set({
         targetStatusId: targetStatusId === undefined ? undefined : targetStatusId,
         qualificationStatusId: qualificationStatusId === undefined ? undefined : qualificationStatusId,
+        saleStatusId: saleStatusId === undefined ? undefined : saleStatusId,
         saleAmount: saleAmount === undefined ? undefined : saleAmount.toString(),
         updatedAt: new Date(),
       }).where(eq(goalAchievements.id, id));

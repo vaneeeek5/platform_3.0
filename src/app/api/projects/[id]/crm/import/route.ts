@@ -118,6 +118,7 @@ export async function POST(
             await tx.update(goalAchievements).set({
                 targetStatusId: rule?.targetStatusId ?? existingGa.targetStatusId,
                 qualificationStatusId: rule?.qualificationStatusId ?? existingGa.qualificationStatusId,
+                saleStatusId: rule?.saleStatusId ?? existingGa.saleStatusId,
                 saleAmount: amount ? amount.toString() : existingGa.saleAmount,
                 updatedAt: new Date()
             }).where(eq(goalAchievements.id, existingGa.id));
@@ -128,6 +129,7 @@ export async function POST(
                 goalName: "Manual Import",
                 targetStatusId: rule?.targetStatusId,
                 qualificationStatusId: rule?.qualificationStatusId,
+                saleStatusId: rule?.saleStatusId,
                 saleAmount: amount.toString(),
             });
         }

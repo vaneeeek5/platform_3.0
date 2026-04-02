@@ -65,14 +65,23 @@ export async function GET(request: Request) {
     const positiveQualIds = new Set(allQualStatuses.filter(s => s.isPositive).map(s => s.id));
 
     const resolveName = (utmCampaign: string | null, directOrder: string | null, utmSource: string | null = null) => {
+      // Clean up common macro tags like {mk_kviz} -> mk_kviz
+      const cleanUtm = utmCampaign?.replace(/^\{(.*)\}$/, '$1');
+      const cleanDirect = directOrder?.toString().replace(/^\{(.*)\}$/, '$1');
+
       const mapping = projectMappings.find(m => {
+        // Match by UTM (cleaned)
+        if (m.utmValue && cleanUtm && m.utmValue.toLowerCase() === cleanUtm.toLowerCase()) return true;
+        // Match by Direct ID or Order
+        if (m.directValue && cleanDirect && m.directValue.toLowerCase() === cleanDirect.toLowerCase()) return true;
+        // Fallback to raw UTM match
         if (m.utmValue && utmCampaign && m.utmValue.toLowerCase() === utmCampaign.toLowerCase()) return true;
-        if (m.directValue && directOrder && m.directValue.toLowerCase() === directOrder.toLowerCase()) return true;
         return false;
       });
+
       if (mapping?.displayName) return mapping.displayName;
-      if (utmCampaign) return utmCampaign;
-      if (directOrder) return directOrder;
+      if (cleanUtm) return cleanUtm;
+      if (cleanDirect) return cleanDirect;
       if (utmSource) return `Source: ${utmSource}`;
       return "Direct / Unknown";
     };

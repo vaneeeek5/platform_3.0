@@ -20,25 +20,30 @@ interface Status {
 export function StatusSettings({ projectId }: { projectId: number }) {
   const [targetStatuses, setTargetStatuses] = useState<Status[]>([])
   const [qualStatuses, setQualStatuses] = useState<Status[]>([])
+  const [saleStatuses, setSaleStatuses] = useState<Status[]>([])
   const [stageStatuses, setStageStatuses] = useState<Status[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchStatuses = async () => {
     try {
-      const [tRes, qRes, sRes] = await Promise.all([
+      const [tRes, qRes, saleRes, sRes] = await Promise.all([
         fetch(`/api/projects/${projectId}/statuses/target`),
         fetch(`/api/projects/${projectId}/statuses/qualification`),
+        fetch(`/api/projects/${projectId}/statuses/sale`),
         fetch(`/api/projects/${projectId}/statuses/stages`)
       ])
       let tData = [];
       let qData = [];
+      let saleData = [];
       let sData = [];
       try { tData = await tRes.json(); } catch(e) {}
-      try { qData = await qRes.json(); } catch(e) {}
+      try { qData = qRes.ok ? await qRes.json() : []; } catch(e) {}
+      try { saleData = saleRes.ok ? await saleRes.json() : []; } catch(e) {}
       try { sData = await sRes.json(); } catch(e) {}
       
       setTargetStatuses(Array.isArray(tData) ? tData : []);
       setQualStatuses(Array.isArray(qData) ? qData : []);
+      setSaleStatuses(Array.isArray(saleData) ? saleData : []);
       setStageStatuses(Array.isArray(sData) ? sData : []);
     } catch (e) {
       toast.error("Не удалось загрузить статусы")
@@ -51,7 +56,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
     fetchStatuses()
   }, [projectId])
 
-  const addStatus = async (type: 'target' | 'qualification' | 'stages') => {
+  const addStatus = async (type: 'target' | 'qualification' | 'sale' | 'stages') => {
     try {
       const res = await fetch(`/api/projects/${projectId}/statuses/${type}`, {
         method: "POST",
@@ -67,7 +72,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
     }
   }
 
-  const deleteStatus = async (type: 'target' | 'qualification' | 'stages', id: number) => {
+  const deleteStatus = async (type: 'target' | 'qualification' | 'sale' | 'stages', id: number) => {
     if (!confirm("Вы уверены? Это может затронуть существующие лиды.")) return
     try {
       const res = await fetch(`/api/projects/${projectId}/statuses/${type}/${id}`, {
@@ -82,7 +87,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
     }
   }
 
-  const updateStatus = async (type: 'target' | 'qualification' | 'stages', id: number, updates: Partial<Status>) => {
+  const updateStatus = async (type: 'target' | 'qualification' | 'sale' | 'stages', id: number, updates: Partial<Status>) => {
     try {
       const res = await fetch(`/api/projects/${projectId}/statuses/${type}/${id}`, {
         method: "PATCH",
@@ -108,7 +113,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
   );
 
   return (
-    <div className="grid gap-10 xl:grid-cols-3 animate-in fade-in duration-700">
+    <div className="grid gap-10 xl:grid-cols-2 2xl:grid-cols-4 animate-in fade-in duration-700">
       <StatusSection 
         title="Целевые статусы" 
         description="Результаты сделок для расчета ROI"
@@ -193,7 +198,7 @@ function StatusSection({ title, description, items, onAdd, onDelete, onUpdate, t
                             </Button>
                         </div>
                         
-                        {(type === 'target' || type === 'qualification') && (
+                        {(type === 'target' || type === 'qualification' || type === 'sale') && (
                             <div className="flex items-center gap-3 pl-8">
                                 <Checkbox 
                                     id={`pos-${status.id}`}
@@ -204,7 +209,7 @@ function StatusSection({ title, description, items, onAdd, onDelete, onUpdate, t
                                     className="w-5 h-5 rounded-lg border-primary/20"
                                 />
                                 <Label htmlFor={`pos-${status.id}`} className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 cursor-pointer hover:text-primary transition-colors">
-                                    {type === 'target' ? 'Учитывать в ROI' : 'Учитывать в Квалах'}
+                                    {type === 'target' ? 'Учитывать в ROI' : type === 'sale' ? 'Учитывать как Продажу' : 'Учитывать в Квалах'}
                                 </Label>
                             </div>
                         )}

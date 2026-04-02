@@ -116,6 +116,17 @@ export const qualificationStatuses = pgTable("qualification_statuses", {
   sortOrder: integer("sort_order").default(0),
 });
 
+export const saleStatuses = pgTable("sale_statuses", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id")
+    .references(() => projects.id, { onDelete: "cascade" })
+    .notNull(),
+  label: text("label").notNull(),
+  color: text("color").notNull(),
+  isPositive: boolean("is_positive").default(true),
+  sortOrder: integer("sort_order").default(0),
+});
+
 export const leadStages = pgTable("lead_stages", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id")
@@ -157,6 +168,7 @@ export const crmStageMappings = pgTable("crm_stage_mappings", {
   crmStageName: text("crm_stage_name").notNull(),
   targetStatusId: integer("target_status_id").references(() => targetStatuses.id),
   qualificationStatusId: integer("qualification_status_id").references(() => qualificationStatuses.id),
+  saleStatusId: integer("sale_status_id").references(() => saleStatuses.id),
   leadStageId: integer("lead_stage_id").references(() => leadStages.id),
 });
 
@@ -173,6 +185,7 @@ export const goalAchievements = pgTable(
     qualificationStatusId: integer("qualification_status_id").references(
       () => qualificationStatuses.id
     ),
+    saleStatusId: integer("sale_status_id").references(() => saleStatuses.id),
     saleAmount: numeric("sale_amount", { precision: 12, scale: 2 }),
     comment: text("comment"),
     updatedAt: timestamp("updated_at").defaultNow(),

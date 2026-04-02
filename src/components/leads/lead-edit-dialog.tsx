@@ -32,6 +32,7 @@ interface LeadEditDialogProps {
 export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: LeadEditDialogProps) {
   const [targetStatuses, setTargetStatuses] = useState<any[]>([])
   const [qualStatuses, setQualStatuses] = useState<any[]>([])
+  const [saleStatuses, setSaleStatuses] = useState<any[]>([])
   const [leadStages, setLeadStages] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   
@@ -41,6 +42,7 @@ export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: Lea
   const [form, setForm] = useState({
     targetStatusId: "",
     qualificationStatusId: "",
+    saleStatusId: "",
     stageId: "",
     saleAmount: ""
   })
@@ -51,6 +53,7 @@ export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: Lea
       setForm({
         targetStatusId: achievement?.targetStatusId?.toString() || "none",
         qualificationStatusId: achievement?.qualificationStatusId?.toString() || "none",
+        saleStatusId: achievement?.saleStatusId?.toString() || "none",
         stageId: leadData?.stageId?.toString() || "none",
         saleAmount: achievement?.saleAmount || "0"
       })
@@ -58,13 +61,15 @@ export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: Lea
   }, [isOpen, projectId, lead])
 
   const fetchStatuses = async () => {
-    const [tRes, qRes, sRes] = await Promise.all([
+    const [tRes, qRes, saleRes, sRes] = await Promise.all([
       fetch(`/api/projects/${projectId}/statuses/target`),
       fetch(`/api/projects/${projectId}/statuses/qualification`),
+      fetch(`/api/projects/${projectId}/statuses/sale`),
       fetch(`/api/projects/${projectId}/statuses/stages`)
     ])
     if (tRes.ok) setTargetStatuses(await tRes.json())
     if (qRes.ok) setQualStatuses(await qRes.json())
+    if (saleRes.ok) setSaleStatuses(await saleRes.json())
     if (sRes.ok) setLeadStages(await sRes.json())
   }
 
@@ -80,6 +85,7 @@ export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: Lea
           stageId: form.stageId === "none" ? null : parseInt(form.stageId),
           targetStatusId: form.targetStatusId === "none" ? null : parseInt(form.targetStatusId),
           qualificationStatusId: form.qualificationStatusId === "none" ? null : parseInt(form.qualificationStatusId),
+          saleStatusId: form.saleStatusId === "none" ? null : parseInt(form.saleStatusId),
           saleAmount: form.saleAmount
         })
       })
@@ -164,6 +170,29 @@ export function LeadEditDialog({ isOpen, onClose, onSave, lead, projectId }: Lea
                 </Select>
             </div>
           </div>
+
+          <div className="grid gap-2">
+                <Label className="text-xs font-bold text-neutral-500 uppercase">Статус продажи</Label>
+                <Select 
+                value={form.saleStatusId} 
+                onValueChange={(val) => setForm({...form, saleStatusId: val})}
+                >
+                <SelectTrigger className="h-10 border-neutral-200">
+                    <SelectValue placeholder="Выберите статус продажи" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="none">Не выбрано</SelectItem>
+                    {saleStatuses.map(s => (
+                    <SelectItem key={s.id} value={s.id.toString()}>
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                            {s.label}
+                        </div>
+                    </SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+            </div>
 
           <div className="grid gap-2">
             <Label className="text-xs font-bold text-neutral-500 uppercase">Сумма продажи (₽)</Label>
