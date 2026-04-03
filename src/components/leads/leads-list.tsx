@@ -342,7 +342,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        onChange={(val) => setFilterGoals(val)}                     />
                  </div>
               </TableHead>
-              <TableHead className="text-[10px] font-black uppercase tracking-widest hidden xl:table-cell w-[110px]">ClientID</TableHead>
+
               <TableHead className="text-[10px] font-black uppercase tracking-widest w-[130px]">
                  <div className="flex items-center gap-2">
                     Статус
@@ -436,7 +436,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     </span>
                     {item.lead.utmCampaign && (
                       <span className="text-[9px] text-muted-foreground/50 truncate font-black uppercase tracking-widest mt-0.5" title={item.lead.utmCampaign}>
-                        {item.lead.utmCampaign}
+                        {item.lead.utmCampaign?.replace(/\{|\}/g, '')}
                       </span>
                     )}
                   </div>
@@ -454,11 +454,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                       ))}
                    </div>
                 </TableCell>
-                <TableCell className="text-[10px] font-mono text-muted-foreground/40 font-medium hidden xl:table-cell">
-                  <div className="truncate w-[90px] border-b border-primary/10 border-dotted" title={item.lead.metrikaClientId || ''}>
-                    {item.lead.metrikaClientId || '—'}
-                  </div>
-                </TableCell>
+
                 <TableCell>
                    <div className="flex flex-col gap-1.5">
                       {item.achievements?.map((a: any) => (
