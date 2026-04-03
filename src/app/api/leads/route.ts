@@ -5,6 +5,7 @@ import { eq, and, desc, gte, lte, sql, or, inArray } from "drizzle-orm";
 import { getMoscowDateRange } from "@/lib/date-utils";
 import { getSession } from "@/lib/auth";
 import { verifyProjectAccess } from "@/lib/permissions";
+import { recordHistory } from "@/lib/audit";
 
 export async function GET(request: Request) {
   const session = await getSession();
@@ -163,19 +164,85 @@ export async function PATCH(request: Request) {
     }
 
     if (leadId && stageId !== undefined) {
+      const [oldLead] = await db.select().from(leads).where(eq(leads.id, leadId));
       await db.update(leads).set({
         stageId: stageId === null ? null : stageId
       }).where(eq(leads.id, leadId));
+
+      if (oldLead) {
+          await recordHistory({
+              projectId: oldLead.projectId,
+              entityType: 'lead',
+              entityId: leadId,
+              field: 'stageId',
+              oldValue: oldLead.stageId,
+              newValue: stageId,
+              changedBy: session.id
+          });
+      }
     }
 
     if (id && (targetStatusId !== undefined || qualificationStatusId !== undefined || saleStatusId !== undefined || saleAmount !== undefined)) {
+      // Fetch old values for audit
+      const [oldAchievement] = await db.select().from(goalAchievements).where(eq(goalAchievements.id, id));
+      const [lead] = oldAchievement ? await db.select().from(leads).where(eq(leads.id, oldAchievement.leadId)) : [null];
+
       await db.update(goalAchievements).set({
         targetStatusId: targetStatusId === undefined ? undefined : targetStatusId,
         qualificationStatusId: qualificationStatusId === undefined ? undefined : qualificationStatusId,
         saleStatusId: saleStatusId === undefined ? undefined : saleStatusId,
         saleAmount: saleAmount === undefined ? undefined : saleAmount.toString(),
         updatedAt: new Date(),
+        updatedBy: session.id, // Fill who made the change
       }).where(eq(goalAchievements.id, id));
+
+      // Record in audit history
+      if (oldAchievement && lead) {
+          if (targetStatusId !== undefined) {
+              await recordHistory({
+                  projectId: lead.projectId,
+                  entityType: 'achievement',
+                  entityId: id,
+                  field: 'targetStatusId',
+                  oldValue: oldAchievement.targetStatusId,
+                  newValue: targetStatusId,
+                  changedBy: session.id
+              });
+          }
+          if (qualificationStatusId !== undefined) {
+              await recordHistory({
+                  projectId: lead.projectId,
+                  entityType: 'achievement',
+                  entityId: id,
+                  field: 'qualificationStatusId',
+                  oldValue: oldAchievement.qualificationStatusId,
+                  newValue: qualificationStatusId,
+                  changedBy: session.id
+              });
+          }
+           if (saleStatusId !== undefined) {
+              await recordHistory({
+                  projectId: lead.projectId,
+                  entityType: 'achievement',
+                  entityId: id,
+                  field: 'saleStatusId',
+                  oldValue: oldAchievement.saleStatusId,
+                  newValue: saleStatusId,
+                  changedBy: session.id
+              });
+          }
+          if (saleAmount !== undefined) {
+              await recordHistory({
+                  projectId: lead.projectId,
+                  entityType: 'achievement',
+                  entityId: id,
+                  field: 'saleAmount',
+                  oldValue: oldAchievement.saleAmount,
+                  newValue: saleAmount.toString(),
+                  changedBy: session.id
+              });
+          }
+      }
     }
 
     return NextResponse.json({ success: true });
