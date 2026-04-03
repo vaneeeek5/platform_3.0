@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { db } from "@/db";
 import { leads, expenses, goalAchievements, trackedGoals, campaignMappings, targetStatuses, qualificationStatuses, projectLinks } from "@/db/schema";
 import { eq, and, gte, lte, sql, desc, inArray } from "drizzle-orm";
+import { getMoscowDateRange } from "@/lib/date-utils";
 import { getSession } from "@/lib/auth";
 import { verifyProjectAccess } from "@/lib/permissions";
 import { eachDayOfInterval, format, startOfDay, startOfWeek, startOfMonth, eachWeekOfInterval, eachMonthOfInterval, isSameDay, isSameWeek, isSameMonth } from "date-fns";
@@ -35,13 +36,13 @@ export async function GET(request: Request) {
   const dateToStr = searchParams.get("dateTo");
   const granularity = searchParams.get("granularity") || "day";
 
-  // Normalize range
-  const dateFrom = dateFromStr ? new Date(dateFromStr) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const dateTo = dateToStr ? new Date(dateToStr) : new Date();
-  
-  const filterStart = startOfDay(dateFrom);
-  const filterEnd = new Date(dateTo);
-  filterEnd.setHours(23, 59, 59, 999);
+  // Normalize range to Moscow Time boundaries
+  const mDateFrom = dateFromStr ? getMoscowDateRange(dateFromStr) : null;
+  const mDateTo = dateToStr ? getMoscowDateRange(dateToStr) : null;
+
+  const filterStart = mDateFrom?.start || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const filterEnd = mDateTo?.end || new Date();
+
 
   try {
     const filters = [gte(leads.date, filterStart), lte(leads.date, filterEnd)];
@@ -162,9 +163,11 @@ export async function GET(request: Request) {
     });
 
     const getPeriodKey = (date: Date) => {
-      if (granularity === "week") return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-ww');
-      if (granularity === "month") return format(startOfMonth(date), 'yyyy-MM');
-      return format(date, 'yyyy-MM-dd');
+      // Adjust UTC/Local date to Moscow (+3h) before formatting for trend keys
+      const mDate = new Date(date.getTime() + 3 * 3600 * 1000);
+      if (granularity === "week") return format(startOfWeek(mDate, { weekStartsOn: 1 }), 'yyyy-ww');
+      if (granularity === "month") return format(startOfMonth(mDate), 'yyyy-MM');
+      return format(mDate, 'yyyy-MM-dd');
     };
 
     let totalLeadsCount = 0;

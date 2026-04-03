@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { expenses, leads, goalAchievements, campaignMappings, projectLinks } from "@/db/schema";
 import { eq, and, gte, lte, sql, notInArray } from "drizzle-orm";
+import { getMoscowDateRange } from "@/lib/date-utils";
 import { getSession } from "@/lib/auth";
 import { verifyProjectAccess } from "@/lib/permissions";
 
@@ -30,8 +31,14 @@ export async function GET(request: Request) {
 
   try {
     const filters = [eq(expenses.projectId, projectId)];
-    if (dateFrom) filters.push(gte(expenses.date, new Date(dateFrom)));
-    if (dateTo) filters.push(lte(expenses.date, new Date(dateTo)));
+    if (dateFrom) {
+        const range = getMoscowDateRange(dateFrom);
+        if (range) filters.push(gte(expenses.date, range.start));
+    }
+    if (dateTo) {
+        const range = getMoscowDateRange(dateTo);
+        if (range) filters.push(lte(expenses.date, range.end));
+    }
 
     // Fetch mappings once to resolve names in real-time
     const projectMappings = await db.select().from(campaignMappings).where(eq(campaignMappings.projectId, projectId));
@@ -71,7 +78,11 @@ export async function GET(request: Request) {
         count: sql<number>`count(${leads.id})`.mapWith(Number),
       })
       .from(leads)
-      .where(and(eq(leads.projectId, projectId), dateFrom ? gte(leads.date, new Date(dateFrom)) : undefined, dateTo ? lte(leads.date, new Date(dateTo)) : undefined))
+      .where(and(
+        eq(leads.projectId, projectId), 
+        dateFrom ? gte(leads.date, getMoscowDateRange(dateFrom)!.start) : undefined, 
+        dateTo ? lte(leads.date, getMoscowDateRange(dateTo)!.end) : undefined
+      ))
       .groupBy(leads.utmCampaign);
 
     const reportData = new Map<string, any>();
