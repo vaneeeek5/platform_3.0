@@ -26,12 +26,11 @@ export function StatusSettings({ projectId }: { projectId: number }) {
 
   const fetchStatuses = async () => {
     try {
-      const options = { cache: 'no-store' as RequestCache };
       const [tRes, qRes, saleRes, sRes] = await Promise.all([
-        fetch(`/api/projects/${projectId}/statuses/target`, options),
-        fetch(`/api/projects/${projectId}/statuses/qualification`, options),
-        fetch(`/api/projects/${projectId}/statuses/sale`, options),
-        fetch(`/api/projects/${projectId}/statuses/stages`, options)
+        fetch(`/api/projects/${projectId}/statuses/target`),
+        fetch(`/api/projects/${projectId}/statuses/qualification`),
+        fetch(`/api/projects/${projectId}/statuses/sale`),
+        fetch(`/api/projects/${projectId}/statuses/stages`)
       ])
       let tData = [];
       let qData = [];
@@ -66,7 +65,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
       })
       if (res.ok) {
         toast.success("Статус добавлен")
-        await fetchStatuses()
+        fetchStatuses()
       }
     } catch (e) {
       toast.error("Ошибка при добавлении")
@@ -81,7 +80,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
       })
       if (res.ok) {
         toast.success("Статус удален")
-        await fetchStatuses()
+        fetchStatuses()
       }
     } catch (e) {
       toast.error("Ошибка при удалении")
@@ -97,7 +96,7 @@ export function StatusSettings({ projectId }: { projectId: number }) {
       })
       if (res.ok) {
         toast.success("Изменения сохранены", { duration: 1000 })
-        await fetchStatuses()
+        fetchStatuses()
       } else {
         toast.error("Ошибка при сохранении")
       }

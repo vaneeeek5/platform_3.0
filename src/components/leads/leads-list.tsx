@@ -342,7 +342,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                        onChange={(val) => setFilterGoals(val)}                     />
                  </div>
               </TableHead>
-
+              {/* ClientID hidden from UI */}
               <TableHead className="text-[10px] font-black uppercase tracking-widest w-[130px]">
                  <div className="flex items-center gap-2">
                     Статус
@@ -436,7 +436,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                     </span>
                     {item.lead.utmCampaign && (
                       <span className="text-[9px] text-muted-foreground/50 truncate font-black uppercase tracking-widest mt-0.5" title={item.lead.utmCampaign}>
-                        {item.lead.utmCampaign?.replace(/\{|\}/g, '')}
+                        {item.lead.utmCampaign}
                       </span>
                     )}
                   </div>
@@ -454,7 +454,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
                       ))}
                    </div>
                 </TableCell>
-
+                {/* ClientID hidden from UI */}
                 <TableCell>
                    <div className="flex flex-col gap-1.5">
                       {item.achievements?.map((a: any) => (
