@@ -184,7 +184,7 @@ export async function PATCH(request: Request) {
       }).where(eq(leads.id, leadId));
     }
 
-    if (id && (targetStatusId !== undefined || qualificationStatusId !== undefined || saleAmount !== undefined)) {
+    if (id && (targetStatusId !== undefined || qualificationStatusId !== undefined || saleStatusId !== undefined || saleAmount !== undefined)) {
       await db.update(goalAchievements).set({
         targetStatusId: targetStatusId === undefined ? undefined : targetStatusId,
         qualificationStatusId: qualificationStatusId === undefined ? undefined : qualificationStatusId,
