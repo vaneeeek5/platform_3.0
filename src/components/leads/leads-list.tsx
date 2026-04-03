@@ -131,21 +131,30 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     return () => clearTimeout(timer);
   }, [dateRange, user, isInitialized]);
 
-  const fetchLeads = async () => {
+  const fetchLeads = async (overrides?: any) => {
     setLoading(true)
     const params = new URLSearchParams()
     if (projectId) params.append("projectId", projectId.toString())
-    if (query) params.append("query", query)
     
+    // Use overrides if provided, otherwise use state
+    const currentQuery = overrides?.query !== undefined ? overrides.query : query;
+    const currentSources = overrides?.sources !== undefined ? overrides.sources : filterSources;
+    const currentGoals = overrides?.goals !== undefined ? overrides.goals : filterGoals;
+    const currentTargetStatusIds = overrides?.targetStatusIds !== undefined ? overrides.targetStatusIds : filterTargetStatusIds;
+    const currentQualStatusIds = overrides?.qualStatusIds !== undefined ? overrides.qualStatusIds : filterQualStatusIds;
+    const currentSaleStatusIds = overrides?.saleStatusIds !== undefined ? overrides.saleStatusIds : filterSaleStatusIds;
+    const currentStageIds = overrides?.stageIds !== undefined ? overrides.stageIds : filterStageIds;
+
+    if (currentQuery) params.append("query", currentQuery)
     if (dateRange?.from) params.append("dateFrom", format(dateRange.from, 'yyyy-MM-dd'))
     if (dateRange?.to) params.append("dateTo", format(dateRange.to, 'yyyy-MM-dd'))
     
-    if (filterSources.length > 0) params.append("sources", filterSources.join(","))
-    if (filterGoals.length > 0) params.append("goals", filterGoals.join(","))
-    if (filterTargetStatusIds.length > 0) params.append("targetStatusIds", filterTargetStatusIds.join(","))
-    if (filterQualStatusIds.length > 0) params.append("qualStatusIds", filterQualStatusIds.join(","))
-    if (filterSaleStatusIds.length > 0) params.append("saleStatusIds", filterSaleStatusIds.join(","))
-    if (filterStageIds.length > 0) params.append("stageIds", filterStageIds.join(","))
+    if (currentSources.length > 0) params.append("sources", currentSources.join(","))
+    if (currentGoals.length > 0) params.append("goals", currentGoals.join(","))
+    if (currentTargetStatusIds.length > 0) params.append("targetStatusIds", currentTargetStatusIds.join(","))
+    if (currentQualStatusIds.length > 0) params.append("qualStatusIds", currentQualStatusIds.join(","))
+    if (currentSaleStatusIds.length > 0) params.append("saleStatusIds", currentSaleStatusIds.join(","))
+    if (currentStageIds.length > 0) params.append("stageIds", currentStageIds.join(","))
     
     try {
       const res = await fetch(`/api/leads?${params.toString()}`)
@@ -161,7 +170,6 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
       setLoading(false)
     }
   }
-
   const handleResetAll = () => {
     setFilterSources([]);
     setFilterGoals([]);
@@ -171,8 +179,17 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     setFilterStageIds([]);
     setQuery("");
     toast.success("Все фильтры сброшены");
-    // Explicitly fetch leads with empty filters
-    setTimeout(() => fetchLeads(), 0);
+    
+    // Fetch immediately with null/empty filters to bypass React state delay
+    fetchLeads({
+      query: "",
+      sources: [],
+      goals: [],
+      targetStatusIds: [],
+      qualStatusIds: [],
+      saleStatusIds: [],
+      stageIds: []
+    });
   };
 
     const handleExport = () => {
