@@ -135,6 +135,16 @@ export function StatusSettings({ projectId }: { projectId: number }) {
       />
 
       <StatusSection 
+        title="Продажи" 
+        description="Статусы для расчета суммы сделок"
+        items={saleStatuses}
+        onAdd={() => addStatus('sale')}
+        onDelete={(id: number) => deleteStatus('sale', id)}
+        onUpdate={(id: number, updates: any) => updateStatus('sale', id, updates)}
+        type="sale"
+      />
+
+      <StatusSection 
         title="CRM Этапы (Stages)" 
         description="Воронка продаж напрямую из CRM"
         items={stageStatuses}
