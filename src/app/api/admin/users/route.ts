@@ -4,6 +4,7 @@ import { users, projectLinks, projects } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { eq, and } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { recordHistory } from "@/lib/audit";
 
 export async function GET() {
   const session = await getSession();
@@ -58,6 +59,17 @@ export async function POST(request: Request) {
       email: users.email,
       role: users.role
     });
+    
+    // Audit log for user creation
+    await recordHistory({
+        projectId: null as any, // Global action
+        entityType: 'user',
+        entityId: newUser.id,
+        field: 'email',
+        oldValue: null,
+        newValue: email,
+        changedBy: session.id
+    });
 
     return NextResponse.json(newUser);
   } catch (error: any) {
@@ -82,13 +94,36 @@ export async function PATCH(request: Request) {
   
       // 1. Update Global Role if provided
       if (role && !projectId) {
+          const [oldUser] = await db.select().from(users).where(eq(users.id, userId));
           await db.update(users).set({ role }).where(eq(users.id, userId));
+          
+          if (oldUser) {
+              await recordHistory({
+                  projectId: null as any,
+                  entityType: 'user',
+                  entityId: userId,
+                  field: 'role',
+                  oldValue: oldUser.role,
+                  newValue: role,
+                  changedBy: session.id
+              });
+          }
       }
   
       // 2. Manage Project Link
       if (projectId) {
           if (removeLink) {
               await db.delete(projectLinks).where(and(eq(projectLinks.userId, userId), eq(projectLinks.projectId, projectId)));
+              
+              await recordHistory({
+                  projectId,
+                  entityType: 'user_permission',
+                  entityId: userId,
+                  field: 'project_access',
+                  oldValue: 'CONNECTED',
+                  newValue: 'DISCONNECTED',
+                  changedBy: session.id
+              });
           } else {
               // Upsert link
               const [existing] = await db.select().from(projectLinks).where(and(eq(projectLinks.userId, userId), eq(projectLinks.projectId, projectId)));
@@ -106,8 +141,28 @@ export async function PATCH(request: Request) {
   
               if (existing) {
                   await db.update(projectLinks).set(values).where(eq(projectLinks.id, existing.id));
+                  
+                  await recordHistory({
+                      projectId,
+                      entityType: 'user_permission',
+                      entityId: userId,
+                      field: 'permissions_update',
+                      oldValue: JSON.stringify(existing),
+                      newValue: JSON.stringify(values),
+                      changedBy: session.id
+                  });
               } else {
                   await db.insert(projectLinks).values(values);
+                  
+                  await recordHistory({
+                      projectId,
+                      entityType: 'user_permission',
+                      entityId: userId,
+                      field: 'project_access',
+                      oldValue: 'NONE',
+                      newValue: 'CONNECTED',
+                      changedBy: session.id
+                  });
               }
           }
       }

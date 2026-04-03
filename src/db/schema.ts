@@ -265,8 +265,7 @@ export const syncLogs = pgTable("sync_logs", {
 export const changeHistory = pgTable("change_history", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id")
-    .references(() => projects.id, { onDelete: "cascade" })
-    .notNull(),
+    .references(() => projects.id, { onDelete: "cascade" }),
   entityType: text("entity_type").notNull(),
   entityId: integer("entity_id").notNull(),
   field: text("field").notNull(),

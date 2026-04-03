@@ -38,7 +38,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Users, Shield, Plus, Key, Settings, LayoutDashboard, ClipboardList, Banknote, History, Trash2, X, Server, HardDrive, ShieldCheck, Loader2 } from "lucide-react";
+import { Users, Shield, Plus, Key, Settings, LayoutDashboard, ClipboardList, Banknote, History, Trash2, X, Server, HardDrive, ShieldCheck, Loader2, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function GlobalSettingsPage() {
@@ -48,6 +48,9 @@ export default function GlobalSettingsPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isAddUserOpen, setIsAddUserOpen] = React.useState(false);
   const [isPermissionsOpen, setIsPermissionsOpen] = React.useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = React.useState(false);
+  const [userHistory, setUserHistory] = React.useState<any[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = React.useState(false);
   const [selectedUserId, setSelectedUserId] = React.useState<number | null>(null);
   const selectedUser = React.useMemo(() => 
     usersList.find(u => u.id === selectedUserId), 
@@ -117,6 +120,23 @@ export default function GlobalSettingsPage() {
       }
     } catch (e) {
       toast.error("Ошибка сети");
+    }
+  };
+
+  const fetchUserHistory = async (userId: number) => {
+    setIsHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/admin/history?userId=${userId}`);
+      const data = await res.json();
+      if (res.ok) {
+        setUserHistory(data || []);
+      } else {
+        toast.error("Ошибка загрузки истории");
+      }
+    } catch (e) {
+      toast.error("Ошибка сети");
+    } finally {
+      setIsHistoryLoading(false);
     }
   };
 
@@ -286,6 +306,19 @@ export default function GlobalSettingsPage() {
                               <Shield className="h-3.5 w-3.5 mr-2" />
                               Доступы
                             </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-10 rounded-xl hover:bg-primary/10 text-primary px-4 text-[10px] font-black uppercase tracking-widest"
+                              onClick={() => {
+                                setSelectedUserId(user.id);
+                                fetchUserHistory(user.id);
+                                setIsHistoryOpen(true);
+                              }}
+                            >
+                              <History className="h-3.5 w-3.5 mr-2" />
+                              История
+                            </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
@@ -449,6 +482,66 @@ export default function GlobalSettingsPage() {
           </div>
           <DialogFooter className="p-10 border-t border-white/5 bg-white/5">
             <Button onClick={() => setIsPermissionsOpen(false)} className="h-14 rounded-2xl bg-primary text-white font-black uppercase text-[10px] tracking-widest px-12 shadow-xl shadow-primary/20">Готово</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DialogContent className="glass-card border-none shadow-2xl max-w-4xl max-h-[85vh] p-0 overflow-hidden flex flex-col rounded-[2.5rem]">
+          <DialogHeader className="p-10 pb-6 border-b border-white/5">
+            <div className="flex items-center justify-between">
+                <div>
+                   <DialogTitle className="text-3xl font-black tracking-tighter">История действий</DialogTitle>
+                   <DialogDescription className="text-xs font-black uppercase tracking-[0.2em] text-primary mt-1">{selectedUser?.email}</DialogDescription>
+                </div>
+                <div className="p-4 glass-card rounded-[1.5rem] border-primary/20 shadow-xl shadow-primary/10">
+                   <History className="h-7 w-7 text-primary" />
+                </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+              {isHistoryLoading ? (
+                  <div className="py-20 flex flex-col items-center justify-center text-muted-foreground animate-pulse">
+                      <History className="h-12 w-12 mb-4 opacity-20 animate-spin" />
+                      <p className="text-[10px] font-black uppercase tracking-widest">Загружаем логи...</p>
+                  </div>
+              ) : userHistory.length === 0 ? (
+                  <div className="py-20 flex flex-col items-center justify-center text-muted-foreground opacity-40">
+                      <ClipboardList className="h-12 w-12 mb-4" />
+                      <p className="text-[10px] font-black uppercase tracking-widest italic">Действий пока не зафиксировано</p>
+                  </div>
+              ) : (
+                  <div className="space-y-4">
+                      {userHistory.map((log) => (
+                          <div key={log.id} className="p-6 rounded-2xl glass-card border-none bg-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group hover:bg-white/10 transition-all">
+                              <div className="flex items-center gap-4">
+                                  <div className="w-1.5 h-12 bg-primary/20 rounded-full group-hover:bg-primary transition-all" />
+                                  <div>
+                                      <div className="flex items-center gap-2 mb-1">
+                                          <Badge className="bg-primary shadow-lg shadow-primary/10 text-[9px] font-black uppercase tracking-widest px-2">{log.entityType}</Badge>
+                                          <span className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-widest">{log.field}</span>
+                                      </div>
+                                      <div className="text-sm font-medium">
+                                          Изменение: <span className="text-muted-foreground line-through opacity-50 mr-2 italic">{String(log.oldValue || 'пусто')}</span>
+                                          <ArrowUpRight className="inline h-4 w-4 mx-2 text-primary opacity-40" />
+                                          <span className="text-primary font-black">{String(log.newValue || 'пусто')}</span>
+                                      </div>
+                                      {log.projectName && <div className="text-[9px] font-black text-primary/60 uppercase tracking-widest mt-2">{log.projectName}</div>}
+                                  </div>
+                              </div>
+                              <div className="text-right flex flex-col items-end">
+                                  <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{new Date(log.changedAt).toLocaleString("ru-RU")}</div>
+                                  <div className="text-[9px] font-bold text-muted-foreground/20 uppercase tracking-tighter mt-1">{log.source}</div>
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              )}
+          </div>
+          <DialogFooter className="p-10 border-t border-white/5 bg-white/5">
+            <Button onClick={() => setIsHistoryOpen(false)} className="h-14 rounded-2xl bg-primary text-white font-black uppercase text-[10px] tracking-widest px-12 shadow-xl shadow-primary/20">Закрыть</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
