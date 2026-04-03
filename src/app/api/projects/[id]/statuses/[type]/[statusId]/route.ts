@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { targetStatuses, qualificationStatuses, leadStages } from "@/db/schema";
+import { targetStatuses, qualificationStatuses, saleStatuses, leadStages } from "@/db/schema";
 import { getSession } from "@/lib/auth";
 import { eq, and } from "drizzle-orm";
 
@@ -15,8 +15,10 @@ export async function PATCH(
   const projectId = parseInt(id);
   const sId = parseInt(statusId);
   const body = await request.json();
-  const isTarget = type === "target";
-  const table = isTarget ? targetStatuses : qualificationStatuses;
+  const table = type === "target" ? targetStatuses : 
+                type === "qualification" ? qualificationStatuses : 
+                type === "sale" ? saleStatuses : 
+                leadStages;
 
   const updates: any = {};
   if (body.label !== undefined) updates.label = body.label;
@@ -42,7 +44,10 @@ export async function DELETE(
   const { id, type, statusId } = await params;
   const projectId = parseInt(id);
   const sId = parseInt(statusId);
-  const table = type === "target" ? targetStatuses : type === "qualification" ? qualificationStatuses : leadStages;
+  const table = type === "target" ? targetStatuses : 
+                type === "qualification" ? qualificationStatuses : 
+                type === "sale" ? saleStatuses : 
+                leadStages;
 
   await db.delete(table).where(and(eq(table.id, sId), eq(table.projectId, projectId)));
   
