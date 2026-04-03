@@ -87,7 +87,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
        fetchStatuses()
        fetchFilterOptions()
     }
-  }, [projectId, dateRange, filterSources, filterGoals, filterTargetStatusIds, filterQualStatusIds, filterSaleStatusIds, filterStageIds])
+  }, [projectId, dateRange, query, filterSources, filterGoals, filterTargetStatusIds, filterQualStatusIds, filterSaleStatusIds, filterStageIds])
 
   const fetchFilterOptions = async () => {
     try {
@@ -171,6 +171,8 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
     setFilterStageIds([]);
     setQuery("");
     toast.success("Все фильтры сброшены");
+    // Explicitly fetch leads with empty filters
+    setTimeout(() => fetchLeads(), 0);
   };
 
     const handleExport = () => {
@@ -283,7 +285,7 @@ export function LeadsList({ projectId, showProjectColumn = false }: LeadsListPro
          </div>
 
          <div className="flex flex-wrap gap-4 flex-1 justify-end">
-            {(filterSources.length > 0 || filterGoals.length > 0 || filterTargetStatusIds.length > 0 || filterQualStatusIds.length > 0 || filterStageIds.length > 0 || query) && (
+            {(filterSources.length > 0 || filterGoals.length > 0 || filterTargetStatusIds.length > 0 || filterQualStatusIds.length > 0 || filterSaleStatusIds.length > 0 || filterStageIds.length > 0 || query) && (
                <Button 
                  variant="ghost" 
                  size="sm" 
